@@ -46,7 +46,7 @@ class SchemaGeneratorSqlSpec extends Specification {
                 .password("postgres")
                 .build()
 
-        sqlSchemaCrawler = new SchemaGeneratorSql(Mock(SqlClient), [], [], new SqlDialectPostGis());
+        sqlSchemaCrawler = new SchemaGeneratorSql(Mock(SqlClient));
 
     }
 

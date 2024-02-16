@@ -16,21 +16,17 @@ import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
-import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
-import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.entities.domain.AbstractEntityFactory;
+import de.ii.xtraplatform.entities.domain.AutoEntityFactory;
 import de.ii.xtraplatform.entities.domain.EntityData;
 import de.ii.xtraplatform.entities.domain.EntityDataBuilder;
 import de.ii.xtraplatform.entities.domain.EntityFactory;
-import de.ii.xtraplatform.entities.domain.EntityRegistry;
 import de.ii.xtraplatform.entities.domain.PersistentEntity;
 import de.ii.xtraplatform.entities.domain.ValidationResult.MODE;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.DecoderFactories;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
 import de.ii.xtraplatform.features.domain.MappingOperationResolver;
 import de.ii.xtraplatform.features.domain.ProviderData;
@@ -39,6 +35,8 @@ import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaFragmentResolver;
 import de.ii.xtraplatform.features.domain.SchemaReferenceResolver;
 import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
+import de.ii.xtraplatform.features.domain.transform.FeatureRefResolver;
+import de.ii.xtraplatform.features.domain.transform.ImplicitMappingResolver;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.features.sql.domain.FeatureProviderSqlData;
@@ -48,23 +46,16 @@ import de.ii.xtraplatform.features.sql.domain.ImmutableFeatureProviderSqlData.Bu
 import de.ii.xtraplatform.features.sql.domain.ImmutablePoolSettings;
 import de.ii.xtraplatform.features.sql.domain.ImmutableQueryGeneratorSettings;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlPathDefaults;
-import de.ii.xtraplatform.features.sql.domain.SqlConnector;
-import de.ii.xtraplatform.features.sql.domain.SqlDialectGpkg;
-import de.ii.xtraplatform.features.sql.domain.SqlDialectPostGis;
-import de.ii.xtraplatform.features.sql.infra.db.SchemaGeneratorSql;
+import de.ii.xtraplatform.features.sql.domain.SqlClientBasicFactory;
 import de.ii.xtraplatform.streams.domain.Reactive;
-import java.util.AbstractMap;
-import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.ArrayList;
-import java.util.Comparator;
+import de.ii.xtraplatform.values.domain.ValueStore;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -79,8 +70,9 @@ public class FeatureProviderSqlFactory
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderSqlFactory.class);
 
   private final Lazy<Set<SchemaFragmentResolver>> schemaResolvers;
-  private final ConnectorFactory connectorFactory;
+  private final FeatureProviderSqlAuto featureProviderSqlAuto;
   private final boolean skipHydration;
+  private final Set<String> connectors;
 
   @Inject
   public FeatureProviderSqlFactory(
@@ -91,22 +83,26 @@ public class FeatureProviderSqlFactory
       Cql cql,
       ConnectorFactory connectorFactory,
       Reactive reactive,
-      EntityRegistry entityRegistry,
+      ValueStore valueStore,
       ProviderExtensionRegistry extensionRegistry,
       DecoderFactories decoderFactories,
       ProviderSqlFactoryAssisted providerSqlFactoryAssisted) {
     super(providerSqlFactoryAssisted);
     this.schemaResolvers = schemaResolvers;
-    this.connectorFactory = connectorFactory;
+    this.featureProviderSqlAuto =
+        new FeatureProviderSqlAuto(new SqlClientBasicFactoryDefault(connectorFactory));
     this.skipHydration = false;
+    // TODO
+    this.connectors = Set.of("JSON");
   }
 
   // for ldproxy-cfg
-  public FeatureProviderSqlFactory() {
+  public FeatureProviderSqlFactory(SqlClientBasicFactory sqlClientBasicFactory) {
     super(null);
     this.schemaResolvers = null;
-    this.connectorFactory = null;
+    this.featureProviderSqlAuto = new FeatureProviderSqlAuto(sqlClientBasicFactory);
     this.skipHydration = true;
+    this.connectors = Set.of();
   }
 
   @Override
@@ -166,6 +162,11 @@ public class FeatureProviderSqlFactory
   }
 
   @Override
+  public Optional<AutoEntityFactory> auto() {
+    return Optional.of(featureProviderSqlAuto);
+  }
+
+  @Override
   public EntityData hydrateData(EntityData entityData) {
     FeatureProviderSqlData data = (FeatureProviderSqlData) entityData;
 
@@ -173,19 +174,42 @@ public class FeatureProviderSqlFactory
       return entityData;
     }
 
-    if (data.isAuto()) {
-      LOGGER.info(
-          "Feature provider with id '{}' is in auto mode, generating configuration ...",
-          data.getId());
-    }
-
     try {
-      return resolveMappingOperationsIfNecessary(
-          resolveSchemasIfNecessary(
-              normalizeConstants(
-                  cleanupAutoPersist(
-                      cleanupAdditionalInfo(
-                          generateNativeCrsIfNecessary(generateTypesIfNecessary(data)))))));
+      if (data.isAuto()) {
+        LOGGER.info(
+            "Feature provider with id '{}' is in auto mode, generating configuration ...",
+            data.getId());
+
+        ConnectionInfoSql connectionInfo = data.getConnectionInfo();
+
+        List<String> schemas =
+            connectionInfo.getSchemas().isEmpty()
+                ? connectionInfo.getDialect() == Dialect.GPKG
+                    ? ImmutableList.of()
+                    : ImmutableList.of("public")
+                : connectionInfo.getSchemas();
+
+        Map<String, List<String>> tables = featureProviderSqlAuto.analyze(data);
+
+        if (connectionInfo.getDialect() != Dialect.GPKG) {
+          Map<String, List<String>> schemaTables = new LinkedHashMap<>();
+
+          for (String schema : schemas) {
+            if (tables.containsKey(schema)) {
+              schemaTables.put(schema, tables.get(schema));
+            }
+          }
+
+          tables = schemaTables;
+        }
+
+        data = featureProviderSqlAuto.generate(data, tables, ignore -> {});
+      }
+
+      return normalizeConstants(
+          normalizeImplicitMappings(
+              normalizeFeatureRefs(
+                  resolveMappingOperationsIfNecessary(resolveSchemasIfNecessary(data)))));
     } catch (Throwable e) {
       LogContext.error(
           LOGGER, e, "Feature provider with id '{}' could not be started", data.getId());
@@ -231,217 +255,38 @@ public class FeatureProviderSqlFactory
     return data;
   }
 
-  private FeatureProviderSqlData generateTypesIfNecessary(FeatureProviderSqlData data) {
-    if (data.isAuto() && data.getTypes().isEmpty()) {
-      SqlConnector connector =
-          (SqlConnector)
-              connectorFactory.createConnector(
-                  data.getProviderSubType(),
-                  data.getId(),
-                  getConnectionInfoWith4Connections(data.getConnectionInfo()));
-
-      if (!connector.isConnected()) {
-        connectorFactory.disposeConnector(connector);
-
-        RuntimeException connectionError =
-            connector
-                .getConnectionError()
-                .map(
-                    throwable ->
-                        throwable instanceof RuntimeException
-                            ? (RuntimeException) throwable
-                            : new RuntimeException(throwable))
-                .orElse(new IllegalStateException("unknown reason"));
-
-        throw connectionError;
-      }
-
-      SchemaGeneratorSql schemaGeneratorSql = null;
-
-      try {
-        ConnectionInfoSql connectionInfo = data.getConnectionInfo();
-
-        List<String> schemas =
-            connectionInfo.getSchemas().isEmpty()
-                ? connectionInfo.getDialect() == Dialect.GPKG
-                    ? ImmutableList.of()
-                    : ImmutableList.of("public")
-                : connectionInfo.getSchemas();
-
-        schemaGeneratorSql =
-            new SchemaGeneratorSql(
-                connector.getSqlClient(),
-                schemas,
-                data.getAutoTypes(),
-                connectionInfo.getDialect() == Dialect.GPKG
-                    ? new SqlDialectGpkg()
-                    : new SqlDialectPostGis());
-
-        List<FeatureSchema> types = schemaGeneratorSql.generate();
-
-        Map<String, Integer> idCounter = new LinkedHashMap<>();
-        types.forEach(
-            featureSchema ->
-                featureSchema.getProperties().stream()
-                    .filter(FeatureSchema::isId)
-                    .map(FeatureSchema::getSourcePath)
-                    .filter(Optional::isPresent)
-                    .map(Optional::get)
-                    .findFirst()
-                    .ifPresent(
-                        path -> {
-                          if (!idCounter.containsKey(path)) {
-                            idCounter.put(path, 0);
-                          }
-                          idCounter.put(path, idCounter.get(path) + 1);
-                        }));
-
-        String mostOftenUsedId =
-            idCounter.entrySet().stream()
-                .max(Comparator.comparingInt(Entry::getValue))
-                .map(Entry::getKey)
-                .orElse("id");
-
-        ImmutableMap<String, FeatureSchema> typeMap =
-            types.stream()
-                .map(
-                    type -> {
-                      Optional<String> differingSortKey =
-                          type.getIdProperty()
-                              .filter(
-                                  idProperty ->
-                                      !Objects.equals(idProperty.getName(), mostOftenUsedId))
-                              .map(FeatureSchema::getName);
-
-                      if (differingSortKey.isPresent() && type.getSourcePath().isPresent()) {
-                        return new ImmutableFeatureSchema.Builder()
-                            .from(type)
-                            .sourcePath(
-                                String.format(
-                                    "%s{sortKey=%s}",
-                                    type.getSourcePath().get(), differingSortKey.get()))
-                            .build();
-                      }
-
-                      return type;
-                    })
-                .map(type -> new AbstractMap.SimpleImmutableEntry<>(type.getName(), type))
-                .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-
-        Builder builder = new Builder().from(data).types(typeMap);
-
-        if (!Objects.equals(mostOftenUsedId, "id")) {
-          // LOGGER.debug("CHANGING defaultSortKey to {}", mostOftenUsedId);
-          builder.sourcePathDefaultsBuilder().primaryKey(mostOftenUsedId).sortKey(mostOftenUsedId);
-        }
-
-        return builder.build();
-      } finally {
-        if (Objects.nonNull(schemaGeneratorSql)) {
-          try {
-            schemaGeneratorSql.close();
-          } catch (Throwable e) {
-            // ignore
-          }
-          try {
-            connectorFactory.disposeConnector(connector);
-          } catch (Throwable e) {
-            // ignore
-          }
-        }
-      }
-    }
-
-    return data;
-  }
-
-  private FeatureProviderSqlData generateNativeCrsIfNecessary(FeatureProviderSqlData data) {
-    if (data.isAuto() && data.getNativeCrs().isEmpty()) {
-      EpsgCrs nativeCrs =
-          data.getTypes().values().stream()
-              .flatMap(type -> type.getProperties().stream())
-              .filter(
-                  property ->
-                      property.isSpatial() && property.getAdditionalInfo().containsKey("crs"))
-              .findFirst()
-              .map(
-                  property -> {
-                    EpsgCrs crs = EpsgCrs.fromString(property.getAdditionalInfo().get("crs"));
-                    Force force = Force.valueOf(property.getAdditionalInfo().get("force"));
-                    if (force != crs.getForceAxisOrder()) {
-                      crs = EpsgCrs.of(crs.getCode(), force);
-                    }
-                    return crs;
-                  })
-              .orElseGet(() -> OgcCrs.CRS84);
-
-      return new Builder().from(data).nativeCrs(nativeCrs).build();
-    }
-
-    return data;
-  }
-
-  private FeatureProviderSqlData cleanupAdditionalInfo(FeatureProviderSqlData data) {
-    if (data.isAuto()) {
-      return new Builder()
-          .from(data)
-          .types(
-              data.getTypes().entrySet().stream()
-                  .map(
-                      entry ->
-                          new SimpleImmutableEntry<>(
-                              entry.getKey(),
-                              new ImmutableFeatureSchema.Builder()
-                                  .from(entry.getValue())
-                                  .additionalInfo(ImmutableMap.of())
-                                  .propertyMap(
-                                      entry.getValue().getPropertyMap().entrySet().stream()
-                                          .map(
-                                              entry2 ->
-                                                  new SimpleImmutableEntry<>(
-                                                      entry2.getKey(),
-                                                      new ImmutableFeatureSchema.Builder()
-                                                          .from(entry2.getValue())
-                                                          .additionalInfo(ImmutableMap.of())
-                                                          .build()))
-                                          .collect(
-                                              ImmutableMap.toImmutableMap(
-                                                  Map.Entry::getKey, Map.Entry::getValue)))
-                                  .build()))
-                  .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)))
-          .build();
-    }
-
-    return data;
-  }
-
-  private FeatureProviderSqlData cleanupAutoPersist(FeatureProviderSqlData data) {
-    if (data.isAuto() && data.isAutoPersist()) {
-      return new Builder()
-          .from(data)
-          .auto(Optional.empty())
-          .autoPersist(Optional.empty())
-          .autoTypes(new ArrayList<>())
-          .build();
-    }
-
-    return data;
-  }
-
   private FeatureProviderSqlData normalizeConstants(FeatureProviderSqlData data) {
-    boolean hasConstants =
+    return applySchemaTransformation(
+        data, p -> p.isConstant() && p.getSourcePaths().isEmpty(), new ConstantsResolver());
+  }
+
+  private FeatureProviderSqlData normalizeImplicitMappings(FeatureProviderSqlData data) {
+    ImplicitMappingResolver implicitMappingResolver = new ImplicitMappingResolver();
+    return applySchemaTransformation(
+        data, implicitMappingResolver::needsResolving, implicitMappingResolver);
+  }
+
+  private FeatureProviderSqlData normalizeFeatureRefs(FeatureProviderSqlData data) {
+    return applySchemaTransformation(
+        data,
+        p -> p.getType() == Type.FEATURE_REF || p.getType() == Type.FEATURE_REF_ARRAY,
+        new FeatureRefResolver(connectors));
+  }
+
+  private FeatureProviderSqlData applySchemaTransformation(
+      FeatureProviderSqlData data,
+      Predicate<FeatureSchema> propertyMatcher,
+      SchemaVisitorTopDown<FeatureSchema, FeatureSchema> transformer) {
+    boolean anyPropertyMatches =
         data.getTypes().values().stream()
             .flatMap(t -> t.getAllNestedProperties().stream())
-            .anyMatch(p -> p.isConstant() && p.getSourcePaths().isEmpty());
+            .anyMatch(propertyMatcher);
 
-    if (hasConstants) {
+    if (anyPropertyMatches) {
       Map<String, FeatureSchema> types =
           data.getTypes().entrySet().stream()
-              .map(
-                  entry ->
-                      new SimpleImmutableEntry<>(
-                          entry.getKey(), entry.getValue().accept(new NormalizeConstants())))
-              .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+              .map(entry -> Map.entry(entry.getKey(), entry.getValue().accept(transformer)))
+              .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
       return new Builder().from(data).types(types).build();
     }
@@ -449,69 +294,10 @@ public class FeatureProviderSqlFactory
     return data;
   }
 
-  protected ConnectionInfoSql getConnectionInfoWith4Connections(ConnectionInfoSql connectionInfo) {
-
-    if (connectionInfo.getPool().getMaxConnections() <= 0) {
-      return new ImmutableConnectionInfoSql.Builder()
-          .from(connectionInfo)
-          .pool(
-              new ImmutablePoolSettings.Builder()
-                  .from(connectionInfo.getPool())
-                  .maxConnections(4)
-                  .build())
-          .build();
-    }
-
-    return connectionInfo;
-  }
-
   @AssistedFactory
   public interface ProviderSqlFactoryAssisted
       extends FactoryAssisted<FeatureProviderDataV2, FeatureProviderSql> {
     @Override
     FeatureProviderSql create(FeatureProviderDataV2 data);
-  }
-
-  public class NormalizeConstants implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
-    final int[] constantCounter = {0};
-
-    @Override
-    public FeatureSchema visit(
-        FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
-      Map<String, FeatureSchema> visitedPropertiesMap =
-          visitedProperties.stream()
-              .filter(Objects::nonNull)
-              .map(
-                  featureSchema ->
-                      new SimpleImmutableEntry<>(
-                          featureSchema.getName(),
-                          normalizeConstants(schema.getName(), featureSchema)))
-              .collect(
-                  ImmutableMap.toImmutableMap(
-                      Entry::getKey, Entry::getValue, (first, second) -> second));
-
-      return new ImmutableFeatureSchema.Builder()
-          .from(schema)
-          .propertyMap(visitedPropertiesMap)
-          .build();
-    }
-
-    private FeatureSchema normalizeConstants(String parent, FeatureSchema schema) {
-      if (schema.getConstantValue().isPresent() && schema.getSourcePaths().isEmpty()) {
-        String constantValue =
-            schema.getType() == Type.STRING
-                ? String.format("'%s'", schema.getConstantValue().get())
-                : schema.getConstantValue().get();
-        String constantSourcePath =
-            String.format(
-                "constant_%s_%d{constant=%s}", parent, constantCounter[0]++, constantValue);
-
-        return new ImmutableFeatureSchema.Builder()
-            .from(schema)
-            .addSourcePaths(constantSourcePath)
-            .build();
-      }
-      return schema;
-    }
   }
 }

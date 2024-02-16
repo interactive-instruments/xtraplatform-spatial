@@ -10,7 +10,10 @@ package de.ii.xtraplatform.features.domain;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import de.ii.xtraplatform.docs.DocFile;
+import de.ii.xtraplatform.docs.DocIgnore;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -21,36 +24,6 @@ import org.immutables.value.Value;
 
 public interface SchemaBase<T extends SchemaBase<T>> {
 
-  /**
-   * @langEn `ID` has to be set for the property that should be used as the unique feature id. As a
-   *     rule that should be the first property ion the `properties` object. Property names cannot
-   *     contain spaces (" ") or slashes ("/"). Set `TYPE` for a property that specifies the type
-   *     name of the object.
-   * @langDe Kennzeichnet besondere Bedeutungen der Eigenschaft.
-   *     <ul>
-   *       <li><code>ID</code> ist bei der Eigenschaft eines Objekts anzugeben, die für die <code>
-   *           featureId</code> in der API zu verwenden ist. Diese Eigenschaft ist typischerweise
-   *           die erste Eigenschaft im <code>properties</code>-Objekt. Erlaubte Zeichen in diesen
-   *           Eigenschaften sind alle Zeichen bis auf das Leerzeichen (" ") und der Querstrich
-   *           ("/").
-   *       <li><code>TYPE</code> ist optional bei der Eigenschaft eines Objekts anzugeben, die den
-   *           Namen einer Unterobjektart enthält.
-   *       <li>Hat eine Objektart mehrere Geometrieeigenschaften, dann ist <code>PRIMARY_GEOMETRY
-   *           </code> bei der Eigenschaft anzugeben, die für <code>bbox</code>-Abfragen verwendet
-   *           werden soll und die z.B. in GeoJSON in <code>geometry</code> kodiert werden soll. Bei
-   *           JSON-FG wird in <code>place</code> die <code>SECONDARY_GEOMETRY</code> kodiert,
-   *           sofern die Rolle gesetzt ist, ansonsten auch die <code>PRIMARY_GEOMETRY</code>.
-   *       <li>Hat eine Objektart mehrere zeitliche Eigenschaften, dann sollte <code>PRIMARY_INSTANT
-   *           </code> bei der Eigenschaft angegeben werden, die für <code>datetime</code>-Abfragen
-   *           verwendet werden soll, sofern ein Zeitpunkt die zeitliche Ausdehnung der Features
-   *           beschreibt.
-   *       <li>Ist die zeitliche Ausdehnung hingegen ein Zeitintervall, dann sind <code>
-   *           PRIMARY_INTERVAL_START</code> und <code>PRIMARY_INTERVAL_END</code> bei den
-   *           jeweiligen zeitlichen Eigenschaften anzugeben.
-   *     </ul>
-   *
-   * @default `null`
-   */
   enum Role {
     ID,
     TYPE,
@@ -78,6 +51,82 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     UNKNOWN
   }
 
+  /**
+   * @langEn # Schema Scopes
+   *     <p>Schemas are used with different scopes. Properties may be applicable only for a subset
+   *     of the scopes depending on the characteristics of the property or the API design. The four
+   *     scopes are discussed below.
+   *     <p>## `RETURNABLE`
+   *     <p>Returnable properties are the properties that are included in feature representations
+   *     when features are fetched. By default, all properties are returnable unless the property is
+   *     explicitly excluded. Eligible properties may be explicitly excluded, for example, if the
+   *     property should be used only in queries (as a queryable or sortable), but never coded in
+   *     the features themselves.
+   *     <p>## `RECEIVABLE`
+   *     <p>Receivable properties are the properties that may be included in feature representations
+   *     when features are created or updated. By default, all properties are receivable unless the
+   *     property is constant or explicitly excluded. Eligible properties may be explicitly
+   *     excluded, for example, if the property is derived or uses a different representation in the
+   *     data store than in the response.
+   *     <p>## `QUERYABLE`
+   *     <p>Queryable properties are the properties that may be used in filter expressions. By
+   *     default, all properties may be queryable unless the property is explicitly excluded, uses
+   *     `concat` / `coalesce`, or is of type `OBJECT` / `OBJECT_ARRAY`. Eligible properties may be
+   *     explicitly excluded, for example, if the property is not optimized for use in queries.
+   *     <p>## `SORTABLE`
+   *     <p>Sortable properties are the properties that may be used to sort features in responses.
+   *     By default, all direct properties of a feature type that are of type STRING, FLOAT,
+   *     INTEGER, DATE, or DATETIME may be sortable unless the property is explicitly excluded, or
+   *     uses `concat` / `coalesce`. Eligible properties may be explicitly excluded, for example, if
+   *     the property is not optimized for use in queries.
+   * @langDe # Schema-Anwendungsbereiche
+   *     <p>Schemas werden mit unterschiedlichen Anwendungsbereichen verwendet. Objekteigenschaften
+   *     können je nach den Merkmalen der Eigenschaft oder dem API-Design nur für eine Teilmenge der
+   *     Bereiche anwendbar sein. Die vier Anwendungsbereiche werden im Folgenden erläutert.
+   *     <p>## `RETURNABLE`
+   *     <p>Rückgabefähige Eigenschaften sind die Eigenschaften, die in Feature-Darstellungen
+   *     enthalten sind, wenn Features abgerufen werden. Standardmäßig sind alle Eigenschaften
+   *     rückgabefähig, es sei denn, die Eigenschaft wird explizit ausgeschlossen. In Frage kommende
+   *     Eigenschaften können explizit ausgeschlossen werden, z. B. wenn die Eigenschaft nur in
+   *     Abfragen verwendet werden soll (als Queryable oder Sortable), aber niemals in den Features
+   *     selbst kodiert werden soll.
+   *     <p>## `RECEIVABLE`
+   *     <p>Empfangbare Eigenschaften sind die Eigenschaften, die in Feature-Darstellungen enthalten
+   *     sein können, wenn Features erzeugt oder aktualisiert werden. Standardmäßig sind alle
+   *     Eigenschaften empfangbar, es sei denn, die Eigenschaft ist konstant oder explizit
+   *     ausgeschlossen. In Frage kommende Eigenschaften können explizit ausgeschlossen werden, z.B.
+   *     wenn die Eigenschaft abgeleitet ist oder eine andere Darstellung im Datenspeicher als in
+   *     der Antwort verwendet.
+   *     <p>## `QUERYABLE`
+   *     <p>Abfragbare Eigenschaften sind die Eigenschaften, die in Filterausdrücken verwendet
+   *     werden können. Standardmäßig können alle Eigenschaften abgefragt werden, es sei denn, die
+   *     Eigenschaft ist explizit ausgeschlossen, verwendet `concat` / `coalesce` oder ist vom Typ
+   *     `OBJECT` / `OBJECT_ARRAY`. In Frage kommende Eigenschaften können explizit ausgeschlossen
+   *     werden, zum Beispiel, wenn die Eigenschaft nicht für die Verwendung in Abfragen optimiert
+   *     ist.
+   *     <p>## `SORTABLE`
+   *     <p>Sortierbare Eigenschaften sind die Eigenschaften, die zum Sortieren von Features in
+   *     Antworten verwendet werden können. Standardmäßig können alle direkten Eigenschaften einer
+   *     Objektart, die vom Typ `STRING`, `FLOAT`, `INTEGER`, `DATE` oder `DATETIME` sind,
+   *     sortierbar sein, es sei denn, die Eigenschaft wird explizit ausgeschlossen oder verwendet
+   *     `concat` / `coalesce`. In Frage kommende Eigenschaften können explizit ausgeschlossen
+   *     werden, zum Beispiel wenn die Eigenschaft nicht für die Verwendung in Abfragen optimiert
+   *     ist.
+   */
+  @DocFile(path = "providers/details", name = "scopes.md")
+  enum Scope {
+    RETURNABLE,
+    RECEIVABLE,
+    QUERYABLE,
+    SORTABLE;
+
+    public static List<Scope> allBut(Scope... scopes) {
+      return Arrays.stream(Scope.values())
+          .filter(s -> Arrays.stream(scopes).noneMatch(scope -> scope == s))
+          .collect(Collectors.toList());
+    }
+  }
+
   String getName();
 
   Type getType();
@@ -92,12 +141,16 @@ public interface SchemaBase<T extends SchemaBase<T>> {
 
   Optional<String> getRefUriTemplate();
 
+  Optional<String> getRefKeyTemplate();
+
   List<String> getPath();
 
   List<String> getParentPath();
 
   Optional<String> getSourcePath();
 
+  // not part of the configuration, but de-/serialization is needed for unit tests
+  @DocIgnore
   List<String> getSourcePaths();
 
   @JsonIgnore
@@ -117,19 +170,28 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default boolean isForcePolygonCCW() {
-    return getForcePolygonCCW().filter(force -> force == false).isEmpty();
+    return getForcePolygonCCW().orElse(true);
   }
 
-  Optional<Boolean> getIsQueryable();
+  Optional<Boolean> getLinearizeCurves();
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean shouldLinearizeCurves() {
+    return getLinearizeCurves().orElse(false);
+  }
+
+  Set<Scope> getExcludedScopes();
 
   @JsonIgnore
   @Value.Derived
   @Value.Auxiliary
   default boolean queryable() {
-    return !isObject() && !Objects.equals(getType(), Type.UNKNOWN) && getIsQueryable().orElse(true);
+    return !isObject()
+        && !Objects.equals(getType(), Type.UNKNOWN)
+        && !getExcludedScopes().contains(Scope.QUERYABLE);
   }
-
-  Optional<Boolean> getIsSortable();
 
   @JsonIgnore
   @Value.Derived
@@ -140,7 +202,39 @@ public interface SchemaBase<T extends SchemaBase<T>> {
         && !isArray()
         && !Objects.equals(getType(), Type.BOOLEAN)
         && !Objects.equals(getType(), Type.UNKNOWN)
-        && getIsSortable().orElse(true);
+        && !getExcludedScopes().contains(Scope.SORTABLE);
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean returnable() {
+    return !getExcludedScopes().contains(Scope.RETURNABLE);
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean receivable() {
+    return !getExcludedScopes().contains(Scope.RECEIVABLE);
+  }
+
+  default boolean hasOneOf(Set<Scope> scopes) {
+    return scopes.stream()
+        .anyMatch(
+            s -> {
+              switch (s) {
+                case RETURNABLE:
+                  return returnable();
+                case RECEIVABLE:
+                  return receivable();
+                case QUERYABLE:
+                  return queryable();
+                case SORTABLE:
+                  return sortable();
+              }
+              return false;
+            });
   }
 
   Optional<Boolean> getIsLastModified();
@@ -359,7 +453,12 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default boolean isFeatureRef() {
-    return getType() == Type.FEATURE_REF || getType() == Type.FEATURE_REF_ARRAY;
+    return getType() == Type.FEATURE_REF
+        || getType() == Type.FEATURE_REF_ARRAY
+        || (isObject()
+            && (getRefType().isPresent()
+                || getRefUriTemplate().isPresent()
+                || getRefKeyTemplate().isPresent()));
   }
 
   @JsonIgnore

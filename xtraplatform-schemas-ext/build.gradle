@@ -1,4 +1,8 @@
+
 maturity = 'PROPOSAL'
+maintenance = 'NONE'
+description = 'Derive feature provider type definitions from JSON schemas.'
+descriptionDe = 'Ableiten von Feature-Provider Typ-Definitionen aus JSON-Schemas.'
 
 repositories {
     maven {
@@ -7,9 +11,13 @@ repositories {
 }
 
 dependencies {
+    provided 'de.interactive_instruments:xtraplatform-entities'
+    provided 'de.interactive_instruments:xtraplatform-blobs'
+    provided 'de.interactive_instruments:xtraplatform-values'
     provided project(':xtraplatform-features')
     provided project(':xtraplatform-geometries')
 
+    // TODO: will most likely not work with dependabot since it is not from maven central
     embeddedFlat 'net.jimblackler.jsonschemafriend:core:0.12.2'
     embeddedFlat 'com.damnhandy:handy-uri-templates:2.1.8'
     embedded 'org.jruby.joni:joni:2.1.41'

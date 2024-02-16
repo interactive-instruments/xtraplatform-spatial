@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
 import de.ii.xtraplatform.docs.DocFile;
@@ -61,7 +60,7 @@ import org.immutables.value.Value;
  */
 @DocFile(
     path = "providers/tile",
-    name = "mbtiles.md",
+    name = "30-mbtiles.md",
     tables = {
       @DocTable(
           name = "properties",
@@ -100,7 +99,6 @@ public interface TileProviderMbtilesData extends TileProviderData {
   @Override
   String getProviderSubType();
 
-  @JsonAlias("layerDefaults")
   @DocIgnore
   @Value.Default
   @Override
@@ -109,7 +107,6 @@ public interface TileProviderMbtilesData extends TileProviderData {
     return new ImmutableTilesetMbTilesDefaults.Builder().build();
   }
 
-  @JsonAlias("layers")
   @Override
   Map<String, TilesetMbTiles> getTilesets();
 
@@ -126,8 +123,8 @@ public interface TileProviderMbtilesData extends TileProviderData {
   @Value.Check
   default void checkSingleTileset() {
     Preconditions.checkState(
-        getTilesets().size() == 1,
-        "There must be exactly one tileset in an MBTiles provider. Found: %s.",
+        getTilesets().size() <= 1,
+        "There can only be one tileset in an MBTiles provider. Found: %s.",
         getTilesets().size());
   }
 }

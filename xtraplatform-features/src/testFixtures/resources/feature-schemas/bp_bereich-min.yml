@@ -1,0 +1,23 @@
+# schema references, mapping operations and feature refs are already resolved
+sourcePath: "/coretable{filter=featuretype='BP_Bereich'}"
+type: OBJECT
+objectType: BP_Bereich
+properties:
+  oid:
+    sourcePath: id
+    type: STRING
+    role: ID
+  gehoertZuPlan:
+    type: OBJECT
+    refType: bp_plan
+    properties:
+      id:
+        type: STRING
+        sourcePath: ref
+      type:
+        type: STRING
+        sourcePath: constant_gehoertZuPlan_5{constant=bp_plan}
+        constantValue: bp_plan
+      title:
+        type: STRING
+        sourcePath: ref

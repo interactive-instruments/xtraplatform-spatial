@@ -7,73 +7,22 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.features.app.ImmutableCoordinatesWriterFeatureTokens;
-import de.ii.xtraplatform.features.domain.transform.FeaturePropertyValueTransformer;
-import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
-import de.ii.xtraplatform.features.domain.transform.TransformerChain;
 import de.ii.xtraplatform.geometries.domain.CoordinatesTransformer;
 import de.ii.xtraplatform.geometries.domain.ImmutableCoordinatesTransformer;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.io.IOException;
-import java.time.ZoneId;
-import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Optional;
 
-public class FeatureTokenTransformerValueMappings extends FeatureTokenTransformer {
+public class FeatureTokenTransformerCoordinates extends FeatureTokenTransformer {
 
-  private final Map<String, PropertyTransformations> propertyTransformations;
-  private final Map<String, Codelist> codelists;
-  private final Optional<ZoneId> nativeTimeZone;
   private final Optional<CrsTransformer> crsTransformer;
-  private Map<String, TransformerChain<String, FeaturePropertyValueTransformer>>
-      valueTransformerChains;
-  private TransformerChain<String, FeaturePropertyValueTransformer> valueTransformerChain;
   private ImmutableCoordinatesTransformer.Builder coordinatesTransformerBuilder;
   private int targetDimension;
 
-  public FeatureTokenTransformerValueMappings(
-      Map<String, PropertyTransformations> propertyTransformations,
-      Map<String, Codelist> codelists,
-      Optional<ZoneId> nativeTimeZone,
-      Optional<CrsTransformer> crsTransformer) {
-    this.propertyTransformations = propertyTransformations;
-    this.codelists = codelists;
-    this.nativeTimeZone = nativeTimeZone;
+  public FeatureTokenTransformerCoordinates(Optional<CrsTransformer> crsTransformer) {
     this.crsTransformer = crsTransformer;
-  }
-
-  @Override
-  public void onStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    this.valueTransformerChains =
-        context.mappings().entrySet().stream()
-            .map(
-                entry ->
-                    new SimpleImmutableEntry<>(
-                        entry.getKey(),
-                        propertyTransformations
-                            .get(entry.getKey())
-                            .getValueTransformations(
-                                entry.getValue(),
-                                codelists,
-                                nativeTimeZone,
-                                context.valueBuffer()::get)))
-            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
-
-    super.onStart(context);
-  }
-
-  @Override
-  public void onFeatureStart(ModifiableContext<FeatureSchema, SchemaMapping> context) {
-    this.valueTransformerChain = valueTransformerChains.get(context.type());
-
-    super.onFeatureStart(context);
   }
 
   @Override
@@ -139,38 +88,7 @@ public class FeatureTokenTransformerValueMappings extends FeatureTokenTransforme
         throw new IllegalArgumentException(e);
       }
     } else {
-      String path = context.pathAsString();
-      String value = context.value();
-
-      if (!context.valueBuffer().isEmpty()) {
-        transformValueBuffer(context, path);
-      }
-
-      value = valueTransformerChain.transform(path, value);
-
-      // skip, if the value has been transformed to null
-      if (Objects.nonNull(value)) {
-        context.setValue(value);
-        getDownstream().onValue(context);
-      }
-    }
-  }
-
-  private void transformValueBuffer(
-      ModifiableContext<FeatureSchema, SchemaMapping> context, String path) {
-    for (Iterator<Entry<String, String>> it = context.valueBuffer().entrySet().iterator();
-        it.hasNext(); ) {
-      Map.Entry<String, String> entry = it.next();
-      String key = entry.getKey();
-
-      if (key.startsWith(path + ".")) {
-        String transformed = valueTransformerChain.transform(key, entry.getValue());
-        if (Objects.nonNull(transformed)) {
-          context.putValueBuffer(key, transformed);
-        } else {
-          it.remove();
-        }
-      }
+      getDownstream().onValue(context);
     }
   }
 }

@@ -41,45 +41,58 @@ public class OnlySortables implements SchemaVisitorTopDown<FeatureSchema, Featur
   @Override
   public FeatureSchema visit(
       FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
+    if (parents.isEmpty()) {
+      PropertyTransformations propertyTransformations =
+          schema.accept(new PropertyTransformationsCollector());
+      SchemaTransformerChain schemaTransformations =
+          propertyTransformations.getSchemaTransformations(null, false);
 
-    if (parents.size() > 1) {
-      // only direct properties can be a sortable
-      return null;
+      return schema.accept(schemaTransformations).accept(new OnlySortablesIncluder());
     }
+    return schema;
+  }
 
-    if (parents.stream().anyMatch(s -> excludePathMatcher.test(s.getSourcePath().orElse("")))) {
-      // if the path is excluded, no property can be a sortable
-      return null;
-    }
+  class OnlySortablesIncluder implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
 
-    if (!schema.getConcat().isEmpty() || !schema.getCoalesce().isEmpty()) {
-      return null;
-    }
+    @Override
+    public FeatureSchema visit(
+        FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
 
-    if (schema.sortable()) {
-      String path = schema.getFullPathAsString(pathSeparator);
-      // ignore property, if it is not included (by default or explicitly) or if it is excluded
-      if ((!wildcard && !included.contains(path)) || excluded.contains(path)) {
+      if (parents.size() > 1) {
+        // only direct properties can be a sortable
         return null;
       }
-    } else if (!schema.isFeature()) {
-      return null;
+
+      if (parents.stream().anyMatch(s -> excludePathMatcher.test(s.getSourcePath().orElse("")))) {
+        // if the path is excluded, no property can be a sortable
+        return null;
+      }
+
+      if (schema.sortable()) {
+        String path = schema.getFullPathAsString(pathSeparator);
+        // ignore property, if it is not included (by default or explicitly) or if it is excluded
+        if ((!wildcard && !included.contains(path)) || excluded.contains(path)) {
+          return null;
+        }
+      } else if (!schema.isFeature()) {
+        return null;
+      }
+
+      Map<String, FeatureSchema> visitedPropertiesMap =
+          visitedProperties.stream()
+              .filter(Objects::nonNull)
+              .map(
+                  featureSchema ->
+                      new SimpleImmutableEntry<>(
+                          featureSchema.getFullPathAsString(pathSeparator), featureSchema))
+              .collect(
+                  ImmutableMap.toImmutableMap(
+                      Entry::getKey, Entry::getValue, (first, second) -> second));
+
+      return new ImmutableFeatureSchema.Builder()
+          .from(schema)
+          .propertyMap(visitedPropertiesMap)
+          .build();
     }
-
-    Map<String, FeatureSchema> visitedPropertiesMap =
-        visitedProperties.stream()
-            .filter(Objects::nonNull)
-            .map(
-                featureSchema ->
-                    new SimpleImmutableEntry<>(
-                        featureSchema.getFullPathAsString(pathSeparator), featureSchema))
-            .collect(
-                ImmutableMap.toImmutableMap(
-                    Entry::getKey, Entry::getValue, (first, second) -> second));
-
-    return new ImmutableFeatureSchema.Builder()
-        .from(schema)
-        .propertyMap(visitedPropertiesMap)
-        .build();
   }
 }

@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -35,9 +34,9 @@ import org.immutables.value.Value;
  * @langEn # Features
  *     <p>There are currently three types of Feature providers:
  *     <p><code>
- * - [SQL](sql.md): The features are stored in a SQL database (PostgreSQL/PostGIS, GeoPackage, SQLite/SpatiaLite).
- * - [WFS](wfs.md): The features are retrieved from an OGC WFS.
- * - [GraphQL](graphql.md): The features are retrieved from a GraphQL API. This Feature provider is **experimental** and has limitations..
+ * - [SQL](10-sql.md): The features are stored in a SQL database (PostgreSQL/PostGIS, GeoPackage, SQLite/SpatiaLite).
+ * - [WFS](50-wfs.md): The features are retrieved from an OGC WFS.
+ * - [GraphQL](60-graphql.md): The features are retrieved from a GraphQL API. This Feature provider is **experimental** and has limitations..
  *     </code>
  *     <p>## Configuration
  *     <p>These are common configuration options for all provider types.
@@ -48,9 +47,9 @@ import org.immutables.value.Value;
  * @langDe # Allgemein
  *     <p>Es werden aktuell drei Arten von Feature-Providern unterstützt:
  *     <p><code>
- * - [SQL](sql.md): Die Features sind in einer SQL-Datenbank gespeichert (PostgreSQL/PostGIS, GeoPackage, SQLite/SpatiaLite).
- * - [WFS](wfs.md): Die Features werden von einem OGC WFS bezogen.
- * - [GraphQL](graphql.md): Die Features werden von einer GraphQL API bezogen. Dieser Feature-Provider ist **experimentell** und hat einen eingeschränkten Funktionsumfang.
+ * - [SQL](10-sql.md): Die Features sind in einer SQL-Datenbank gespeichert (PostgreSQL/PostGIS, GeoPackage, SQLite/SpatiaLite).
+ * - [WFS](50-wfs.md): Die Features werden von einem OGC WFS bezogen.
+ * - [GraphQL](60-graphql.md): Die Features werden von einer GraphQL API bezogen. Dieser Feature-Provider ist **experimentell** und hat einen eingeschränkten Funktionsumfang.
  *     </code>
  *     <p>## Konfiguration
  *     <p>Dies sind gemeinsame Konfigurations-Optionen für alle Provider-Typen.
@@ -59,11 +58,11 @@ import org.immutables.value.Value;
  *     <p>{@docTable:types}
  *     <p>
  * @langEn ### Connection Info
- *     <p>For data source specifics, see [SQL](sql.md#connection-info) and
- *     [WFS](wfs.md#connection-info).
+ *     <p>For data source specifics, see [SQL](10-sql.md#connection-info) and
+ *     [WFS](50-wfs.md#connection-info).
  * @langDe ### Connection Info
  *     <p>Informationen zu den Datenquellen finden Sie auf separaten Seiten:
- *     [SQL](sql.md#connection-info) und [WFS](wfs.md#connection-info).
+ *     [SQL](10-sql.md#connection-info) und [WFS](50-wfs.md#connection-info).
  *     <p>
  * @langEn ### Example Configuration (SQL)
  *     <p>See the [feature
@@ -77,9 +76,14 @@ import org.immutables.value.Value;
  *     <p>{@docVar:mappingOps}
  * @langDe ### Mapping Operationen
  *     <p>{@docVar:mappingOps}
+ * @langEn ### Feature References
+ *     <p>{@docVar:featureRefs}
+ * @langDe ### Objektreferenzen
+ *     <p>{@docVar:featureRefs}
  * @ref:cfgProperties {@link de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCommonData}
  * @ref:cfgProperties:types {@link de.ii.xtraplatform.features.domain.ImmutableFeatureSchema}
  * @ref:mappingOps {@link de.ii.xtraplatform.features.domain.MappingOperationResolver}
+ * @ref:featureRefs {@link de.ii.xtraplatform.features.domain.transform.FeatureRefResolver}
  */
 @DocFile(
     path = "providers/feature",
@@ -107,6 +111,12 @@ import org.immutables.value.Value;
             @DocStep(type = Step.TAG_REFS, params = "{@ref:mappingOps}"),
             @DocStep(type = Step.TAG, params = "{@bodyBlock}")
           }),
+      @DocVar(
+          name = "featureRefs",
+          value = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:featureRefs}"),
+            @DocStep(type = Step.TAG, params = "{@bodyBlock}")
+          }),
     })
 /*@DocFilesTemplate(
     files = ForEach.IMPLEMENTATION,
@@ -120,8 +130,6 @@ import org.immutables.value.Value;
 )*/
 // @JsonDeserialize(builder = ImmutableFeatureProviderCommonData.Builder.class)
 public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, ExtendableConfiguration {
-
-  @Deprecated String PROVIDER_SUB_TYPE_KEY_OLD = "featureProviderType";
 
   @JsonIgnore
   @Override
@@ -141,7 +149,6 @@ public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, Extenda
    * @langDe `SQL` für ein SQL-DBMS als Datenquelle, `WFS` für einen OGC Web Feature Service als
    *     Datenquelle.
    */
-  @JsonAlias("featureProviderType")
   @Override
   String getProviderSubType();
 
@@ -195,11 +202,12 @@ public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, Extenda
   @Nullable
   MODE getTypeValidation();
 
+  @DocIgnore
   Optional<String> getLabelTemplate();
 
   /**
-   * @langEn Definition of extensions, see [Extensions](extensions/README.md).
-   * @langDe Definition von Erweiterungen, siehe [Erweiterungen](extensions/README.md).
+   * @langEn Definition of extensions, see [Extensions](90-extensions/README.md).
+   * @langDe Definition von Erweiterungen, siehe [Erweiterungen](90-extensions/README.md).
    * @default []
    */
   @Override
@@ -244,15 +252,6 @@ public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, Extenda
   @Override
   Optional<Boolean> getAutoPersist();
 
-  /**
-   * @langEn List of source types to include in derived `types` definitions when `auto: true`.
-   *     Currently only works for [SQL](sql.md).
-   * @langDe Liste von Quelltypen, die für die Ableitung der `types` Definitionen im Auto-Modus
-   *     berücksichtigt werden sollen. Funktioniert aktuell nur für [SQL](sql.md).
-   * @default []
-   */
-  List<String> getAutoTypes();
-
   // custom builder to automatically use keys of types as name of FeatureTypeV2
   abstract class Builder<T extends Builder<T>> implements EntityDataBuilder<FeatureProviderDataV2> {
 
@@ -294,7 +293,7 @@ public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, Extenda
 
     public abstract T providerType(String providerType);
 
-    public abstract T providerSubType(String featureProviderType);
+    public abstract T providerSubType(String providerSubType);
 
     // jackson should append to instead of replacing extensions
     @JsonIgnore

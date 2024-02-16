@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.schemas.ext.app;
+package de.ii.xtraplatform.features.app;
 
 import com.github.azahnen.dagger.annotations.AutoBind;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
@@ -18,7 +18,6 @@ import de.ii.xtraplatform.features.domain.SchemaFragmentResolver;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -31,7 +30,7 @@ public class LocalSchemaFragmentResolver implements SchemaFragmentResolver {
   private static final Logger LOGGER = LoggerFactory.getLogger(LocalSchemaFragmentResolver.class);
 
   @Inject
-  LocalSchemaFragmentResolver() {}
+  public LocalSchemaFragmentResolver() {}
 
   private String getKey(String ref) {
     return ref.replace("#/fragments/", "");
@@ -92,7 +91,7 @@ public class LocalSchemaFragmentResolver implements SchemaFragmentResolver {
     return new ImmutablePartialObjectSchema.Builder()
         .from(original)
         .sourcePath(resolved.getSourcePath())
-        .schema(Optional.empty())
+        .schema(resolved.getSchema())
         .propertyMap(properties)
         .build();
   }

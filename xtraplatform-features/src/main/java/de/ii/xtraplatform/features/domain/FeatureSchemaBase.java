@@ -19,12 +19,5 @@ public interface FeatureSchemaBase<T extends FeatureSchemaBase<T>> extends Schem
 
   Optional<String> getConstantValue();
 
-  Optional<Scope> getScope();
-
   List<PropertyTransformation> getTransformations();
-
-  enum Scope {
-    QUERIES,
-    MUTATIONS
-  }
 }

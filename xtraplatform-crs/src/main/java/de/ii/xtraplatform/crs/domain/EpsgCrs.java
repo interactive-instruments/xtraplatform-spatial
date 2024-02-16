@@ -8,7 +8,6 @@
 package de.ii.xtraplatform.crs.domain;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.Objects;
 import java.util.Optional;
@@ -85,18 +84,9 @@ public interface EpsgCrs {
 
   OptionalInt getVerticalCode();
 
-  // TODO: migrate
-  @Deprecated
-  @JsonProperty(value = "forceLongitudeFirst", access = JsonProperty.Access.WRITE_ONLY)
-  @Value.Default
-  @Value.Auxiliary
-  default boolean getForceLongitudeFirst() {
-    return false;
-  }
-
   @Value.Default
   default Force getForceAxisOrder() {
-    return getForceLongitudeFirst() ? Force.LON_LAT : Force.NONE;
+    return Force.NONE;
   }
 
   @Value.Lazy
@@ -118,6 +108,17 @@ public interface EpsgCrs {
       return OgcCrs.CRS84h_URI;
     }
     return String.format("http://www.opengis.net/def/crs/EPSG/0/%d", getCode());
+  }
+
+  @Value.Lazy
+  default String toSafeCurie() {
+    if (Objects.equals(this, OgcCrs.CRS84)) {
+      return OgcCrs.CRS84_CURIE;
+    }
+    if (Objects.equals(this, OgcCrs.CRS84h)) {
+      return OgcCrs.CRS84h_CURIE;
+    }
+    return String.format("[EPSG:%d]", getCode());
   }
 
   @Value.Lazy

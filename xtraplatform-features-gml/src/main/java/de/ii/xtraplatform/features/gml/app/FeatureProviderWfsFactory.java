@@ -8,34 +8,28 @@
 package de.ii.xtraplatform.features.gml.app;
 
 import com.github.azahnen.dagger.annotations.AutoBind;
-import com.google.common.collect.ImmutableMap;
 import dagger.assisted.AssistedFactory;
 import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
-import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.entities.domain.AbstractEntityFactory;
+import de.ii.xtraplatform.entities.domain.AutoEntityFactory;
 import de.ii.xtraplatform.entities.domain.EntityData;
 import de.ii.xtraplatform.entities.domain.EntityDataBuilder;
 import de.ii.xtraplatform.entities.domain.EntityFactory;
-import de.ii.xtraplatform.entities.domain.EntityRegistry;
 import de.ii.xtraplatform.entities.domain.PersistentEntity;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
-import de.ii.xtraplatform.features.domain.FeatureSchema;
-import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
 import de.ii.xtraplatform.features.domain.ProviderData;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
-import de.ii.xtraplatform.features.gml.domain.ConnectionInfoWfsHttp;
 import de.ii.xtraplatform.features.gml.domain.FeatureProviderWfsData;
 import de.ii.xtraplatform.features.gml.domain.ImmutableFeatureProviderWfsData;
-import de.ii.xtraplatform.features.gml.infra.WfsConnectorHttp;
-import de.ii.xtraplatform.features.gml.infra.WfsSchemaCrawler;
+import de.ii.xtraplatform.features.gml.infra.WfsClientBasicFactoryDefault;
+import de.ii.xtraplatform.features.gml.infra.WfsClientBasicFactorySimple;
 import de.ii.xtraplatform.streams.domain.Reactive;
-import java.util.AbstractMap;
-import java.util.AbstractMap.SimpleImmutableEntry;
+import de.ii.xtraplatform.values.domain.ValueStore;
+import de.ii.xtraplatform.web.domain.Http;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -52,7 +46,7 @@ public class FeatureProviderWfsFactory
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderWfsFactory.class);
 
-  private final ConnectorFactory connectorFactory;
+  private final FeatureProviderWfsAuto featureProviderWfsAuto;
   private final boolean skipHydration;
 
   @Inject
@@ -62,17 +56,18 @@ public class FeatureProviderWfsFactory
       Cql cql,
       ConnectorFactory connectorFactory,
       Reactive reactive,
-      EntityRegistry entityRegistry,
+      ValueStore valueStore,
       ProviderExtensionRegistry extensionRegistry,
       ProviderWfsFactoryAssisted providerWfsFactoryAssisted) {
     super(providerWfsFactoryAssisted);
-    this.connectorFactory = connectorFactory;
+    this.featureProviderWfsAuto =
+        new FeatureProviderWfsAuto(new WfsClientBasicFactoryDefault(connectorFactory));
     this.skipHydration = false;
   }
 
-  public FeatureProviderWfsFactory() {
+  public FeatureProviderWfsFactory(Http http) {
     super(null);
-    this.connectorFactory = null;
+    this.featureProviderWfsAuto = new FeatureProviderWfsAuto(new WfsClientBasicFactorySimple(http));
     this.skipHydration = true;
   }
 
@@ -117,6 +112,11 @@ public class FeatureProviderWfsFactory
   }
 
   @Override
+  public Optional<AutoEntityFactory> auto() {
+    return Optional.of(featureProviderWfsAuto);
+  }
+
+  @Override
   public EntityData hydrateData(EntityData entityData) {
     FeatureProviderWfsData data = (FeatureProviderWfsData) entityData;
 
@@ -124,150 +124,25 @@ public class FeatureProviderWfsFactory
       return data;
     }
 
-    if (data.isAuto()) {
-      LOGGER.info(
-          "Feature provider with id '{}' is in auto mode, generating configuration ...",
-          data.getId());
-    }
-
-    WfsConnectorHttp connector =
-        (WfsConnectorHttp)
-            connectorFactory.createConnector(
-                data.getProviderSubType(), data.getId(), data.getConnectionInfo());
-
     try {
-      if (!connector.isConnected()) {
-        connectorFactory.disposeConnector(connector);
+      if (data.isAuto()) {
+        LOGGER.info(
+            "Feature provider with id '{}' is in auto mode, generating configuration ...",
+            data.getId());
 
-        RuntimeException connectionError =
-            connector
-                .getConnectionError()
-                .map(
-                    throwable ->
-                        throwable instanceof RuntimeException
-                            ? (RuntimeException) throwable
-                            : new RuntimeException(throwable))
-                .orElse(new IllegalStateException("unknown reason"));
+        Map<String, List<String>> types = featureProviderWfsAuto.analyze(data);
 
-        throw connectionError;
+        data = featureProviderWfsAuto.generate(data, types, ignore -> {});
       }
 
-      return cleanupAutoPersist(
-          cleanupAdditionalInfo(
-              completeConnectionInfoIfNecessary(
-                  connector,
-                  generateNativeCrsIfNecessary(
-                      connector, generateTypesIfNecessary(connector, data)))));
+      return data;
 
     } catch (Throwable e) {
       LogContext.error(
           LOGGER, e, "Feature provider with id '{}' could not be started", data.getId());
-    } finally {
-      connectorFactory.disposeConnector(connector);
     }
 
     throw new IllegalStateException();
-  }
-
-  private FeatureProviderWfsData completeConnectionInfoIfNecessary(
-      WfsConnectorHttp connector, FeatureProviderWfsData data) {
-    ConnectionInfoWfsHttp connectionInfo = (ConnectionInfoWfsHttp) data.getConnectionInfo();
-
-    if (data.isAuto() && connectionInfo.getNamespaces().isEmpty()) {
-
-      WfsSchemaCrawler schemaCrawler = new WfsSchemaCrawler(connector, connectionInfo);
-
-      ConnectionInfoWfsHttp connectionInfoWfsHttp = schemaCrawler.completeConnectionInfo();
-
-      return new ImmutableFeatureProviderWfsData.Builder()
-          .from(data)
-          .connectionInfo(connectionInfoWfsHttp)
-          .build();
-    }
-
-    return data;
-  }
-
-  private FeatureProviderWfsData generateTypesIfNecessary(
-      WfsConnectorHttp connector, FeatureProviderWfsData data) {
-    if (data.isAuto() && data.getTypes().isEmpty()) {
-
-      ConnectionInfoWfsHttp connectionInfo = (ConnectionInfoWfsHttp) data.getConnectionInfo();
-
-      WfsSchemaCrawler schemaCrawler = new WfsSchemaCrawler(connector, connectionInfo);
-
-      List<FeatureSchema> types = schemaCrawler.parseSchema();
-
-      ImmutableMap<String, FeatureSchema> typeMap =
-          types.stream()
-              .map(type -> new AbstractMap.SimpleImmutableEntry<>(type.getName(), type))
-              .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
-
-      return new ImmutableFeatureProviderWfsData.Builder().from(data).types(typeMap).build();
-    }
-
-    return data;
-  }
-
-  private FeatureProviderWfsData generateNativeCrsIfNecessary(
-      WfsConnectorHttp connector, FeatureProviderWfsData data) {
-    if (data.isAuto() && !data.getNativeCrs().isPresent()) {
-      ConnectionInfoWfsHttp connectionInfo = (ConnectionInfoWfsHttp) data.getConnectionInfo();
-
-      WfsSchemaCrawler schemaCrawler = new WfsSchemaCrawler(connector, connectionInfo);
-
-      EpsgCrs nativeCrs = schemaCrawler.getNativeCrs().orElse(OgcCrs.CRS84);
-
-      return new ImmutableFeatureProviderWfsData.Builder().from(data).nativeCrs(nativeCrs).build();
-    }
-
-    return data;
-  }
-
-  private FeatureProviderWfsData cleanupAdditionalInfo(FeatureProviderWfsData data) {
-    if (data.isAuto()) {
-      return new ImmutableFeatureProviderWfsData.Builder()
-          .from(data)
-          .types(
-              data.getTypes().entrySet().stream()
-                  .map(
-                      entry ->
-                          new SimpleImmutableEntry<>(
-                              entry.getKey(),
-                              new ImmutableFeatureSchema.Builder()
-                                  .from(entry.getValue())
-                                  .additionalInfo(ImmutableMap.of())
-                                  .propertyMap(
-                                      entry.getValue().getPropertyMap().entrySet().stream()
-                                          .map(
-                                              entry2 ->
-                                                  new SimpleImmutableEntry<>(
-                                                      entry2.getKey(),
-                                                      new ImmutableFeatureSchema.Builder()
-                                                          .from(entry2.getValue())
-                                                          .additionalInfo(ImmutableMap.of())
-                                                          .build()))
-                                          .collect(
-                                              ImmutableMap.toImmutableMap(
-                                                  Map.Entry::getKey, Map.Entry::getValue)))
-                                  .build()))
-                  .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue)))
-          .build();
-    }
-
-    return data;
-  }
-
-  private FeatureProviderWfsData cleanupAutoPersist(FeatureProviderWfsData data) {
-    if (data.isAuto() && data.isAutoPersist()) {
-      return new ImmutableFeatureProviderWfsData.Builder()
-          .from(data)
-          .auto(Optional.empty())
-          .autoPersist(Optional.empty())
-          .build();
-    }
-
-    return data;
   }
 
   @AssistedFactory

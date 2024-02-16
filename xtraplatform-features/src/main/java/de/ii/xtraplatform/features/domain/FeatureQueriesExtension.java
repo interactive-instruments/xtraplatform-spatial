@@ -48,7 +48,7 @@ import java.util.function.BiConsumer;
  *     <p>{@docTable:overview}
  */
 @DocFile(
-    path = "providers/feature/extensions",
+    path = "providers/feature/90-extensions",
     name = "README.md",
     tables = {
       @DocTable(
@@ -84,7 +84,7 @@ import java.util.function.BiConsumer;
     })
 @DocFilesTemplate(
     files = ForEach.IMPLEMENTATION,
-    path = "providers/feature/extensions",
+    path = "providers/feature/90-extensions",
     // stripSuffix = "BuildingBlock",
     template = {
       @DocI18n(

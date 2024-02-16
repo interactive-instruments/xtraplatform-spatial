@@ -7,63 +7,35 @@
  */
 package de.ii.xtraplatform.features.domain
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.google.common.io.Resources
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry
 
-import static de.ii.xtraplatform.features.domain.SchemaBase.Role
+import java.util.stream.Collectors
+import java.util.stream.Stream
+
 import static de.ii.xtraplatform.features.domain.SchemaBase.Type
 
 class FeatureTokenFixtures {
 
-    public static final FeatureSchema SCHEMA = new ImmutableFeatureSchema.Builder()
-            .name("biotop")
-            .type(Type.OBJECT)
-            .sourcePath("/biotop")
-            .putProperties2("id",
-                    new ImmutableFeatureSchema.Builder()
-                            .type(Type.STRING)
-                            .role(Role.ID)
-                            .sourcePath("id"))
-            .putProperties2("kennung",
-                    new ImmutableFeatureSchema.Builder()
-                            .type(Type.STRING)
-                            .sourcePath("kennung"))
-            .putProperties2("erfasser",
-                    new ImmutableFeatureSchema.Builder()
-                            .type(Type.OBJECT)
-                            .putProperties2("name",
-                                    new ImmutableFeatureSchema.Builder()
-                                            .type(Type.STRING)
-                                            .sourcePath("name")))
-            .putProperties2("erfasser_required",
-                    new ImmutableFeatureSchema.Builder()
-                            .type(Type.OBJECT)
-                            .constraints(new ImmutableSchemaConstraints.Builder()
-                                    .required(true)
-                                    .build())
-                            .putProperties2("name",
-                                    new ImmutableFeatureSchema.Builder()
-                                            .type(Type.STRING)
-                                            .sourcePath("name")))
-            .putProperties2("erfasser_array",
-                    new ImmutableFeatureSchema.Builder()
-                            .type(Type.VALUE_ARRAY)
-                            .valueType(Type.STRING)
-                            .sourcePath("name"))
-            .putProperties2("erfasser_array_required",
-                    new ImmutableFeatureSchema.Builder()
-                            .type(Type.VALUE_ARRAY)
-                            .valueType(Type.STRING)
-                            .constraints(new ImmutableSchemaConstraints.Builder()
-                                    .required(true)
-                                    .build())
-                            .sourcePath("name"))
-            .build()
+    private static final ObjectMapper YAML = YamlSerialization.createYamlMapper();
 
-    public static final SchemaMapping MAPPING = new ImmutableSchemaMapping.Builder()
-            .targetSchema(SCHEMA)
-            .useTargetPaths(true)
-            .sourcePathTransformer((path, isValue) -> path)
-            .build()
+    public static FeatureTokens fromYaml(String name) {
+        def resource = Resources.getResource("feature-tokens/" + name + ".yml");
+        return YAML.readValue(Resources.toByteArray(resource), FeatureTokens.class);
+    }
+
+    public static List<Object> withType(String type, List<Object> tokens) {
+        return tokens.stream().flatMap {
+            if (it instanceof List) {
+                return Stream.of([type] + ((List<String>) it))
+            }
+            if (it == FeatureTokenType.FEATURE) {
+                return [it, [type]].stream()
+            }
+            return Stream.of(it)
+        }.collect(Collectors.toList());
+    }
 
     public static final List<Object> SINGLE_FEATURE = [
             FeatureTokenType.INPUT,
@@ -81,22 +53,7 @@ class FeatureTokenFixtures {
             FeatureTokenType.INPUT_END
     ]
 
-    public static final List<Object> SINGLE_FEATURE_SQL = [
-            FeatureTokenType.INPUT,
-            true,
-            FeatureTokenType.FEATURE,
-            ["biotop"],
-            FeatureTokenType.VALUE,
-            ["biotop", "id"],
-            "24",
-            Type.STRING,
-            FeatureTokenType.VALUE,
-            ["biotop", "kennung"],
-            "611320001-1",
-            Type.STRING,
-            FeatureTokenType.FEATURE_END,
-            FeatureTokenType.INPUT_END
-    ]
+    public static final List<Object> SINGLE_FEATURE_SOURCE = withType("biotop", SINGLE_FEATURE)
 
     public static final List<Object> SINGLE_FEATURE_POINT = [
             FeatureTokenType.INPUT,
@@ -121,7 +78,9 @@ class FeatureTokenFixtures {
             "49.698295103021096",
             Type.FLOAT,
             FeatureTokenType.ARRAY_END,
+            ["geometry"],
             FeatureTokenType.OBJECT_END,
+            ["geometry"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "611320001-1",
@@ -129,6 +88,8 @@ class FeatureTokenFixtures {
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
     ]
+
+    public static final List<Object> SINGLE_FEATURE_POINT_SOURCE = withType("biotop", SINGLE_FEATURE_POINT)
 
     public static final List<Object> SINGLE_FEATURE_MULTI_POINT = [
             FeatureTokenType.INPUT,
@@ -161,7 +122,9 @@ class FeatureTokenFixtures {
             "51.1501333536934",
             Type.FLOAT,
             FeatureTokenType.ARRAY_END,
+            ["geometry"],
             FeatureTokenType.OBJECT_END,
+            ["geometry"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "580410003-1",
@@ -169,6 +132,8 @@ class FeatureTokenFixtures {
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
     ]
+
+    public static final List<Object> SINGLE_FEATURE_MULTI_POINT_SOURCE = withType("biotop", SINGLE_FEATURE_MULTI_POINT)
 
     public static final List<Object> SINGLE_FEATURE_MULTI_POLYGON = [
             FeatureTokenType.INPUT,
@@ -205,7 +170,9 @@ class FeatureTokenFixtures {
             "49.69823291309017",
             Type.FLOAT,
             FeatureTokenType.ARRAY_END,
+            ["geometry"],
             FeatureTokenType.ARRAY_END,
+            ["geometry"],
             FeatureTokenType.ARRAY,
             ["geometry"],
             FeatureTokenType.ARRAY,
@@ -227,6 +194,7 @@ class FeatureTokenFixtures {
             "49.69836248910692",
             Type.FLOAT,
             FeatureTokenType.ARRAY_END,
+            ["geometry"],
             FeatureTokenType.ARRAY,
             ["geometry"],
             FeatureTokenType.VALUE,
@@ -246,9 +214,13 @@ class FeatureTokenFixtures {
             "49.69866280390489",
             Type.FLOAT,
             FeatureTokenType.ARRAY_END,
+            ["geometry"],
             FeatureTokenType.ARRAY_END,
+            ["geometry"],
             FeatureTokenType.ARRAY_END,
+            ["geometry"],
             FeatureTokenType.OBJECT_END,
+            ["geometry"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "631510001-1",
@@ -256,6 +228,8 @@ class FeatureTokenFixtures {
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
     ]
+
+    public static final List<Object> SINGLE_FEATURE_MULTI_POLYGON_SOURCE = withType("biotop", SINGLE_FEATURE_MULTI_POLYGON)
 
     public static final List<Object> SINGLE_FEATURE_POLYGON_INNER = [
             FeatureTokenType.INPUT,
@@ -290,7 +264,9 @@ class FeatureTokenFixtures {
                     "              ",
             Type.STRING,
             FeatureTokenType.ARRAY_END,
+            ["bag:pand", "bag:geom", "gml:Polygon"],
             FeatureTokenType.OBJECT_END,
+            ["bag:pand", "bag:geom"],
             FeatureTokenType.VALUE,
             ["bag:pand", "bag:identificatie"],
             "0150100000004952",
@@ -314,6 +290,7 @@ class FeatureTokenFixtures {
             "John Doe",
             Type.STRING,
             FeatureTokenType.OBJECT_END,
+            ["erfasser"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "611320001-1",
@@ -321,6 +298,8 @@ class FeatureTokenFixtures {
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
     ]
+
+    public static final List<Object> SINGLE_FEATURE_NESTED_OBJECT_SOURCE = withType("biotop", SINGLE_FEATURE_NESTED_OBJECT)
 
     public static final List<Object> SINGLE_FEATURE_NESTED_OBJECT_EMPTY = [
             FeatureTokenType.INPUT,
@@ -333,6 +312,7 @@ class FeatureTokenFixtures {
             FeatureTokenType.OBJECT,
             ["erfasser"],
             FeatureTokenType.OBJECT_END,
+            ["erfasser"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "611320001-1",
@@ -352,6 +332,7 @@ class FeatureTokenFixtures {
             FeatureTokenType.OBJECT,
             ["erfasser_required"],
             FeatureTokenType.OBJECT_END,
+            ["erfasser_required"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "611320001-1",
@@ -379,6 +360,7 @@ class FeatureTokenFixtures {
             "Jane Doe",
             Type.STRING,
             FeatureTokenType.ARRAY_END,
+            ["erfasser_array"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "611320001-1",
@@ -386,6 +368,8 @@ class FeatureTokenFixtures {
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
     ]
+
+    public static final List<Object> SINGLE_FEATURE_VALUE_ARRAY_SOURCE = withType("biotop", SINGLE_FEATURE_VALUE_ARRAY)
 
     public static final List<Object> SINGLE_FEATURE_VALUE_ARRAY_EMPTY = [
             FeatureTokenType.INPUT,
@@ -398,6 +382,7 @@ class FeatureTokenFixtures {
             FeatureTokenType.ARRAY,
             ["erfasser_array"],
             FeatureTokenType.ARRAY_END,
+            ["erfasser_array"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "611320001-1",
@@ -417,6 +402,91 @@ class FeatureTokenFixtures {
             FeatureTokenType.ARRAY,
             ["erfasser_array_required"],
             FeatureTokenType.ARRAY_END,
+            ["erfasser_array_required"],
+            FeatureTokenType.VALUE,
+            ["kennung"],
+            "611320001-1",
+            Type.STRING,
+            FeatureTokenType.FEATURE_END,
+            FeatureTokenType.INPUT_END
+    ]
+
+    public static final List<Object> SINGLE_FEATURE_VALUE_ARRAY_AT_END = [
+            FeatureTokenType.INPUT,
+            true,
+            FeatureTokenType.FEATURE,
+            FeatureTokenType.VALUE,
+            ["biotop", "id"],
+            "24",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["biotop", "kennung"],
+            "611320001-1",
+            Type.STRING,
+            FeatureTokenType.ARRAY,
+            ["biotop", "[eid=id]erfasser"],
+            FeatureTokenType.VALUE,
+            ["biotop", "[eid=id]erfasser", "name"],
+            "John Doe",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["biotop", "[eid=id]erfasser", "name"],
+            "Jane Doe",
+            Type.STRING,
+            FeatureTokenType.ARRAY_END,
+            ["biotop", "[eid=id]erfasser"],
+            FeatureTokenType.FEATURE_END,
+            FeatureTokenType.INPUT_END
+    ]
+
+    public static final List<Object> SINGLE_FEATURE_VALUE_ARRAY_IN_ORDER = [
+            FeatureTokenType.INPUT,
+            true,
+            FeatureTokenType.FEATURE,
+            FeatureTokenType.VALUE,
+            ["biotop", "id"],
+            "24",
+            Type.STRING,
+            FeatureTokenType.ARRAY,
+            ["biotop", "[eid=id]erfasser"],
+            FeatureTokenType.VALUE,
+            ["biotop", "[eid=id]erfasser", "name"],
+            "John Doe",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["biotop", "[eid=id]erfasser", "name"],
+            "Jane Doe",
+            Type.STRING,
+            FeatureTokenType.ARRAY_END,
+            ["biotop", "[eid=id]erfasser"],
+            FeatureTokenType.VALUE,
+            ["biotop", "kennung"],
+            "611320001-1",
+            Type.STRING,
+            FeatureTokenType.FEATURE_END,
+            FeatureTokenType.INPUT_END
+    ]
+
+    public static final List<Object> SINGLE_FEATURE_VALUE_ARRAY_IN_ORDER_MAPPED = [
+            FeatureTokenType.INPUT,
+            true,
+            FeatureTokenType.FEATURE,
+            FeatureTokenType.VALUE,
+            ["id"],
+            "24",
+            Type.STRING,
+            FeatureTokenType.ARRAY,
+            ["erfasser_array_join"],
+            FeatureTokenType.VALUE,
+            ["erfasser_array_join"],
+            "John Doe",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["erfasser_array_join"],
+            "Jane Doe",
+            Type.STRING,
+            FeatureTokenType.ARRAY_END,
+            ["erfasser_array_join"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "611320001-1",
@@ -452,7 +522,9 @@ class FeatureTokenFixtures {
             "34",
             Type.INTEGER,
             FeatureTokenType.ARRAY_END,
+            ["raumreferenz", "ortsangabe", "flurstueckskennzeichen"],
             FeatureTokenType.OBJECT_END,
+            ["raumreferenz", "ortsangabe"],
             FeatureTokenType.OBJECT,
             ["raumreferenz", "ortsangabe"],
             FeatureTokenType.ARRAY,
@@ -466,7 +538,9 @@ class FeatureTokenFixtures {
             "36",
             Type.INTEGER,
             FeatureTokenType.ARRAY_END,
+            ["raumreferenz", "ortsangabe", "flurstueckskennzeichen"],
             FeatureTokenType.OBJECT_END,
+            ["raumreferenz", "ortsangabe"],
             FeatureTokenType.OBJECT,
             ["raumreferenz", "ortsangabe"],
             FeatureTokenType.VALUE,
@@ -480,14 +554,173 @@ class FeatureTokenFixtures {
             "37",
             Type.INTEGER,
             FeatureTokenType.ARRAY_END,
+            ["raumreferenz", "ortsangabe", "flurstueckskennzeichen"],
             FeatureTokenType.OBJECT_END,
+            ["raumreferenz", "ortsangabe"],
             FeatureTokenType.ARRAY_END,
+            ["raumreferenz", "ortsangabe"],
             FeatureTokenType.OBJECT_END,
+            ["raumreferenz"],
             FeatureTokenType.ARRAY_END,
+            ["raumreferenz"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "611320001-1",
             Type.STRING,
+            FeatureTokenType.FEATURE_END,
+            FeatureTokenType.INPUT_END
+    ]
+
+    public static final List<Object> SINGLE_FEATURE_NESTED_OBJECT_ARRAYS_SOURCE = withType("biotop", SINGLE_FEATURE_NESTED_OBJECT_ARRAYS)
+
+    public static final List<Object> OBJECT_WITHOUT_SOURCE_PATH = [
+            FeatureTokenType.INPUT,
+            true,
+            FeatureTokenType.FEATURE,
+            FeatureTokenType.VALUE,
+            ["explorationsite", "id"],
+            "24",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["explorationsite", "legalavailability_fk"],
+            "11",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["explorationsite", "legalavailability_fk"],
+            "11",
+            Type.STRING,
+            FeatureTokenType.FEATURE_END,
+            FeatureTokenType.INPUT_END
+    ]
+
+    public static final List<Object> OBJECT_WITHOUT_SOURCE_PATH_MAPPED = [
+            FeatureTokenType.INPUT,
+            true,
+            FeatureTokenType.FEATURE,
+            FeatureTokenType.VALUE,
+            ["id"],
+            "24",
+            Type.STRING,
+            FeatureTokenType.OBJECT,
+            ["legalAvailability"],
+            FeatureTokenType.VALUE,
+            ["legalAvailability", "title"],
+            "11",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["legalAvailability", "href"],
+            "11",
+            Type.STRING,
+            FeatureTokenType.OBJECT_END,
+            ["legalAvailability"],
+            FeatureTokenType.FEATURE_END,
+            FeatureTokenType.INPUT_END
+    ]
+
+    public static final List<Object> EXPLORATION_SITE_OBJECT_ARRAY = [
+            FeatureTokenType.INPUT,
+            true,
+            FeatureTokenType.FEATURE,
+            FeatureTokenType.VALUE,
+            ["explorationsite", "id"],
+            "24",
+            Type.STRING,
+            FeatureTokenType.ARRAY,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task"],
+            FeatureTokenType.OBJECT,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task"],
+            FeatureTokenType.VALUE,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task", "projectname"],
+            "11",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task", "id"],
+            "34",
+            Type.STRING,
+            FeatureTokenType.OBJECT_END,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task"],
+            FeatureTokenType.OBJECT,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task"],
+            FeatureTokenType.VALUE,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task", "projectname"],
+            "35",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task", "id"],
+            "36",
+            Type.STRING,
+            FeatureTokenType.OBJECT_END,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task"],
+            FeatureTokenType.OBJECT,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task"],
+            FeatureTokenType.VALUE,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task", "projectname"],
+            "12",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task", "id"],
+            "37",
+            Type.STRING,
+            FeatureTokenType.OBJECT_END,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task"],
+            FeatureTokenType.ARRAY_END,
+            ["explorationsite", "[id=explorationsite_fk]explorationsite_task", "[task_fk=id]task"],
+            FeatureTokenType.VALUE,
+            ["explorationsite", "kennung"],
+            "611320001-1",
+            Type.STRING,
+            FeatureTokenType.FEATURE_END,
+            FeatureTokenType.INPUT_END
+    ]
+
+    public static final List<Object> EXPLORATION_SITE_OBJECT_ARRAY_MAPPED = [
+            FeatureTokenType.INPUT,
+            true,
+            FeatureTokenType.FEATURE,
+            FeatureTokenType.VALUE,
+            ["id"],
+            "24",
+            Type.STRING,
+            FeatureTokenType.ARRAY,
+            ["task"],
+            FeatureTokenType.OBJECT,
+            ["task"],
+            FeatureTokenType.VALUE,
+            ["task", "title"],
+            "11",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["task", "id"],
+            "34",
+            Type.STRING,
+            FeatureTokenType.OBJECT_END,
+            ["task"],
+            FeatureTokenType.OBJECT,
+            ["task"],
+            FeatureTokenType.VALUE,
+            ["task", "title"],
+            "35",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["task", "id"],
+            "36",
+            Type.STRING,
+            FeatureTokenType.OBJECT_END,
+            ["task"],
+            FeatureTokenType.OBJECT,
+            ["task"],
+            FeatureTokenType.VALUE,
+            ["task", "title"],
+            "12",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["task", "id"],
+            "37",
+            Type.STRING,
+            FeatureTokenType.OBJECT_END,
+            ["task"],
+            FeatureTokenType.ARRAY_END,
+            ["task"],
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
     ]
@@ -516,7 +749,9 @@ class FeatureTokenFixtures {
             "50.11336914792363",
             Type.FLOAT,
             FeatureTokenType.ARRAY_END,
+            ["geometry"],
             FeatureTokenType.OBJECT_END,
+            ["geometry"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "580340001-1",
@@ -552,12 +787,105 @@ class FeatureTokenFixtures {
             "50.1501333536934",
             Type.FLOAT,
             FeatureTokenType.ARRAY_END,
+            ["geometry"],
             FeatureTokenType.OBJECT_END,
+            ["geometry"],
             FeatureTokenType.VALUE,
             ["kennung"],
             "631510001-1",
             Type.STRING,
             FeatureTokenType.FEATURE_END,
             FeatureTokenType.INPUT_END
+    ]
+
+    public static final List<Object> COLLECTION_SOURCE = withType("biotop", COLLECTION)
+
+    public static final List<Object> STUFF = [
+            FeatureTokenType.VALUE,
+            ["oid"],
+            "17e2d34d-44e0-44af-9de9-d8f8d8a6408e",
+            Type.STRING,
+            FeatureTokenType.ARRAY,
+            ["hatGenerAttribut"],
+            FeatureTokenType.OBJECT,
+            ["hatGenerAttribut"],
+            FeatureTokenType.VALUE,
+            ["hatGenerAttribut", "name"],
+            "drehwinkel",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["hatGenerAttribut", "wert"],
+            "1.0",
+            Type.FLOAT,
+            FeatureTokenType.VALUE,
+            ["hatGenerAttribut", "wert"],
+            "bar",
+            Type.STRING,
+            FeatureTokenType.OBJECT_END,
+            ["hatGenerAttribut"],
+            FeatureTokenType.OBJECT,
+            ["hatGenerAttribut"],
+            FeatureTokenType.VALUE,
+            ["hatGenerAttribut", "name"],
+            "foo",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["hatGenerAttribut", "wert"],
+            "bar",
+            Type.STRING,
+            FeatureTokenType.OBJECT_END,
+            ["hatGenerAttribut"],
+            FeatureTokenType.ARRAY_END,
+            ["hatGenerAttribut"],
+            FeatureTokenType.OBJECT,
+            ["gehoertZuBereich"],
+            FeatureTokenType.VALUE,
+            ["gehoertZuBereich", "id"],
+            "d9bfd586-3e00-488f-8686-fd8387f6fc35",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["gehoertZuBereich", "type"],
+            "BP_Bereich",
+            Type.STRING,
+            FeatureTokenType.VALUE,
+            ["gehoertZuBereich", "title"],
+            "0",
+            Type.INTEGER,
+            FeatureTokenType.OBJECT_END,
+            ["gehoertZuBereich"],
+            FeatureTokenType.VALUE,
+            ["rechtscharakter"],
+            "1000",
+            Type.STRING,
+            FeatureTokenType.OBJECT,
+            ["position"],
+            SimpleFeatureGeometry.POINT,
+            2,
+            FeatureTokenType.VALUE,
+            ["position"],
+            "561524.729 5942848.073",
+            Type.STRING,
+            FeatureTokenType.OBJECT_END,
+            ["position"],
+            FeatureTokenType.VALUE,
+            ["nordwinkel"],
+            "0.0",
+            Type.FLOAT,
+            FeatureTokenType.VALUE,
+            ["massnahme"],
+            "1000",
+            Type.STRING,
+            FeatureTokenType.ARRAY,
+            ["gegenstand"],
+            FeatureTokenType.VALUE,
+            ["gegenstand"],
+            "1000",
+            Type.STRING,
+            FeatureTokenType.ARRAY_END,
+            ["gegenstand"],
+            FeatureTokenType.VALUE,
+            ["istAusgleich"],
+            "false",
+            Type.BOOLEAN
     ]
 }

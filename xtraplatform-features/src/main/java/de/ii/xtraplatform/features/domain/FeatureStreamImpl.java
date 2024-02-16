@@ -13,6 +13,7 @@ import static de.ii.xtraplatform.features.domain.transform.PropertyTransformatio
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.base.domain.ETag;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
@@ -24,9 +25,10 @@ import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.Sink;
 import de.ii.xtraplatform.streams.domain.Reactive.SinkReduced;
 import de.ii.xtraplatform.streams.domain.Reactive.Stream;
-import de.ii.xtraplatform.web.domain.ETag;
 import java.util.AbstractMap;
 import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -61,11 +63,14 @@ public class FeatureStreamImpl implements FeatureStream {
   public CompletionStage<Result> runWith(
       Sink<Object> sink, Map<String, PropertyTransformations> propertyTransformations) {
 
+    Map<String, PropertyTransformations> mergedTransformations =
+        getMergedTransformations(propertyTransformations);
+
     BiFunction<FeatureTokenSource, Map<String, String>, Stream<Result>> stream =
         (tokenSource, virtualTables) -> {
           FeatureTokenSource source =
               doTransform
-                  ? getFeatureTokenSourceTransformed(tokenSource, propertyTransformations)
+                  ? getFeatureTokenSourceTransformed(tokenSource, mergedTransformations)
                   : tokenSource;
           ImmutableResult.Builder resultBuilder = ImmutableResult.builder();
           final ETag.Incremental eTag = ETag.incremental();
@@ -112,18 +117,21 @@ public class FeatureStreamImpl implements FeatureStream {
                   });
         };
 
-    return runner.runQuery(stream, query, !doTransform);
+    return runner.runQuery(stream, query, mergedTransformations, !doTransform);
   }
 
   @Override
   public <X> CompletionStage<ResultReduced<X>> runWith(
       SinkReduced<Object, X> sink, Map<String, PropertyTransformations> propertyTransformations) {
 
+    Map<String, PropertyTransformations> mergedTransformations =
+        getMergedTransformations(propertyTransformations);
+
     BiFunction<FeatureTokenSource, Map<String, String>, Reactive.Stream<ResultReduced<X>>> stream =
         (tokenSource, virtualTables) -> {
           FeatureTokenSource source =
               doTransform
-                  ? getFeatureTokenSourceTransformed(tokenSource, propertyTransformations)
+                  ? getFeatureTokenSourceTransformed(tokenSource, mergedTransformations)
                   : tokenSource;
           ImmutableResultReduced.Builder<X> resultBuilder = ImmutableResultReduced.<X>builder();
           final ETag.Incremental eTag = ETag.incremental();
@@ -172,18 +180,15 @@ public class FeatureStreamImpl implements FeatureStream {
                   });
         };
 
-    return runner.runQuery(stream, query, !doTransform);
+    return runner.runQuery(stream, query, mergedTransformations, !doTransform);
   }
 
   private FeatureTokenSource getFeatureTokenSourceTransformed(
       FeatureTokenSource featureTokenSource,
       Map<String, PropertyTransformations> propertyTransformations) {
-
-    Map<String, PropertyTransformations> mergedTransformations =
-        getMergedTransformations(propertyTransformations);
-
-    FeatureTokenTransformerSchemaMappings schemaMapper =
-        new FeatureTokenTransformerSchemaMappings(mergedTransformations);
+    FeatureTokenTransformerMappings schemaMapper =
+        new FeatureTokenTransformerMappings(
+            propertyTransformations, codelists, data.getNativeTimeZone());
 
     Optional<CrsTransformer> crsTransformer =
         query
@@ -192,17 +197,20 @@ public class FeatureStreamImpl implements FeatureStream {
                 targetCrs ->
                     crsTransformerFactory.getTransformer(
                         data.getNativeCrs().orElse(OgcCrs.CRS84), targetCrs));
-    FeatureTokenTransformerValueMappings valueMapper =
-        new FeatureTokenTransformerValueMappings(
-            mergedTransformations, codelists, data.getNativeTimeZone(), crsTransformer);
+    FeatureTokenTransformerCoordinates valueMapper =
+        new FeatureTokenTransformerCoordinates(crsTransformer);
 
     FeatureTokenTransformerRemoveEmptyOptionals cleaner =
         new FeatureTokenTransformerRemoveEmptyOptionals();
 
-    FeatureTokenValidator validator = new FeatureTokenValidator();
+    FeatureTokenSource tokenSourceTransformed =
+        featureTokenSource.via(schemaMapper).via(valueMapper).via(cleaner);
 
-    return featureTokenSource.via(schemaMapper).via(valueMapper).via(cleaner);
-    // .via(validator);
+    if (FeatureTokenValidator.LOGGER.isTraceEnabled()) {
+      tokenSourceTransformed = tokenSourceTransformed.via(new FeatureTokenValidator());
+    }
+
+    return tokenSourceTransformed;
   }
 
   private Map<String, PropertyTransformations> getMergedTransformations(
@@ -239,22 +247,65 @@ public class FeatureStreamImpl implements FeatureStream {
     FeatureSchema featureSchema = data.getTypes().get(typeQuery.getType());
 
     if (typeQuery instanceof FeatureQuery
-        && ((FeatureQuery) typeQuery).getSchemaScope() == FeatureSchemaBase.Scope.MUTATIONS) {
+        && ((FeatureQuery) typeQuery).getSchemaScope() == SchemaBase.Scope.RECEIVABLE) {
       return () -> getProviderTransformationsMutations(featureSchema);
     }
 
     PropertyTransformations providerTransformations =
         () -> getProviderTransformations(featureSchema);
 
-    return propertyTransformations
-        .map(p -> p.mergeInto(providerTransformations))
-        .orElse(providerTransformations);
+    PropertyTransformations merged =
+        propertyTransformations
+            .map(p -> p.mergeInto(providerTransformations))
+            .orElse(providerTransformations);
+
+    return applyRename(merged);
+  }
+
+  private PropertyTransformations applyRename(PropertyTransformations propertyTransformations) {
+    if (propertyTransformations.getTransformations().values().stream()
+        .flatMap(Collection::stream)
+        .anyMatch(propertyTransformation -> propertyTransformation.getRename().isPresent())) {
+      Map<String, List<PropertyTransformation>> renamed = new LinkedHashMap<>();
+
+      propertyTransformations
+          .getTransformations()
+          .forEach(
+              (key, value) -> {
+                Optional<String> rename =
+                    value.stream()
+                        .filter(
+                            propertyTransformation ->
+                                propertyTransformation.getRename().isPresent())
+                        .map(propertyTransformation -> propertyTransformation.getRename().get())
+                        .findFirst();
+
+                if (rename.isPresent()) {
+                  renamed.put(rename.get(), value);
+
+                  String prefix = key + ".";
+
+                  propertyTransformations
+                      .getTransformations()
+                      .forEach(
+                          (key2, value2) -> {
+                            if (key2.startsWith(prefix)) {
+                              renamed.put(key2.replace(key, rename.get()), value2);
+                            }
+                          });
+                }
+              });
+
+      return propertyTransformations.mergeInto(() -> renamed);
+    }
+
+    return propertyTransformations;
   }
 
   private Map<String, List<PropertyTransformation>> getProviderTransformations(
       FeatureSchema featureSchema) {
     return featureSchema
-        .accept(AbstractFeatureProvider.WITH_SCOPE_QUERIES)
+        .accept(AbstractFeatureProvider.WITH_SCOPE_RETURNABLE)
         .accept(
             (schema, visitedProperties) ->
                 java.util.stream.Stream.concat(
@@ -286,7 +337,7 @@ public class FeatureStreamImpl implements FeatureStream {
   private Map<String, List<PropertyTransformation>> getProviderTransformationsMutations(
       FeatureSchema featureSchema) {
     return featureSchema
-        .accept(AbstractFeatureProvider.WITH_SCOPE_MUTATIONS)
+        .accept(AbstractFeatureProvider.WITH_SCOPE_RECEIVABLE)
         .accept(
             (schema, visitedProperties) ->
                 java.util.stream.Stream.concat(

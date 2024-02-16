@@ -1,0 +1,27 @@
+tokens:
+  - type: VALUE
+    source: /coretable{filter=featuretype='BP_Bereich'}/id
+    target: oid
+    value: 17e2d34d-44e0-44af-9de9-d8f8d8a6408e
+    valueType: STRING
+  - type: OBJECT
+    target: gehoertZuPlan
+    onlyIf: wrapped
+  - type: VALUE
+    source: /coretable{filter=featuretype='BP_Bereich'}/ref
+    target: gehoertZuPlan.id
+    value: 809f09b1-629e-4c6c-93e9-94a07a544904
+    valueType: STRING
+  - type: VALUE
+    source: /coretable{filter=featuretype='BP_Bereich'}/constant_gehoertZuPlan_5
+    target: gehoertZuPlan.type
+    value: bp_plan
+    valueType: STRING
+  - type: VALUE
+    source: /coretable{filter=featuretype='BP_Bereich'}/ref
+    target: gehoertZuPlan.title
+    value: 809f09b1-629e-4c6c-93e9-94a07a544904
+    valueType: STRING
+  - type: OBJECT_END
+    target: gehoertZuPlan
+    onlyIf: wrapped

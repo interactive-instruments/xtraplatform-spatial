@@ -1,7 +1,14 @@
 
 maturity = 'CANDIDATE'
+maintenance = 'NONE'
+description = 'WFS feature provider and GML features.'
+descriptionDe = 'WFS-Feature-Provider und GML-Features.'
 
 dependencies {
+    provided 'de.interactive_instruments:xtraplatform-entities'
+    provided 'de.interactive_instruments:xtraplatform-streams'
+    provided 'de.interactive_instruments:xtraplatform-values'
+    provided 'de.interactive_instruments:xtraplatform-web'
     provided project(':xtraplatform-codelists')
     provided project(':xtraplatform-cql')
     provided project(':xtraplatform-crs')
@@ -10,9 +17,9 @@ dependencies {
 
     testImplementation(testFixtures(project(":xtraplatform-features")))
 
-    embedded group: 'com.sun.xsom', name: 'xsom', version: '20140925'
-    embeddedFlat group: 'com.fasterxml', name: 'aalto-xml', version: '1.3.1'
-    embeddedFlat group: 'com.fasterxml.staxmate', name: 'staxmate', version: '2.4.0'
+    embedded libs.xsom
+    embeddedFlat libs.aalto
+    embeddedFlat libs.staxmate
 }
 
 moduleInfo {

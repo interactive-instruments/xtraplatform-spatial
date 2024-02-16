@@ -16,15 +16,19 @@ import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql.PropertyTypeInfo;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import javax.annotation.Nullable;
+import org.immutables.value.Value;
 import org.threeten.extra.Interval;
 
 public interface SqlDialect {
 
-  String applyToWkt(String column, boolean forcePolygonCCW);
+  String applyToWkt(String column, boolean forcePolygonCCW, boolean linearizeCurves);
 
   String applyToExtent(String column, boolean is3d);
 
@@ -62,9 +66,15 @@ public interface SqlDialect {
 
   String geometryInfoQuery(Map<String, String> dbInfo);
 
-  default EpsgCrs.Force forceAxisOrder(Map<String, String> dbInfo) {
+  Map<String, GeoInfo> getGeoInfo(Connection connection, DbInfo dbInfo) throws SQLException;
+
+  DbInfo getDbInfo(Connection connection) throws SQLException;
+
+  default EpsgCrs.Force forceAxisOrder(DbInfo dbInfo) {
     return Force.NONE;
   }
+
+  List<String> getSystemSchemas();
 
   List<String> getSystemTables();
 
@@ -83,6 +93,9 @@ public interface SqlDialect {
     return ImmutableSet.of();
   }
 
+  interface DbInfo {}
+
+  @Value.Immutable
   interface GeoInfo {
 
     String SCHEMA = "schema";
@@ -91,6 +104,28 @@ public interface SqlDialect {
     String DIMENSION = "dimension";
     String SRID = "srid";
     String TYPE = "type";
+
+    @Nullable
+    @Value.Parameter
+    String getSchema();
+
+    @Value.Parameter
+    String getTable();
+
+    @Value.Parameter
+    String getColumn();
+
+    @Value.Parameter
+    String getDimension();
+
+    @Value.Parameter
+    String getSrid();
+
+    @Value.Parameter
+    String getForce();
+
+    @Value.Parameter
+    String getType();
   }
 
   Map<SpatialOperator, String> SPATIAL_OPERATORS =

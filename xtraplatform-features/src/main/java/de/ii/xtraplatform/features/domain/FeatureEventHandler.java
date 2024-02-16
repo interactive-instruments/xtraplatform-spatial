@@ -40,11 +40,6 @@ public interface FeatureEventHandler<
     @Nullable
     Type valueType();
 
-    Map<String, String> valueBuffer();
-
-    @Nullable
-    T customSchema();
-
     @Value.Default
     default boolean inGeometry() {
       return false;
@@ -88,7 +83,7 @@ public interface FeatureEventHandler<
     Map<String, String> transformed();
 
     @Value.Default
-    default boolean isBuffering() {
+    default boolean isUseTargetPaths() {
       return false;
     }
 
@@ -96,11 +91,6 @@ public interface FeatureEventHandler<
 
     @Value.Lazy
     default Optional<T> schema() {
-      return Optional.ofNullable(customSchema()).or(this::currentSchema);
-    }
-
-    @Value.Lazy
-    default Optional<T> currentSchema() {
       if (Objects.isNull(mapping())) {
         return Optional.empty();
       }
@@ -111,7 +101,10 @@ public interface FeatureEventHandler<
         return Optional.ofNullable(mapping().getTargetSchema());
       }
 
-      List<T> targetSchemas = mapping().getTargetSchemas(path);
+      List<T> targetSchemas =
+          isUseTargetPaths()
+              ? mapping().getSchemasForTargetPath(path)
+              : mapping().getSchemasForSourcePath(path);
 
       if (targetSchemas.isEmpty()) {
         // LOGGER.warn("No mapping found for path {}.", path);
@@ -130,6 +123,57 @@ public interface FeatureEventHandler<
     }
 
     @Value.Lazy
+    default int pos() {
+      if (Objects.isNull(mapping())) {
+        return -1;
+      }
+
+      List<String> path = path();
+
+      if (path.isEmpty()) {
+        return -1;
+      }
+
+      List<Integer> positions =
+          isUseTargetPaths()
+              ? mapping().getPositionsForTargetPath(path)
+              : mapping().getPositionsForSourcePath(path);
+
+      int schemaIndex = schemaIndex() > -1 ? schemaIndex() : positions.size() - 1;
+      if (positions.size() > schemaIndex) {
+        return positions.get(schemaIndex);
+      }
+
+      return -1;
+    }
+
+    @Value.Lazy
+    default List<Integer> parentPos() {
+      if (Objects.isNull(mapping())) {
+        return List.of();
+      }
+
+      List<String> path = path();
+
+      if (path.isEmpty()) {
+        return List.of();
+      }
+
+      // TODO: by target path?
+      List<List<Integer>> positions =
+          isUseTargetPaths()
+              ? mapping().getParentPositionsForTargetPath(path)
+              : mapping().getParentPositionsForSourcePath(path);
+
+      int schemaIndex = schemaIndex() > -1 ? schemaIndex() : positions.size() - 1;
+      if (positions.size() > schemaIndex) {
+        return positions.get(schemaIndex);
+      }
+
+      return List.of();
+    }
+
+    @Value.Lazy
     default List<T> parentSchemas() {
       if (Objects.isNull(mapping())) {
         return ImmutableList.of();
@@ -141,7 +185,10 @@ public interface FeatureEventHandler<
         return ImmutableList.of();
       }
 
-      List<List<T>> parentSchemas = mapping().getParentSchemas(path);
+      List<List<T>> parentSchemas =
+          isUseTargetPaths()
+              ? mapping().getParentSchemasForTargetPath(path)
+              : mapping().getParentSchemasForSourcePath(path);
 
       if (parentSchemas.isEmpty()) {
         return ImmutableList.of();
@@ -202,9 +249,8 @@ public interface FeatureEventHandler<
 
     @Value.Lazy
     default boolean shouldSkip() {
-      return isBuffering()
-          || currentSchema().isEmpty()
-          || !shouldInclude(currentSchema().get(), parentSchemas(), pathTracker().toString());
+      return schema().isEmpty()
+          || !shouldInclude(schema().get(), parentSchemas(), pathTracker().toString());
     }
 
     private boolean shouldInclude(T schema, List<T> parentSchemas, String path) {
@@ -257,10 +303,6 @@ public interface FeatureEventHandler<
 
     ModifiableContext<T, U> setValueType(SchemaBase.Type valueType);
 
-    ModifiableContext<T, U> putValueBuffer(String key, String value);
-
-    ModifiableContext<T, U> setCustomSchema(T schema);
-
     ModifiableContext<T, U> setInGeometry(boolean inGeometry);
 
     ModifiableContext<T, U> setInObject(boolean inObject);
@@ -277,9 +319,9 @@ public interface FeatureEventHandler<
 
     ModifiableContext<T, U> setSchemaIndex(int schemaIndex);
 
-    ModifiableContext<T, U> putTransformed(String key, String value);
+    ModifiableContext<T, U> setTransformed(Map<String, ? extends String> transformed);
 
-    ModifiableContext<T, U> setIsBuffering(boolean inArray);
+    ModifiableContext<T, U> setIsUseTargetPaths(boolean isUseTargetPaths);
 
     ModifiableContext<T, U> putAdditionalInfo(String key, String value);
   }

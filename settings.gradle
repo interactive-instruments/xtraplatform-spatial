@@ -18,7 +18,7 @@ plugins {
 dependencyResolutionManagement {
     versionCatalogs {
         catalog {
-            from(files("./catalog.versions.toml"))
+            from(files("gradle/plugins.versions.toml"))
         }
     }
 }
@@ -39,5 +39,5 @@ extensions.gitHooks.with {
 }
 
 //includeBuild '../xtraplatform-build'
-//includeBuild '../xtraplatform/xtraplatform-core'
+//includeBuild '../xtraplatform'
 //includeBuild '../xtraplatform-native'

@@ -107,7 +107,8 @@ public abstract class FeatureTokenDecoder<
     return (W)
         ModifiableGenericContext.create()
             .setMappings(ImmutableMap.of())
-            .setQuery(ImmutableFeatureQuery.builder().type("default").build());
+            .setQuery(ImmutableFeatureQuery.builder().type("default").build())
+            .setType("default");
   }
 
   protected final FeatureEventHandler<U, V, W> getDownstream() {

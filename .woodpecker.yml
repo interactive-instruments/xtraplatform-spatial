@@ -1,0 +1,58 @@
+when:
+  event: [push, tag]
+
+steps:
+
+  load-cache:
+    image: drillster/drone-volume-cache
+    volumes: [/var/lib/docker/tmp:/cache]
+    settings:
+      restore: true
+      mount:
+        - .gradle/caches
+        - .gradle/wrapper
+
+  build:
+    image: openjdk:11-slim
+    commands:
+      - export GRADLE_USER_HOME=$${CI_WORKSPACE}/.gradle
+      - ./gradlew build -Pbranch=$CI_COMMIT_BRANCH -PdeployUser=$SNAPSHOT_USER -PdeployPassword=$SNAPSHOT_PASS
+    secrets: [ snapshot_user, snapshot_pass]
+    when:
+      event: push
+
+  build-release:
+    image: openjdk:11-slim
+    commands:
+      - export GRADLE_USER_HOME=$${CI_WORKSPACE}/.gradle
+      - ./gradlew build -Prelease=true -PdeployUser=$SNAPSHOT_USER -PdeployPassword=$SNAPSHOT_PASS
+    secrets: [ snapshot_user, snapshot_pass]
+    when:
+      event: tag
+
+  publish-snapshot:
+    image: openjdk:11-slim
+    commands:
+      - export GRADLE_USER_HOME=$${CI_WORKSPACE}/.gradle
+      - ./gradlew publish -Pbranch=$CI_COMMIT_BRANCH -PdeployUser=$SNAPSHOT_USER -PdeployPassword=$SNAPSHOT_PASS
+    secrets: [ snapshot_user, snapshot_pass]
+    when:
+      event: push
+
+  publish-release:
+    image: openjdk:11-slim
+    commands:
+      - export GRADLE_USER_HOME=$${CI_WORKSPACE}/.gradle
+      - ./gradlew publish -Prelease=true -PdeployUser=$SNAPSHOT_USER -PdeployPassword=$SNAPSHOT_PASS
+    secrets: [ snapshot_user, snapshot_pass]
+    when:
+      event: tag
+
+  save-cache:
+    image: drillster/drone-volume-cache
+    volumes: [/var/lib/docker/tmp:/cache]
+    settings:
+      rebuild: true
+      mount:
+        - .gradle/caches
+        - .gradle/wrapper

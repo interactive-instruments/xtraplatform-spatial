@@ -8,11 +8,13 @@
 package de.ii.xtraplatform.features.domain;
 
 import dagger.Lazy;
+import de.ii.xtraplatform.features.app.LocalSchemaFragmentResolver;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,11 +24,13 @@ public class SchemaReferenceResolver implements TypesResolver {
 
   private final FeatureProviderDataV2 data;
   private final Lazy<Set<SchemaFragmentResolver>> schemaResolvers;
+  private final SchemaFragmentResolver localFragmentResolver;
 
   public SchemaReferenceResolver(
       FeatureProviderDataV2 data, Lazy<Set<SchemaFragmentResolver>> schemaResolvers) {
     this.data = data;
     this.schemaResolvers = schemaResolvers;
+    this.localFragmentResolver = new LocalSchemaFragmentResolver();
   }
 
   private static boolean hasSchema(FeatureSchema type) {
@@ -50,7 +54,8 @@ public class SchemaReferenceResolver implements TypesResolver {
   }
 
   private SchemaFragmentResolver getResolver(String ref) {
-    return schemaResolvers.get().stream()
+    // NOTE: workaround, AutoBinds currently cannot be collected and registered from the same module
+    return Stream.concat(Stream.of(localFragmentResolver), schemaResolvers.get().stream())
         .filter(resolver -> resolver.canResolve(ref, data))
         .findFirst()
         .orElseThrow(

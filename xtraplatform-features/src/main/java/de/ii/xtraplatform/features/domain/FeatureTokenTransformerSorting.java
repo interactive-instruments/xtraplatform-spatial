@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -44,6 +45,10 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
   private final Queue<Boolean> inArrayQueue;
   private final Queue<Boolean> inObjectQueue;
   private final Queue<FeatureTokenType> tokenQueue;
+  private final Queue<Type> valueTypeQueue;
+  /*private FeatureTokenBuffer<
+      FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
+  downstream;*/
 
   private String currentType;
   private int bufferIndex;
@@ -63,9 +68,17 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
     this.inArrayQueue = new LinkedList<>();
     this.inObjectQueue = new LinkedList<>();
     this.tokenQueue = new LinkedList<>();
+    this.valueTypeQueue = new LinkedList<>();
     this.currentType = null;
     this.bufferIndex = 0;
     this.bufferParent = new ArrayList<>();
+  }
+
+  @Override
+  protected void init() {
+    // this.downstream = new FeatureTokenBuffer<>(getDownstream(), getContext());
+
+    super.init();
   }
 
   @Override
@@ -86,6 +99,7 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
   public void onFeatureEnd(ModifiableContext<FeatureSchema, SchemaMapping> context) {
     if (bufferIndex > 0) {
       emptyBuffer(context, Integer.MAX_VALUE);
+      // downstream.bufferStop(true);
     }
 
     super.onFeatureEnd(context);
@@ -137,6 +151,10 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
     return -1;
   }
 
+  // TODO: identify out of order elements, on element after ooe start buffer and mark 0, on ooe
+  // insert 0 and flush
+  // TODO: multiple ooes following each other, multiple marks
+  // TODO: test with xleit, create unit tests
   private void analyzeMapping(SchemaMapping mapping) {
     if (Objects.isNull(mapping)) {
       return;
@@ -155,7 +173,7 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
     List<String> lastParent = null;
     boolean doRearrange = false;
 
-    for (List<String> path : mapping.getTargetSchemasByPath().keySet()) {
+    for (List<String> path : mapping.getSchemasByTargetPath().keySet()) {
       if (path.size() > 1) {
         if (path.stream().anyMatch(elem -> elem.matches("\\[[^=\\]]+].+"))) {
           continue;
@@ -200,11 +218,21 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
 
     if (doRearrange) {
       buffer(context, index, token);
+      /*if (!downstream.isBuffering()) {
+        if (bufferIndex <= 0) {
+          this.bufferIndex = index;
+          this.bufferParent = context.path().subList(0, context.path().size() - 1);
+        }
+        downstream.bufferStart();
+        downstream.bufferMark();
+        push(context, token);
+      }*/
     } else {
       if (bufferIndex > 0 && doEmptyBuffer) {
         emptyBuffer(context, triggerIndex);
+        // downstream.bufferFlush();
       }
-
+      // downstream.bufferStop(false);
       push(context, token);
     }
   }
@@ -243,6 +271,7 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
     inGeoQueue.add(context.inGeometry());
     inArrayQueue.add(context.inArray());
     inObjectQueue.add(context.inObject());
+    valueTypeQueue.add(context.valueType());
   }
 
   private void emptyBuffer(
@@ -266,6 +295,7 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
       context.setSchemaIndex(schemaIndexQueue.remove());
       context.setIndexes(indexesQueue.remove());
       context.setValue(valueQueue.remove());
+      context.setValueType(valueTypeQueue.remove());
       context.setGeometryType(geoTypeQueue.remove());
       context.setGeometryDimension(geoDimQueue.remove());
       context.setInGeometry(inGeoQueue.remove());
@@ -296,18 +326,23 @@ public class FeatureTokenTransformerSorting extends FeatureTokenTransformer {
       ModifiableContext<FeatureSchema, SchemaMapping> context, FeatureTokenType token) {
     switch (token) {
       case VALUE:
+        // downstream.onValue(context);
         super.onValue(context);
         break;
       case OBJECT:
+        // downstream.onObjectStart(context);
         super.onObjectStart(context);
         break;
       case OBJECT_END:
+        // downstream.onObjectEnd(context);
         super.onObjectEnd(context);
         break;
       case ARRAY:
+        // downstream.onArrayStart(context);
         super.onArrayStart(context);
         break;
       case ARRAY_END:
+        // downstream.onArrayEnd(context);
         super.onArrayEnd(context);
         break;
     }

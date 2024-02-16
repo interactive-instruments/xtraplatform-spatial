@@ -7,9 +7,8 @@
  */
 package de.ii.xtraplatform.features.domain.transform;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.docs.DocFile;
 import de.ii.xtraplatform.docs.DocStep;
 import de.ii.xtraplatform.docs.DocStep.Step;
@@ -19,13 +18,14 @@ import de.ii.xtraplatform.entities.domain.ImmutableValidationResult;
 import de.ii.xtraplatform.entities.domain.Mergeable;
 import de.ii.xtraplatform.entities.domain.maptobuilder.Buildable;
 import de.ii.xtraplatform.entities.domain.maptobuilder.BuildableBuilder;
+import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.immutables.value.Value;
@@ -141,11 +141,57 @@ public interface PropertyTransformation
 
   /**
    * @langEn Reduces an object to a string using the same syntax as `stringFormat` but with
-   *     additional replacements for objects property names.
+   *     additional replacements for the object property names.
    * @langDe Reduziert ein Objekt zu einem String mithilfe der `stringFormat`-Syntax aber mit
    *     zusätzlichen Ersetzungen für die Property-Names des Objekts.
    */
-  Optional<String> getReduceStringFormat();
+  Optional<String> getObjectReduceFormat();
+
+  /**
+   * @langEn Reduces an object to one of its properties, the value is the desired property name.
+   * @langDe Reduziert ein Objekt zu einem seiner Properties, der Wert ist der gewünschte
+   *     Property-Name.
+   */
+  Optional<String> getObjectReduceSelect();
+
+  /**
+   * @langEn Removes an object, if the property with the name in the value is `null`.
+   * @langDe Entfernt ein Objekt, wenn die Eigenschaft mit dem Namen im Wert `null` ist.
+   */
+  Optional<String> getObjectRemoveSelect();
+
+  /**
+   * @langEn Maps an object to another object, the value is map where the keys are the new property
+   *     names. The values use the same syntax as `stringFormat` but with additional replacements
+   *     for the source object property names.
+   * @langDe Bildet ein Object auf ein anderes Object ab, der Wert ist eine Map bei der die Keys die
+   *     neuen Property-Namen sind. Die Werte verwenden die `stringFormat`-Syntax aber mit
+   *     zusätzlichen Ersetzungen für die Property-Names des Quell-Objekts.
+   */
+  Map<String, String> getObjectMapFormat();
+
+  @JsonIgnore
+  Map<String, String> getObjectMapDuplicate();
+
+  @JsonIgnore
+  Map<String, String> getObjectAddConstants();
+
+  /**
+   * @langEn Reduces a value array to a string using the same syntax as `stringFormat` but with
+   *     additional replacements for the array indexes.
+   * @langDe Reduziert ein Werte-Array zu einem String mithilfe der `stringFormat`-Syntax aber mit
+   *     zusätzlichen Ersetzungen für die Array-Indizes.
+   */
+  Optional<String> getArrayReduceFormat();
+
+  @JsonIgnore
+  Optional<Boolean> getCoalesce();
+
+  @JsonIgnore
+  Optional<Boolean> getConcat();
+
+  @JsonIgnore
+  Optional<Type> getWrap();
 
   // Optional<String> getFlattenObjects();
 
@@ -195,24 +241,7 @@ public interface PropertyTransformation
    * @langDe Bildet alle Werte, die einem der regulären Ausdrücke in der Liste entsprechen, auf
    *     `null` ab. Diese Transformation ist nicht bei objektwertigen Eigenschaften anwendbar.
    */
-  @Value.Default
-  default List<String> getNullify() {
-    return getNull().map(ImmutableList::of).orElse(ImmutableList.of());
-  }
-
-  /**
-   * @langEn *Deprecated* See `nullify`.
-   * @langDe *Deprecated* Siehe `nullify`.
-   */
-  @Deprecated
-  @JsonProperty(value = "null", access = JsonProperty.Access.WRITE_ONLY)
-  Optional<String> getNull();
-
-  /**
-   * @langEn TODO
-   * @langDe TODO
-   */
-  Optional<String> getAsLink(); // TODO: implement, with support for title
+  List<String> getNullify();
 
   @Override
   default PropertyTransformation mergeInto(PropertyTransformation source) {
@@ -261,17 +290,6 @@ public interface PropertyTransformation
             MessageFormat.format(
                 "The codelist transformation in collection ''{0}'' for property ''{1}'' is invalid. The codelist ''{2}'' is not one of the known values: {3}.",
                 collectionId, property, codelist.get(), codelists));
-      }
-    }
-    final Optional<String> null_ = getNull();
-    if (null_.isPresent()) {
-      try {
-        Pattern.compile(null_.get());
-      } catch (Exception e) {
-        builder.addStrictErrors(
-            MessageFormat.format(
-                "The null transformation in collection ''{0}'' for property ''{1}'' with  value ''{2}'' is invalid: {3}.",
-                collectionId, property, null_.get(), e.getMessage()));
       }
     }
 

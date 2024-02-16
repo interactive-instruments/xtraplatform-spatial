@@ -88,6 +88,8 @@ public class TileCacheImmutable implements ChainedTileProvider, TileCache {
       tileStore.staging().promote();
 
       tileStore.staging().cleanup();
+
+      tileStore.tidyup();
     }
   }
 }

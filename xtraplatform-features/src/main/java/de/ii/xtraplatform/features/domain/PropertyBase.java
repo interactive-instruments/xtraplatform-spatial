@@ -7,6 +7,8 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import de.ii.xtraplatform.features.domain.transform.FeaturePropertyTransformerFlatten;
+import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +63,14 @@ public interface PropertyBase<T extends PropertyBase<T, U>, U extends SchemaBase
   @Value.Derived
   default boolean isArray() {
     return getType() == Type.ARRAY;
+  }
+
+  @Value.Lazy
+  default boolean isFlattened() {
+    return getTransformed().containsKey(PropertyTransformations.WILDCARD)
+        && getTransformed()
+            .get(PropertyTransformations.WILDCARD)
+            .contains(FeaturePropertyTransformerFlatten.TYPE);
   }
 
   Optional<SimpleFeatureGeometry> getGeometryType();

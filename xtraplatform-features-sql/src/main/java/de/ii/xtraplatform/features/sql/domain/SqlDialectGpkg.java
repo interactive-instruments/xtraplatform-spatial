@@ -14,13 +14,20 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql.PropertyTypeInfo;
+import de.ii.xtraplatform.features.sql.domain.SqlDialectGpkg.DbInfoGpkg.SpatialMetadata;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import org.immutables.value.Value;
 import org.threeten.extra.Interval;
 
 public class SqlDialectGpkg implements SqlDialect {
@@ -29,7 +36,7 @@ public class SqlDialectGpkg implements SqlDialect {
       Splitter.onPattern("[(), ]").omitEmptyStrings().trimResults();
 
   @Override
-  public String applyToWkt(String column, boolean forcePolygonCCW) {
+  public String applyToWkt(String column, boolean forcePolygonCCW, boolean linearizeCurves) {
     if (!forcePolygonCCW) {
       return String.format("ST_AsText(%s)", column);
     }
@@ -199,12 +206,84 @@ public class SqlDialectGpkg implements SqlDialect {
   }
 
   @Override
-  public EpsgCrs.Force forceAxisOrder(Map<String, String> dbInfo) {
-    if (Objects.equals(dbInfo.get("spatial_metadata"), "GPKG")) {
+  public Map<String, GeoInfo> getGeoInfo(Connection connection, DbInfo dbInfo) throws SQLException {
+    if (!(dbInfo instanceof DbInfoGpkg)
+        || ((DbInfoGpkg) dbInfo).getSpatialMetadata() == SpatialMetadata.UNSUPPORTED) {
+      throw new SQLException("Not a valid spatial SQLite database.");
+    }
+    String query =
+        ((DbInfoGpkg) dbInfo).getSpatialMetadata() == SpatialMetadata.GPKG
+            ? String.format(
+                "SELECT table_name AS \"%s\", column_name AS \"%s\", CASE z WHEN 1 THEN 3 ELSE 2 END AS \"%s\", srs_id AS \"%s\", geometry_type_name AS \"%s\" FROM gpkg_geometry_columns;",
+                GeoInfo.TABLE, GeoInfo.COLUMN, GeoInfo.DIMENSION, GeoInfo.SRID, GeoInfo.TYPE)
+            : String.format(
+                "SELECT f_table_name AS \"%s\", f_geometry_column AS \"%s\", coord_dimension AS \"%s\", srid AS \"%s\", geometry_type AS \"%s\" FROM geometry_columns;",
+                GeoInfo.TABLE, GeoInfo.COLUMN, GeoInfo.DIMENSION, GeoInfo.SRID, GeoInfo.TYPE);
+
+    Statement stmt = connection.createStatement();
+    ResultSet rs = stmt.executeQuery(query);
+    Map<String, GeoInfo> result = new LinkedHashMap<>();
+
+    while (rs.next()) {
+      result.put(
+          rs.getString(GeoInfo.TABLE),
+          ImmutableGeoInfo.of(
+              null,
+              rs.getString(GeoInfo.TABLE),
+              rs.getString(GeoInfo.COLUMN),
+              rs.getString(GeoInfo.DIMENSION),
+              rs.getString(GeoInfo.SRID),
+              forceAxisOrder(dbInfo).name(),
+              rs.getString(GeoInfo.TYPE)));
+    }
+
+    return result;
+  }
+
+  @Override
+  public DbInfo getDbInfo(Connection connection) throws SQLException {
+    String query =
+        "SELECT sqlite_version(),spatialite_version(),CASE CheckSpatialMetaData() WHEN 4 THEN 'GPKG' WHEN 3 THEN 'SPATIALITE' ELSE 'UNSUPPORTED' END;";
+
+    Statement stmt = connection.createStatement();
+    ResultSet rs = stmt.executeQuery(query);
+    rs.next();
+
+    return ImmutableDbInfoGpkg.of(
+        rs.getString(1), rs.getString(2), SpatialMetadata.valueOf(rs.getString(3)));
+  }
+
+  @Value.Immutable
+  public interface DbInfoGpkg extends DbInfo {
+    enum SpatialMetadata {
+      GPKG,
+      SPATIALITE,
+      UNSUPPORTED
+    }
+
+    @Value.Parameter
+    String getSqliteVersion();
+
+    @Value.Parameter
+    String getSpatialiteVersion();
+
+    @Value.Parameter
+    SpatialMetadata getSpatialMetadata();
+  }
+
+  @Override
+  public EpsgCrs.Force forceAxisOrder(DbInfo dbInfo) {
+    if (dbInfo instanceof DbInfoGpkg
+        && ((DbInfoGpkg) dbInfo).getSpatialMetadata() == SpatialMetadata.GPKG) {
       return Force.LON_LAT;
     }
 
     return Force.NONE;
+  }
+
+  @Override
+  public List<String> getSystemSchemas() {
+    return ImmutableList.of();
   }
 
   @Override

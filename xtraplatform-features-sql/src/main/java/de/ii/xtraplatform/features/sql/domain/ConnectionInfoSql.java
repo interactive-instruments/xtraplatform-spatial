@@ -7,21 +7,16 @@
  */
 package de.ii.xtraplatform.features.sql.domain;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.docs.DocIgnore;
 import de.ii.xtraplatform.entities.domain.maptobuilder.encoding.MergeableMapEncodingEnabled;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
-import de.ii.xtraplatform.features.sql.domain.ImmutableConnectionInfoSql.Builder;
 import de.ii.xtraplatform.features.sql.infra.db.SqlConnectorRx;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.OptionalInt;
 import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
@@ -44,6 +39,7 @@ public interface ConnectionInfoSql extends ConnectionInfo {
     PGIS,
     GPKG
   }
+
   /**
    * @langEn Always `SLICK`.
    * @langDe Stets `SLICK`.
@@ -66,10 +62,10 @@ public interface ConnectionInfoSql extends ConnectionInfo {
   }
 
   /**
-   * @langEn The name of the database. For `GPKG` the file path, either absolute or relative to the
-   *     [data folder](../../application/30-data-folder.md).
-   * @langDe Der Name der Datenbank. Für `GPKG` der Pfad zur Datei, entweder absolut oder relativ
-   *     zum [Daten-Verzeichnis](../../application/30-data-folder.md).
+   * @langEn The name of the database. For `GPKG` a relative path to a resource with type `features`
+   *     in the [Store (new)](../../application/20-configuration/10-store-new.md).
+   * @langDe Der Name der Datenbank. Für `GPKG` ein relativer Pfad zu einer Ressource mit Typ
+   *     `features` * im [Store (neu)](../../application/20-configuration/10-store-new.md).
    */
   String getDatabase();
 
@@ -140,112 +136,6 @@ public interface ConnectionInfoSql extends ConnectionInfo {
     return String.format("%s/%s", getHost().orElse(""), getDatabase());
   }
 
-  /**
-   * @langEn *Deprecated* See `pool.maxConnections`.
-   * @langDe *Deprecated* Siehe `pool.maxConnections`.
-   * @default dynamic
-   */
-  @Deprecated(forRemoval = true, since = "ldproxy 3.0.0")
-  @JsonAlias("maxThreads")
-  @JsonProperty(
-      value = "maxConnections",
-      access = JsonProperty.Access.WRITE_ONLY) // means only read from json
-  OptionalInt getMaxConnections();
-
-  /**
-   * @langEn *Deprecated* See `pool.minConnections`.
-   * @langDe *Deprecated* Siehe `pool.minConnections`.
-   * @default maxConnections
-   */
-  @Deprecated(forRemoval = true, since = "ldproxy 3.0.0")
-  @JsonProperty(
-      value = "minConnections",
-      access = JsonProperty.Access.WRITE_ONLY) // means only read from json
-  OptionalInt getMinConnections();
-
-  /**
-   * @langEn *Deprecated* See `pool.initFailFast`.
-   * @langDe *Deprecated* Siehe `pool.initFailFast`.
-   * @default true
-   */
-  @Deprecated(forRemoval = true, since = "ldproxy 3.0.0")
-  @JsonProperty(
-      value = "initFailFast",
-      access = JsonProperty.Access.WRITE_ONLY) // means only read from json
-  Optional<Boolean> getInitFailFast();
-
-  /**
-   * @langEn *Deprecated* See [Query Generation](#query-generation) below.
-   * @langDe *Deprecated* Siehe [Query-Generierung](#query-generation).
-   * @default true
-   */
-  @Deprecated(forRemoval = true, since = "ldproxy 3.0.0")
-  @JsonProperty(
-      value = "computeNumberMatched",
-      access = JsonProperty.Access.WRITE_ONLY) // means only read from json
-  Optional<Boolean> getComputeNumberMatched();
-
-  /**
-   * @langEn *Deprecated* See [Source Path Defaults](#source-path-defaults) below.
-   * @langDe *Deprecated* Siehe [SQL-Pfad-Defaults](#source-path-defaults).
-   */
-  @Deprecated(forRemoval = true, since = "ldproxy 3.0.0")
-  @JsonProperty(
-      value = "pathSyntax",
-      access = JsonProperty.Access.WRITE_ONLY) // means only read from json
-  Optional<SqlPathDefaults> getPathSyntax();
-
-  @Deprecated(since = "3.5") // nested defaults are handled by FeatureProviderSqlFactory.dataBuilder
-  @Value.Check
-  default ConnectionInfoSql initNestedDefault() {
-    boolean poolIsNull = Objects.isNull(getPool());
-    boolean maxConnectionsDiffers =
-        getMaxConnections().isPresent()
-            && (poolIsNull
-                || !Objects.equals(getMaxConnections().getAsInt(), getPool().getMaxConnections()));
-    boolean minConnectionsDiffers =
-        getMinConnections().isPresent()
-            && (poolIsNull
-                || !Objects.equals(getMinConnections().getAsInt(), getPool().getMinConnections()));
-    boolean initFailFastDiffers =
-        getInitFailFast().isPresent()
-            && (poolIsNull
-                || !Objects.equals(getInitFailFast().get(), getPool().getInitFailFast()));
-
-    if (maxConnectionsDiffers || minConnectionsDiffers || initFailFastDiffers) {
-      Builder builder = new Builder().from(this);
-      ImmutablePoolSettings.Builder poolBuilder = builder.poolBuilder();
-
-      if (maxConnectionsDiffers) {
-        getMaxConnections().ifPresent(poolBuilder::maxConnections);
-      }
-      if (minConnectionsDiffers) {
-        getMinConnections().ifPresent(poolBuilder::minConnections);
-      }
-      if (initFailFastDiffers) {
-        getInitFailFast().ifPresent(poolBuilder::initFailFast);
-      }
-
-      return builder.build();
-    }
-
-    return this;
-  }
-
-  @Deprecated(since = "3.5")
-  @Value.Check
-  default ConnectionInfoSql upgradeGpkgPaths() {
-    if (getDialect() == Dialect.GPKG
-        && Path.of(getDatabase()).startsWith("api-resources/features/")) {
-      return new Builder()
-          .from(this)
-          .database(getDatabase().replace("api-resources/features/", ""))
-          .build();
-    }
-
-    return this;
-  }
-
   @Value.Immutable
   @JsonDeserialize(builder = ImmutablePoolSettings.Builder.class)
   interface PoolSettings {
@@ -284,6 +174,7 @@ public interface ConnectionInfoSql extends ConnectionInfo {
      *     Diese Option sollte in der Regel nur auf Entwicklungssystemen deaktiviert werden.
      * @default true
      */
+    // TODO what should be done here in v4.0?
     @Deprecated
     @Nullable
     Boolean getInitFailFast();

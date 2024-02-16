@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Range;
@@ -27,9 +26,9 @@ import org.immutables.value.Value;
  * @langEn # Tiles
  *     <p>There are currently three types of Tile providers:
  *     <p><code>
- * - [Features](features.md): The tiles are derived from a feature provider.
- * - [MbTiles](mbtiles.md): The tiles are retrieved from one or more MBTiles files.
- * - [HTTP](http.md): The tiles are retrieved via HTTP, e.g. from a TileServer GL instance.
+ * - [Features](10-features.md): The tiles are derived from a feature provider.
+ * - [MbTiles](30-mbtiles.md): The tiles are retrieved from one or more MBTiles files.
+ * - [HTTP](60-http.md): The tiles are retrieved via HTTP, e.g. from a TileServer GL instance.
  *     </code>
  *     <p>## Configuration
  *     <p>These are common configuration options for all provider types.
@@ -37,9 +36,9 @@ import org.immutables.value.Value;
  * @langDe # Tiles
  *     <p>Es werden aktuell drei Arten von Tile-Providern unterstützt:
  *     <p><code>
- * - [Features](features.md): Die Kacheln werden aus einem Feature-Provider abgeleitet.
- * - [MbTiles](mbtiles.md): Die Kacheln liegen in einer oder mehreren MBTiles-Dateien vor.
- * - [HTTP](http.md): Die Kacheln werden via HTTP abgerufen, z.B. von einer TileServer GL Instanz.
+ * - [Features](10-features.md): Die Kacheln werden aus einem Feature-Provider abgeleitet.
+ * - [MbTiles](30-mbtiles.md): Die Kacheln liegen in einer oder mehreren MBTiles-Dateien vor.
+ * - [HTTP](60-http.md): Die Kacheln werden via HTTP abgerufen, z.B. von einer TileServer GL Instanz.
  *     </code>
  *     <p>## Konfiguration
  *     <p>Dies sind gemeinsame Konfigurations-Optionen für alle Provider-Typen.
@@ -82,7 +81,6 @@ public interface TileProviderData extends ProviderData {
    * @langDe Defaults für alle `tilesets`.
    * @since v3.4
    */
-  @JsonAlias("layerDefaults")
   TilesetCommonDefaults getTilesetDefaults();
 
   /**
@@ -91,7 +89,6 @@ public interface TileProviderData extends ProviderData {
    * @since v3.4
    * @default {}
    */
-  @JsonAlias("layers")
   Map<String, ? extends TilesetCommon> getTilesets();
 
   @JsonIgnore
@@ -116,6 +113,6 @@ public interface TileProviderData extends ProviderData {
 
     public abstract T providerType(String providerType);
 
-    public abstract T providerSubType(String featureProviderType);
+    public abstract T providerSubType(String providerSubType);
   }
 }

@@ -39,7 +39,8 @@ public class MultiplicityTracker {
                         this.arrayPaths.values().stream()
                             .filter(
                                 subPath ->
-                                    subPath.length() > path.length() && subPath.startsWith(path))
+                                    subPath.length() > path.length()
+                                        && subPath.startsWith(path + "."))
                             .collect(Collectors.toList())))
             .filter(entry -> !entry.getValue().isEmpty())
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));

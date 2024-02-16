@@ -10,7 +10,7 @@ package de.ii.xtraplatform.features.sql.infra.db;
 import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.base.Strings;
 import de.ii.xtraplatform.base.domain.AppContext;
-import de.ii.xtraplatform.blobs.domain.BlobStore;
+import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.spatialite.domain.SpatiaLiteLoader;
 import java.io.IOException;
@@ -35,7 +35,7 @@ public class SqlDataSourceFactoryImpl implements SqlDataSourceFactory {
   private static final Logger LOGGER = LoggerFactory.getLogger(SqlDataSourceFactoryImpl.class);
 
   private final Path dataDir;
-  private final BlobStore featuresStore;
+  private final ResourceStore featuresStore;
   private final String applicationName;
   private final SpatiaLiteLoader spatiaLiteLoader;
 
@@ -43,7 +43,7 @@ public class SqlDataSourceFactoryImpl implements SqlDataSourceFactory {
 
   @Inject
   public SqlDataSourceFactoryImpl(
-      AppContext appContext, BlobStore blobStore, SpatiaLiteLoader spatiaLiteLoader) {
+      AppContext appContext, ResourceStore blobStore, SpatiaLiteLoader spatiaLiteLoader) {
     this.dataDir = appContext.getDataDir();
     this.featuresStore = blobStore.with("features");
     this.applicationName =
@@ -146,20 +146,10 @@ public class SqlDataSourceFactoryImpl implements SqlDataSourceFactory {
     return ds;
   }
 
-  @Deprecated(since = "3.5") // remove anything but the featuresStore resolution
   private DataSource createGpkg(String providerId, ConnectionInfoSql connectionInfo) {
     Path source = Path.of(connectionInfo.getDatabase());
 
     if (!source.isAbsolute()) {
-      if (source.startsWith("api-resources/features")) {
-        source = Path.of("api-resources/features").relativize(source);
-        LOGGER.warn(
-            "Using a relative path starting with api-resources/features for a Geopackage file in connectionInfo.database is deprecated and will stop working in v4. Provide the path relative to that directory in connectionInfo.database instead.");
-      } else if (source.startsWith("resources/features")) {
-        source = Path.of("resources/features").relativize(source);
-        LOGGER.warn(
-            "Using a relative path starting with resources/features for a Geopackage file in connectionInfo.database is deprecated and will stop working in v4. Provide the path relative to that directory in connectionInfo.database instead.");
-      }
       Optional<Path> localPath = Optional.empty();
       try {
         localPath = featuresStore.asLocalPath(source, false);
@@ -168,19 +158,16 @@ public class SqlDataSourceFactoryImpl implements SqlDataSourceFactory {
       }
       if (localPath.isPresent()) {
         source = localPath.get();
-      } else if (dataDir.resolve(connectionInfo.getDatabase()).toFile().exists()) {
-        source = dataDir.resolve(connectionInfo.getDatabase());
-        LOGGER.warn(
-            "Using a path relative to the data directory for a Geopackage file in connectionInfo.database is deprecated and will stop working in v4. Move the file to (api-)resources/features and provide the path relative to that directory in connectionInfo.database.");
       } else {
         throw new IllegalStateException("GPKG database not found: " + source);
       }
     } else {
-      LOGGER.warn(
-          "Using an absolute path for a Geopackage file in connectionInfo.database is deprecated and will stop working in v4. Move the file to (api-)resources/features and provide the path relative to that directory in connectionInfo.database.");
+      throw new IllegalStateException(
+          "GPKG database reference must be a path relative to resources/features. Found: "
+              + source);
     }
 
-    if (!spatiaLiteInitialized) {
+    if (!spatiaLiteInitialized && Objects.nonNull(spatiaLiteLoader)) {
       spatiaLiteLoader.load();
 
       this.spatiaLiteInitialized = true;
@@ -193,12 +180,14 @@ public class SqlDataSourceFactoryImpl implements SqlDataSourceFactory {
               throws SQLException {
             SQLiteConnection connection = super.getConnection(username, password);
 
-            try (var statement = connection.createStatement()) {
-              // connection was created a few milliseconds before, so set query timeout is omitted
-              // (we assume it will succeed)
-              statement.execute(
-                  String.format(
-                      "SELECT load_extension('%s');", spatiaLiteLoader.getExtensionPath()));
+            if (Objects.nonNull(spatiaLiteLoader)) {
+              try (var statement = connection.createStatement()) {
+                // connection was created a few milliseconds before, so set query timeout is omitted
+                // (we assume it will succeed)
+                statement.execute(
+                    String.format(
+                        "SELECT load_extension('%s');", spatiaLiteLoader.getExtensionPath()));
+              }
             }
 
             return connection;

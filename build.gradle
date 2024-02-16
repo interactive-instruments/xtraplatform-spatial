@@ -1,3 +1,12 @@
+buildscript {
+    configurations.all {
+        resolutionStrategy {
+            cacheChangingModulesFor 0, 'seconds'
+            cacheDynamicVersionsFor 0, 'seconds'
+        }
+    }
+}
+
 plugins {
     alias catalog.plugins.xtraplatform.layer
     alias catalog.plugins.spotless apply false
@@ -7,7 +16,7 @@ allprojects {
     group = 'de.interactive_instruments'
 }
 
-version = '6.4.0' + versionSuffix
+version = '7.0.0' + versionSuffix
 
 //TODO
 layer {
@@ -22,10 +31,17 @@ layer {
 }
 
 dependencies {
-    layers group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '5.4.0-SNAPSHOT'
-    layers group: 'de.interactive_instruments', name: 'xtraplatform-native', version: "2.3.0-${platform}-SNAPSHOT"
+    layers group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '6.0.0-SNAPSHOT'
+    layers group: 'de.interactive_instruments', name: 'xtraplatform-native', version: "2.4.0-${platform}-SNAPSHOT"
 
     modules subprojects
+}
+
+configurations.all {
+    resolutionStrategy {
+        cacheChangingModulesFor 0, 'seconds'
+        cacheDynamicVersionsFor 0, 'seconds'
+    }
 }
 
 
@@ -37,3 +53,4 @@ subprojects {
 
 apply from: 'formatting.gradle'
 
+tasks.clean { dependsOn subprojects*.tasks*.findByPath('clean') }

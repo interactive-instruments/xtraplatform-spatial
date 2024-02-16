@@ -13,7 +13,6 @@ import de.ii.xtraplatform.streams.app.ReactiveRx
 import de.ii.xtraplatform.streams.domain.Reactive
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -43,23 +42,31 @@ class FeatureTokenDecoderGmlSpec extends Specification {
     }
 
     def setup() {
+        def schema = new ImmutableFeatureSchema.Builder()
+                .name("pand")
+                .sourcePath("/bag:pand")
+                .type(SchemaBase.Type.OBJECT)
+                .putProperties2("id", new ImmutableFeatureSchema.Builder()
+                        .sourcePath("gml@id")
+                        .type(SchemaBase.Type.STRING)
+                        .role(SchemaBase.Role.ID))
+                .putProperties2("geometry", new ImmutableFeatureSchema.Builder()
+                        .sourcePath("bag:geom")
+                        .type(SchemaBase.Type.GEOMETRY)
+                        .geometryType(SimpleFeatureGeometry.POLYGON))
+                .build()
+
         decoder = new FeatureTokenDecoderGml(
                 ["bag": "http://bag.geonovum.nl", "gml": "http://www.opengis.net/gml/3.2"],
                 [new QName("http://bag.geonovum.nl", "pand")],
-                new ImmutableFeatureSchema.Builder()
-                        .name("pand")
-                        .sourcePath("/bag:pand")
-                        .type(SchemaBase.Type.OBJECT)
-                        .putProperties2("id", new ImmutableFeatureSchema.Builder()
-                                .sourcePath("gml@id")
-                                .type(SchemaBase.Type.STRING)
-                                .role(SchemaBase.Role.ID))
-                        .putProperties2("geometry", new ImmutableFeatureSchema.Builder()
-                                .sourcePath("bag:geom")
-                                .type(SchemaBase.Type.GEOMETRY)
-                                .geometryType(SimpleFeatureGeometry.POLYGON))
-                        .build(),
+                schema,
                 ImmutableFeatureQuery.builder().type("pand").build(),
+                Map.of(
+                    schema.getName(),
+                    new ImmutableSchemaMapping.Builder()
+                            .targetSchema(schema)
+                            .sourcePathTransformer((path, isValue) -> path)
+                            .build()),
                 false)
     }
 

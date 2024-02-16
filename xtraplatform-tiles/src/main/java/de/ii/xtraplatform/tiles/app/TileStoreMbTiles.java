@@ -10,7 +10,7 @@ package de.ii.xtraplatform.tiles.app;
 import static de.ii.xtraplatform.base.domain.util.LambdaWithException.consumerMayThrow;
 
 import de.ii.xtraplatform.base.domain.LogContext;
-import de.ii.xtraplatform.blobs.domain.BlobStore;
+import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import de.ii.xtraplatform.tiles.domain.ImmutableMbtilesMetadata;
 import de.ii.xtraplatform.tiles.domain.ImmutableVectorLayer;
@@ -58,7 +58,7 @@ public class TileStoreMbTiles implements TileStore {
   }
 
   static TileStore readWrite(
-      BlobStore rootStore,
+      ResourceStore rootStore,
       String providerId,
       Map<String, Map<String, TileGenerationSchema>> tileSchemas) {
 
@@ -75,15 +75,17 @@ public class TileStoreMbTiles implements TileStore {
               consumerMayThrow(
                   path -> {
                     String tileset = path.getName(0).toString();
-                    String tms = path.getName(1).toString().replace(MBTILES_SUFFIX, "");
-                    tileSets.put(
-                        key(tileset, tms),
-                        createTileSet(
-                            rootStore,
-                            providerId,
-                            tileset,
-                            tms,
-                            getVectorLayers(tileSchemas, tileset)));
+                    if (tileSchemas.containsKey(tileset)) {
+                      String tms = path.getName(1).toString().replace(MBTILES_SUFFIX, "");
+                      tileSets.put(
+                          key(tileset, tms),
+                          createTileSet(
+                              rootStore,
+                              providerId,
+                              tileset,
+                              tms,
+                              getVectorLayers(tileSchemas, tileset)));
+                    }
                   }));
     } catch (IOException e) {
       LogContext.errorAsWarn(LOGGER, e, "Error when loading tile caches");
@@ -97,13 +99,13 @@ public class TileStoreMbTiles implements TileStore {
   }
 
   private final String providerId;
-  private final BlobStore rootStore;
+  private final ResourceStore rootStore;
   private final Map<String, Map<String, TileGenerationSchema>> tileSchemas;
   private final Map<String, MbtilesTileset> tileSets;
 
   private TileStoreMbTiles(
       String providerId,
-      BlobStore rootStore,
+      ResourceStore rootStore,
       Map<String, MbtilesTileset> tileSets,
       Map<String, Map<String, TileGenerationSchema>> tileSchemas) {
     this.providerId = providerId;
@@ -193,34 +195,53 @@ public class TileStoreMbTiles implements TileStore {
 
   @Override
   public void put(TileQuery tile, InputStream content) throws IOException {
-    try {
-      synchronized (tileSets) {
-        if (!tileSets.containsKey(key(tile))) {
-          tileSets.put(
-              key(tile),
-              createTileSet(
-                  rootStore,
-                  providerId,
-                  tile.getTileset(),
-                  tile.getTileMatrixSet().getId(),
-                  getVectorLayers(tileSchemas, tile.getTileset())));
+    synchronized (tileSets) {
+      if (!tileSets.containsKey(key(tile))) {
+        tileSets.put(
+            key(tile),
+            createTileSet(
+                rootStore,
+                providerId,
+                tile.getTileset(),
+                tile.getTileMatrixSet().getId(),
+                getVectorLayers(tileSchemas, tile.getTileset())));
+      }
+    }
+    MbtilesTileset tileset = tileSets.get(key(tile));
+    boolean written = false;
+    int count = 0;
+    while (!written && count++ < 3) {
+      try {
+        tileset.writeTile(tile, content.readAllBytes());
+        written = true;
+      } catch (SQLException e) {
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace(
+              "Failed to write tile {}/{}/{}/{} for tileset '{}'. Reason: {}. Trying again...",
+              tile.getTileMatrixSet().getId(),
+              tile.getLevel(),
+              tile.getRow(),
+              tile.getCol(),
+              tile.getTileset(),
+              e.getMessage());
+        }
+        try {
+          Thread.sleep(100);
+        } catch (InterruptedException ignore) {
+          // ignore
         }
       }
-      tileSets.get(key(tile)).writeTile(tile, content.readAllBytes());
+    }
 
-    } catch (SQLException e) {
+    if (!written) {
       if (LOGGER.isWarnEnabled()) {
         LOGGER.warn(
-            "Failed to write tile {}/{}/{}/{} for tileset '{}'. Reason: {}",
+            "Failed to write tile {}/{}/{}/{} for tileset '{}'.",
             tile.getTileMatrixSet().getId(),
             tile.getLevel(),
             tile.getRow(),
             tile.getCol(),
-            tile.getTileset(),
-            e.getMessage());
-        if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
-          LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
-        }
+            tile.getTileset());
       }
     }
   }
@@ -312,6 +333,19 @@ public class TileStoreMbTiles implements TileStore {
     }
   }
 
+  @Override
+  public void tidyup() {
+    tileSets.forEach(
+        (key, mbtiles) -> {
+          String[] fromKey = fromKey(key);
+          try {
+            mbtiles.cleanup();
+          } catch (SQLException | IOException e) {
+            // ignore
+          }
+        });
+  }
+
   private static List<VectorLayer> getVectorLayers(
       Map<String, Map<String, TileGenerationSchema>> tileSchemas, String tileset) {
     return tileSchemas.get(tileset).entrySet().stream()
@@ -337,14 +371,20 @@ public class TileStoreMbTiles implements TileStore {
 
   // TODO: minzoom, maxzoom, bounds, center
   private static MbtilesTileset createTileSet(
-      BlobStore rootStore,
+      ResourceStore rootStore,
       String name,
       String tileset,
       String tileMatrixSet,
       List<VectorLayer> vectorLayers)
       throws IOException {
     Path relPath = Path.of(tileset).resolve(tileMatrixSet + MBTILES_SUFFIX);
-    Optional<Path> filePath = rootStore.asLocalPath(relPath, true);
+    Optional<Path> filePath;
+
+    try {
+      filePath = rootStore.asLocalPath(relPath, true);
+    } catch (Throwable e) {
+      throw new IllegalStateException("Could not create MBTiles file.", e);
+    }
 
     if (filePath.isEmpty()) {
       throw new IllegalStateException(

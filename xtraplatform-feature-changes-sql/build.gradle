@@ -1,7 +1,12 @@
 
 maturity = 'PROPOSAL'
+maintenance = 'NONE'
+description = 'PostgreSQL notifications about feature changes.'
+descriptionDe = 'PostgreSQL Notifikationen über Änderungen von Features.'
 
 dependencies {
+    provided 'de.interactive_instruments:xtraplatform-entities'
+    provided 'de.interactive_instruments:xtraplatform-values'
     provided project(':xtraplatform-crs')
     provided project(':xtraplatform-features')
     provided project(':xtraplatform-features-sql')

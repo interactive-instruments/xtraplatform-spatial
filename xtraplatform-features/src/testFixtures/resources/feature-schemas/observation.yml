@@ -1,0 +1,25 @@
+# schema references, mapping operations and feature refs are already resolved
+sourcePath: /observation
+type: OBJECT
+objectType: Observation
+properties:
+  id:
+    sourcePath: id
+    type: INTEGER
+    role: ID
+  process:
+    type: OBJECT_ARRAY
+    sourcePath: '[process_fk=id]process'
+    properties:
+      title:
+        sourcePaths:
+          - category_fk
+          - processstandard_fk
+        concat:
+          - sourcePath: category_fk
+          - sourcePath: processstandard_fk
+        type: VALUE_ARRAY
+        valueType: STRING
+      href:
+        sourcePath: id
+        type: STRING

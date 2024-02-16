@@ -53,7 +53,7 @@ import org.immutables.value.Value;
  */
 @DocFile(
     path = "providers/feature",
-    name = "wfs.md",
+    name = "50-wfs.md",
     tables = {
       @DocTable(
           name = "connectionInfo",
@@ -71,7 +71,7 @@ import org.immutables.value.Value;
             @DocStep(type = Step.TAG, params = "{@examplesAll}")
           })
     })
-@Value.Immutable
+@Value.Immutable(prehash = true)
 @Value.Style(
     builder = "new",
     deepImmutablesDetection = true,

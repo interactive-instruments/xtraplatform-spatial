@@ -202,6 +202,22 @@ public class StringTemplateFilters {
       formattedValue = formattedValue.replaceAll("\\{\\{" + valueSubst2 + "}}", value2);
     }
 
+    Matcher recurseMatcher =
+        !allowSingleCurlyBraces || formattedValue.contains("{{")
+            ? valuePattern.matcher(formattedValue)
+            : valuePatternSingle.matcher(formattedValue);
+
+    if (recurseMatcher.find()) {
+      final boolean currentHasAppliedMarkdown = hasAppliedMarkdown;
+      return applyTemplate(
+          formattedValue,
+          nextHasAppliedMarkdown ->
+              isHtml.accept(currentHasAppliedMarkdown || nextHasAppliedMarkdown),
+          valueLookup,
+          customFilters,
+          allowSingleCurlyBraces);
+    }
+
     isHtml.accept(hasAppliedMarkdown);
 
     return formattedValue;

@@ -61,6 +61,10 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
           .collect(Collectors.toList());
     }
 
+    if (sourceSchema.getType() == Type.OBJECT_ARRAY && !sourceSchema.getConcat().isEmpty()) {
+      return List.of();
+    }
+
     return sourceSchema.getEffectiveSourcePaths().stream()
         .map(
             sourcePath ->
@@ -467,6 +471,7 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
             .valueType(valueType)
             .geometryType(targetSchema.getGeometryType())
             .role(targetSchema.getRole())
+            .excludedScopes(targetSchema.getExcludedScopes())
             .sourcePath(targetSchema.getName())
             .relation(relations)
             .subDecoder(connector)
@@ -476,6 +481,8 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
             .constantValue(targetSchema.getConstantValue())
             .forcePolygonCCW(
                 targetSchema.isForcePolygonCCW() ? Optional.empty() : Optional.of(false))
+            .linearizeCurves(
+                targetSchema.shouldLinearizeCurves() ? Optional.of(true) : Optional.empty())
             .constraints(targetSchema.getConstraints());
 
     if (targetSchema.isObject()) {

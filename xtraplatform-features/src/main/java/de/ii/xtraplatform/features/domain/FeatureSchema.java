@@ -7,13 +7,10 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonProperty.Access;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.OptBoolean;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -30,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -38,7 +37,7 @@ import org.immutables.value.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Value.Immutable
+@Value.Immutable(lazyhash = true)
 @Value.Style(
     builder = "new",
     deepImmutablesDetection = true,
@@ -48,6 +47,7 @@ import org.slf4j.LoggerFactory;
 @JsonDeserialize(builder = ImmutableFeatureSchema.Builder.class)
 @JsonPropertyOrder({
   "sourcePath",
+  "sourcePaths",
   "type",
   "role",
   "valueType",
@@ -56,6 +56,8 @@ import org.slf4j.LoggerFactory;
   "label",
   "description",
   "unit",
+  "scope",
+  "excludedScopes",
   "transformations",
   "constraints",
   "properties"
@@ -81,24 +83,12 @@ public interface FeatureSchema
 
   /**
    * @langEn The relative path for this schema object. The syntax depends on the provider types, see
-   *     [SQL](sql.md#path-syntax) or [WFS](wfs.md#path-syntax).
+   *     [SQL](10-sql.md#path-syntax) or [WFS](50-wfs.md#path-syntax).
    * @langDe Der relative Pfad zu diesem Schemaobjekt. Die Pfadsyntax ist je nach Provider-Typ
-   *     unterschiedlich ([SQL](sql.md#path-syntax) und [WFS](wfs.md#path-syntax)).
+   *     unterschiedlich ([SQL](10-sql.md#path-syntax) und [WFS](50-wfs.md#path-syntax)).
    */
-  @JsonAlias("path")
   @Override
   Optional<String> getSourcePath();
-
-  /**
-   * @langEn The relative paths for this schema object. The syntax depends on the provider types,
-   *     see [SQL](sql.md#path-syntax) or [WFS](wfs.md#path-syntax).
-   * @langDe Die relativen Pfade zu diesem Schemaobjekt. Die Pfadsyntax ist je nach Provider-Typ
-   *     unterschiedlich ([SQL](sql.md#path-syntax) und [WFS](wfs.md#path-syntax)).
-   * @default [sourcePath]
-   */
-  @JsonMerge(OptBoolean.FALSE)
-  @Override
-  List<String> getSourcePaths();
 
   /**
    * @langEn Data type of the schema object. Default is `OBJECT` when `properties` is set, otherwise
@@ -107,8 +97,10 @@ public interface FeatureSchema
    * - `FLOAT`, `INTEGER`, `STRING`, `BOOLEAN`, `DATETIME`, `DATE` for simple values.
    * - `GEOMETRY` for geometries.
    * - `OBJECT` for objects.
-   * - `OBJECT_ARRAY` a list of objects.
-   * - `VALUE_ARRAY` a list of simple values.
+   * - `OBJECT_ARRAY` for a list of objects.
+   * - `VALUE_ARRAY` for a list of simple values.
+   * - `FEATURE_REF` for a reference to another feature or external resource.
+   * - `FEATURE_REF_ARRAY` for a list of references to others features or external resources.
    * </code>
    *     <p>
    * @langDe Der Datentyp des Schemaobjekts. Der Standardwert ist `STRING`, sofern nicht auch die
@@ -119,6 +111,8 @@ public interface FeatureSchema
    * - `OBJECT` für ein Objekt.
    * - `OBJECT_ARRAY` für eine Liste von Objekten.
    * - `VALUE_ARRAY`für eine Liste von einfachen Werten.
+   * - `FEATURE_REF` für einen Verweis auf ein anderes Feature oder eine externe Ressource.
+   * - "FEATURE_REF_ARRAY" für eine Liste von Verweisen auf andere Features oder externe Ressourcen.
    * </code>
    *     <p>
    * @default STRING/OBJECT
@@ -136,19 +130,33 @@ public interface FeatureSchema
   }
 
   /**
-   * @langEn `ID` has to be set for the property that should be used as the unique feature id. As a
-   *     rule that should be the first property ion the `properties` object. Property names cannot
-   *     contain spaces (" ") or slashes ("/"). Set `TYPE` for a property that specifies the type
-   *     name of the object.
-   * @langDe Kennzeichnet besondere Bedeutungen der Eigenschaft.
-   *     <p><code>
-   * - `ID` ist bei der Eigenschaft eines Objekts anzugeben, die für die `featureId` in der API zu verwenden ist. Diese Eigenschaft ist typischerweise die erste Eigenschaft im `properties`-Objekt. Erlaubte Zeichen in diesen Eigenschaften sind alle Zeichen bis auf das Leerzeichen (" ") und der Querstrich ("/").
-   * - `TYPE` ist optional bei der Eigenschaft eines Objekts anzugeben, die den Namen einer Unterobjektart enthält.
-   * - Hat eine Objektart mehrere Geometrieeigenschaften, dann ist `PRIMARY_GEOMETRY` bei der Eigenschaft anzugeben, die für `bbox`-Abfragen verwendet werden soll und die in GeoJSON in `geometry` oder in JSON-FG in `where` kodiert werden soll.
-   * - Hat eine Objektart mehrere zeitliche Eigenschaften, dann sollte `PRIMARY_INSTANT` bei der Eigenschaft angegeben werden, die für `datetime`-Abfragen verwendet werden soll, sofern ein Zeitpunkt die zeitliche Ausdehnung der Features beschreibt.
-   * - Ist die zeitliche Ausdehnung hingegen ein Zeitintervall, dann sind `PRIMARY_INTERVAL_START` und `PRIMARY_INTERVAL_END` bei den jeweiligen zeitlichen Eigenschaften anzugeben.
-   * </code>
-   *     <p>
+   * @langEn Indicates special meanings of the property. `ID` is to be specified at the property of
+   *     an object to be used for the `featureId` in the API. This property is typically the first
+   *     property in the `properties` object. Allowed characters in these properties are all
+   *     characters except the space character (" ") and the horizontal bar ("/"). `TYPE` can be
+   *     specified at the property of an object that contains the name of a subobject type. If an
+   *     object type has multiple geometry properties, then specify `PRIMARY_GEOMETRY` at the
+   *     property to be used for `bbox` queries and to be encoded in data formats with exactly one
+   *     or a singled out geometry (e.g. in GeoJSON `geometry`). If an object type has multiple
+   *     temporal properties, then `PRIMARY_INSTANT` should be specified at the property to be used
+   *     for `datetime` queries, provided that a time instant describes the temporal extent of the
+   *     features. If, on the other hand, the temporal extent is a time interval, then
+   *     `PRIMARY_INTERVAL_START` and `PRIMARY_INTERVAL_END` should be specified at the respective
+   *     temporal properties.
+   * @langDe Kennzeichnet besondere Bedeutungen der Eigenschaft. `ID` ist bei der Eigenschaft eines
+   *     Objekts anzugeben, die für die `featureId` in der API zu verwenden ist. Diese Eigenschaft
+   *     ist typischerweise die erste Eigenschaft im `properties`-Objekt. Erlaubte Zeichen in diesen
+   *     Eigenschaften sind alle Zeichen bis auf das Leerzeichen (" ") und der Querstrich ("/").
+   *     `TYPE` kann bei der Eigenschaft eines Objekts angegeben werden, die den Namen einer
+   *     Unterobjektart enthält. Hat eine Objektart mehrere Geometrieeigenschaften, dann ist
+   *     `PRIMARY_GEOMETRY` bei der Eigenschaft anzugeben, die für `bbox`-Abfragen verwendet werden
+   *     soll und die in Datenformaten mit genau einer oder einer herausgehobenen Geometrie (z.B. in
+   *     GeoJSON `geometry`) kodiert werden soll. Hat eine Objektart mehrere zeitliche
+   *     Eigenschaften, dann sollte `PRIMARY_INSTANT` bei der Eigenschaft angegeben werden, die für
+   *     `datetime`-Abfragen verwendet werden soll, sofern ein Zeitpunkt die zeitliche Ausdehnung
+   *     der Features beschreibt. Ist die zeitliche Ausdehnung hingegen ein Zeitintervall, dann sind
+   *     `PRIMARY_INTERVAL_START` und `PRIMARY_INTERVAL_END` bei den jeweiligen zeitlichen
+   *     Eigenschaften anzugeben.
    * @default null
    */
   @Override
@@ -157,7 +165,7 @@ public interface FeatureSchema
   /**
    * @langEn Only needed when `type` is `VALUE_ARRAY`. Possible values: `FLOAT`, `INTEGER`,
    *     `STRING`, `BOOLEAN`, `DATETIME`, `DATE`
-   * @langDe Wird nur benötigt wenn `type` auf `VALUE_ARRAY` gesetzt ist. Mögliche Werte: `FLOAT`,
+   * @langDe Wird nur benötigt, wenn `type` auf `VALUE_ARRAY` gesetzt ist. Mögliche Werte: `FLOAT`,
    *     `INTEGER`, `STRING`, `BOOLEAN`, `DATETIME`, `DATE`
    * @default STRING
    */
@@ -216,13 +224,90 @@ public interface FeatureSchema
   Optional<String> getConstantValue();
 
   /**
-   * @langEn Optional scope for properties that should only be used when either reading (`QUERIES`)
-   *     or writing (`MUTATIONS`) features.
-   * @langDe Optionaler Geltungsbereich für Eigenschaften die entweder nur beim Lesen (`QUERIES`) *
-   *     oder beim Schreiben (`MUTATIONS`) verwendet werden sollen.
-   * @default null
+   * @langEn Optional exclusion of a property from a schema scope. See [Schema
+   *     Scopes](../details/scopes.md) for a description of the scopes.
+   * @langDe Optionaler Ausschluss einer Eigenschaft aus einem Schema-Anwendungsbereich. Siehe
+   *     [Schema-Anwendungsbereiche](../details/scopes.md) für eine Beschreibung der Bereiche.
+   * @default []
    */
-  Optional<Scope> getScope();
+  @Override
+  Set<Scope> getExcludedScopes();
+
+  /**
+   * @langEn For a property of type `FEATURE_REF` or `FEATURE_REF_ARRAY` where the target is always
+   *     a feature of another type in the same provider, declare the feature type identifier in
+   *     `refType`. For details see [Feature References](#feature-references).
+   * @langDe Für eine Feature-Eigenschaft des Typs `FEATURE_REF` oder `FEATURE_REF_ARRAY`, bei der
+   *     das Ziel immer ein Feature einer anderen Objektart im selben Provider ist, wird die Kennung
+   *     der Objektart in `refType` angegeben. Für Details siehe
+   *     [Objektreferenzen](#objektreferenzen).
+   */
+  @Override
+  Optional<String> getRefType();
+
+  /**
+   * @langEn For a property of type `FEATURE_REF` or `FEATURE_REF_ARRAY` where the target is an
+   *     external resource, declare the URI template of the link in `refUriTemplate`. For details
+   *     see [Feature References](#feature-references).
+   * @langDe Für eine Eigenschaft vom Typ `FEATURE_REF` oder `FEATURE_REF_ARRAY`, bei der das Ziel
+   *     eine externe Ressource ist, deklarieren Sie das URI-Template in `refUriTemplate`. Für
+   *     Details siehe [Objektreferenzen](#objektreferenzen).
+   */
+  @Override
+  Optional<String> getRefUriTemplate();
+
+  /**
+   * @langEn For a property of type `FEATURE_REF` or `FEATURE_REF_ARRAY` where the type of the
+   *     target varies, declare the string template of the foreign key in `refKeyTemplate`. For
+   *     details see [Feature References](#feature-references).
+   * @langDe Für eine Eigenschaft vom Typ `FEATURE_REF` oder `FEATURE_REF_ARRAY`, bei der die
+   *     Objektart des Ziels variiert, deklarieren Sie das String-Template in `refKeyTemplate`. Für
+   *     Details siehe [Objektreferenzen](#objektreferenzen).
+   */
+  @Override
+  Optional<String> getRefKeyTemplate();
+
+  @Override
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean queryable() {
+    return !isObject()
+        && !isMultiSource()
+        && !Objects.equals(getType(), Type.UNKNOWN)
+        && !getExcludedScopes().contains(Scope.QUERYABLE);
+  }
+
+  @Override
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean sortable() {
+    return !isSpatial()
+        && !isObject()
+        && !isArray()
+        && !isMultiSource()
+        && !Objects.equals(getType(), Type.BOOLEAN)
+        && !Objects.equals(getType(), Type.UNKNOWN)
+        && !getExcludedScopes().contains(Scope.SORTABLE);
+  }
+
+  // returnable() is unchanged, no need to override
+
+  @Override
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean receivable() {
+    return !isConstant() && !getExcludedScopes().contains(Scope.RECEIVABLE);
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean isMultiSource() {
+    return !getConcat().isEmpty() || !getCoalesce().isEmpty();
+  }
 
   /**
    * @langEn Reference to an external schema definition. The default resolver will resolve
@@ -278,37 +363,15 @@ public interface FeatureSchema
   Optional<Boolean> getForcePolygonCCW();
 
   /**
-   * @langEn Properties that are not of type OBJECT or OBJECT_ARRAY are by default eligible as
-   *     queryables. This setting can be used to declare a property as ineligible, for example, if
-   *     the property is not optimized for use in queries. If an eligible property can actually be
-   *     queried is decided by the provider implementation, that might not be feasible due to
-   *     technical reasons.
-   * @langDe Eigenschaften, die nicht vom Typ OBJECT oder OBJECT_ARRAY sind, sind standardmäßig für
-   *     Abfragen geeignet. Diese Einstellung kann verwendet werden, um eine Eigenschaft als nicht
-   *     abfragefähig zu markieren, z. B. wenn die Eigenschaft nicht für die Verwendung in Abfragen
-   *     optimiert ist. Ob eine geeignete Eigenschaft tatsächlich abgefragt werden kann entscheidet
-   *     die Provider-Implementierung, das könnte aufgrund technischer Gründe nicht möglich sein.
-   * @default see description
+   * @langEn Option to linearize curve geometries (e.g., CircularString or CurvePolygon) to a Simple
+   *     Features geometry. This option only applies to SQL feature providers of dialect PostGIS.
+   * @langDe Option zur Linearisierung von Kurvengeometrien (z. B. CircularString oder CurvePolygon)
+   *     zu einer Simple-Features-Geometrie. Diese Option gilt nur für SQL-Feature-Anbieter mit
+   *     Dialekt PostGIS.
+   * @default `false`
    */
   @Override
-  Optional<Boolean> getIsQueryable();
-
-  /**
-   * @langEn Only the direct properties of a feature type that are of type STRING, FLOAT, INTEGER,
-   *     DATE, or DATETIME are eligible as sortables. This setting can be used to declare a property
-   *     as ineligible, for example, if the property is not optimized for use in queries. If an
-   *     eligible property can actually be used as sortable is decided by the provider
-   *     implementation, that might not be feasible due to technical reasons.
-   * @langDe Nur die direkten Feature-Eigenschaften einer Objektart, die vom Typ STRING, FLOAT,
-   *     INTEGER, DATE oder DATETIME sind, kommen als Sortierkriterien in Frage. Diese Einstellung
-   *     kann verwendet werden, um eine Eigenschaft als nicht geeignet zu deklarieren, zum Beispiel,
-   *     wenn die Eigenschaft nicht für die Verwendung in Abfragen optimiert ist. Ob eine geeignete
-   *     Eigenschaft tatsächlich als Sortierkriterium verwendet werden kann entscheidet die
-   *     Provider-Implementierung, das könnte aufgrund technischer Gründe nicht möglich sein.
-   * @default see description
-   */
-  @Override
-  Optional<Boolean> getIsSortable();
+  Optional<Boolean> getLinearizeCurves();
 
   /**
    * @langEn Identifies a DATETIME property as a property that contains the timestamp when the
@@ -351,7 +414,6 @@ public interface FeatureSchema
    *     Operationen](#merge).
    * @default []
    */
-  @JsonAlias("allOf")
   List<PartialObjectSchema> getMerge();
 
   /**
@@ -472,39 +534,6 @@ public interface FeatureSchema
         || (isObject() && getProperties().stream().allMatch(FeatureSchema::isConstant));
   }
 
-  /*@Value.Check
-  default FeatureSchema backwardsCompatibility() {
-    // migrate double column syntax to multiple sourcePaths, ignore wfs mappings
-    if (!getParentPath().isEmpty()
-        && !getParentPath().get(0).contains(":")
-        && getSourcePath()
-            .filter(path -> path.lastIndexOf(':') > path.lastIndexOf('/'))
-            .isPresent()) {
-      @Deprecated(since = "3.1.0")
-      String path1 = getSourcePath().get().substring(0, getSourcePath().get().lastIndexOf(':'));
-      String path2 =
-          path1.substring(0, path1.lastIndexOf('/') + 1)
-              + getSourcePath().get().substring(getSourcePath().get().lastIndexOf(':') + 1);
-
-      LOGGER.info(
-          "The sourcePath '{}' in property '{}' uses a deprecated style that includes a colon to merge two columns. Please use multiple sourcePaths instead, one for each column.",
-          getSourcePath().get(),
-          getName());
-
-      return new ImmutableFeatureSchema.Builder()
-          .from(this)
-          .sourcePath(Optional.empty())
-          .sourcePaths(ImmutableList.of(path1, path2))
-          .addTransformations(
-              new ImmutablePropertyTransformation.Builder()
-                  .stringFormat(String.format("{{%s}} ||| {{%s}}", path1, path2))
-                  .build())
-          .build();
-    }
-
-    return this;
-  }*/
-
   @Value.Check
   default FeatureSchema primaryGeometry() {
     if (isFeature()
@@ -612,6 +641,16 @@ public interface FeatureSchema
   }
 
   @Value.Check
+  default void disallowFlattening() {
+    Preconditions.checkState(
+        getTransformations().isEmpty()
+            || getTransformations().stream()
+                .noneMatch(transformations -> transformations.getFlatten().isPresent()),
+        "The 'flatten' transformation is not allowed in the provider schema. Path: %s.",
+        isFeature() ? getName() : getFullPathAsString());
+  }
+
+  @Value.Check
   default void checkMappingOperations() {
     Preconditions.checkState(
         getConcat().isEmpty() || isArray(),
@@ -644,15 +683,14 @@ public interface FeatureSchema
         getConcat().isEmpty()
             || getType() != Type.FEATURE_REF_ARRAY
             || getConcat().stream()
-                .allMatch(
-                    s ->
-                        List.of(Type.STRING, Type.FEATURE_REF, Type.FEATURE_REF_ARRAY)
-                            .contains(s.getType())),
+                .map(FeatureSchema::getDesiredType)
+                .filter(Objects::nonNull)
+                .allMatch(type -> List.of(Type.FEATURE_REF, Type.FEATURE_REF_ARRAY).contains(type)),
         "Concat of type FEATURE_REF_ARRAY may only contain items of type FEATURE_REF_ARRAY or FEATURE_REF. Found: %s. Path: %s.",
         getConcat().stream()
-            .map(FeatureSchema::getType)
-            .filter(
-                t -> !List.of(Type.STRING, Type.FEATURE_REF, Type.FEATURE_REF_ARRAY).contains(t))
+            .map(FeatureSchema::getDesiredType)
+            .filter(Objects::nonNull)
+            .filter(type -> !List.of(Type.FEATURE_REF, Type.FEATURE_REF_ARRAY).contains(type))
             .findFirst()
             .orElse(getType()),
         getFullPathAsString());
@@ -670,9 +708,10 @@ public interface FeatureSchema
                                 Type.BOOLEAN,
                                 Type.DATE,
                                 Type.DATETIME,
-                                Type.VALUE_ARRAY)
+                                Type.VALUE_ARRAY,
+                                Type.VALUE)
                             .contains(s.getType())),
-        "Concat of type VALUE_ARRAY may only contain items of type VALUE_ARRAY, INTEGER, FLOAT, STRING, BOOLEAN, DATE or DATETIME. Found: %s. Path: %s.",
+        "Concat of type VALUE_ARRAY may only contain items of type VALUE_ARRAY, VALUE, INTEGER, FLOAT, STRING, BOOLEAN, DATE or DATETIME. Found: %s. Path: %s.",
         getConcat().stream()
             .map(FeatureSchema::getType)
             .filter(
@@ -684,16 +723,11 @@ public interface FeatureSchema
                             Type.BOOLEAN,
                             Type.DATE,
                             Type.DATETIME,
-                            Type.VALUE_ARRAY)
+                            Type.VALUE_ARRAY,
+                            Type.VALUE)
                         .contains(t))
             .findFirst()
             .orElse(getType()),
-        getFullPathAsString());
-
-    Preconditions.checkState(
-        getCoalesce().isEmpty() || !isArray(),
-        "Coalesce may not be used with array types. Found: %s. Path: %s.",
-        getType(),
         getFullPathAsString());
 
     Preconditions.checkState(
@@ -728,9 +762,10 @@ public interface FeatureSchema
                                 Type.BOOLEAN,
                                 Type.DATE,
                                 Type.DATETIME,
-                                Type.VALUE_ARRAY)
+                                Type.VALUE_ARRAY,
+                                Type.VALUE)
                             .contains(s.getType())),
-        "Coalesce of type VALUE may only contain items of type INTEGER, FLOAT, STRING, BOOLEAN, DATE, DATETIME or VALUE_ARRAY. Found: %s. Path: %s.",
+        "Coalesce of type VALUE may only contain items of type INTEGER, FLOAT, STRING, BOOLEAN, DATE, DATETIME, VALUE or VALUE_ARRAY. Found: %s. Path: %s.",
         getCoalesce().stream()
             .map(FeatureSchema::getType)
             .filter(
@@ -742,7 +777,8 @@ public interface FeatureSchema
                             Type.BOOLEAN,
                             Type.DATE,
                             Type.DATETIME,
-                            Type.VALUE_ARRAY)
+                            Type.VALUE_ARRAY,
+                            Type.VALUE)
                         .contains(t))
             .findFirst()
             .orElse(getType()),
@@ -764,12 +800,6 @@ public interface FeatureSchema
             .findFirst()
             .orElse(getType()),
         getFullPathAsString());
-
-    Preconditions.checkState(
-        getType() != Type.VALUE || !getCoalesce().isEmpty(),
-        "Type VALUE may only be used with coalesce. Found: %s. Path: %s.",
-        getType(),
-        getFullPathAsString());
   }
 
   @Value.Check
@@ -790,8 +820,9 @@ public interface FeatureSchema
                 && !isArray()
                 && !Objects.equals(getType(), Type.BOOLEAN)
                 && !Objects.equals(getType(), Type.UNKNOWN)),
-        "A sortable property must be a string, a number or an instant. Found %s",
-        getType());
+        "A sortable property must be a string, a number or an instant. Found %s. Path: %s.",
+        getType(),
+        getFullPathAsString());
   }
 
   @JsonIgnore
@@ -830,7 +861,7 @@ public interface FeatureSchema
     return visitor.visit(
         this,
         parents,
-        getProperties().stream().map(visit).collect(Collectors.toList()),
+        getPropertyMap().values().stream().map(visit).collect(Collectors.toList()),
         getMerge().stream()
             .map(
                 partial -> {
@@ -852,5 +883,34 @@ public interface FeatureSchema
                       .build();
                 })
             .collect(Collectors.toList()));
+  }
+
+  default FeatureSchema with(Consumer<ImmutableFeatureSchema.Builder> changes) {
+    ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder().from(this);
+
+    changes.accept(builder);
+
+    if (!getConcat().isEmpty()) {
+      builder.concat(
+          getConcat().stream().map(concat -> apply(concat, changes)).collect(Collectors.toList()));
+    }
+
+    if (!getCoalesce().isEmpty()) {
+      builder.coalesce(
+          getCoalesce().stream()
+              .map(coalesce -> apply(coalesce, changes))
+              .collect(Collectors.toList()));
+    }
+
+    return builder.build();
+  }
+
+  static FeatureSchema apply(
+      FeatureSchema schema, Consumer<ImmutableFeatureSchema.Builder> changes) {
+    ImmutableFeatureSchema.Builder builder = new ImmutableFeatureSchema.Builder().from(schema);
+
+    changes.accept(builder);
+
+    return builder.build();
   }
 }

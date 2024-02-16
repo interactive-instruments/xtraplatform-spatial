@@ -22,7 +22,6 @@ import de.ii.xtraplatform.cql.domain.BooleanValue2;
 import de.ii.xtraplatform.cql.domain.Casei;
 import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.cql.domain.CqlFilter;
-import de.ii.xtraplatform.cql.domain.CqlPredicate;
 import de.ii.xtraplatform.cql.domain.Eq;
 import de.ii.xtraplatform.cql.domain.Function;
 import de.ii.xtraplatform.cql.domain.Geometry;
@@ -64,7 +63,7 @@ import java.util.Objects;
 public class CqlFilterExamples {
 
   public static final Cql2Expression EXAMPLE_1 = Gt.of("floors", ScalarLiteral.of(5));
-  public static final CqlFilter EXAMPLE_1_OLD = CqlFilter.of(Gt.of("floors", ScalarLiteral.of(5)));
+  public static final Cql2Expression EXAMPLE_1_OLD = Gt.of("floors", ScalarLiteral.of(5));
 
   public static final Cql2Expression EXAMPLE_2 = Lte.of("taxes", ScalarLiteral.of(500));
   public static final CqlFilter EXAMPLE_2_OLD =
@@ -80,17 +79,15 @@ public class CqlFilterExamples {
 
   public static final Cql2Expression EXAMPLE_5 =
       Not.of(Like.of("owner", ScalarLiteral.of("% Mike %")));
-  public static final CqlFilter EXAMPLE_5_OLD =
-      CqlFilter.of(/*Not.of(*/ Like.of("owner", ScalarLiteral.of("% Mike %")) /*)*/);
+  public static final Cql2Expression EXAMPLE_5_OLD =
+      /*Not.of(*/ Like.of("owner", ScalarLiteral.of("% Mike %")) /*)*/;
 
   public static final Cql2Expression EXAMPLE_6 = Eq.of("swimming_pool", ScalarLiteral.of(true));
-  public static final CqlFilter EXAMPLE_6_OLD =
-      CqlFilter.of(Eq.of("swimming_pool", ScalarLiteral.of(true)));
+  public static final Cql2Expression EXAMPLE_6_OLD = Eq.of("swimming_pool", ScalarLiteral.of(true));
 
   public static final Cql2Expression EXAMPLE_7 = And.of(EXAMPLE_1, EXAMPLE_6);
-  public static final CqlFilter EXAMPLE_7_OLD =
-      CqlFilter.of(
-          And.of(EXAMPLE_1_OLD, CqlPredicate.of(Eq.of("swimming_pool", ScalarLiteral.of(true)))));
+  public static final Cql2Expression EXAMPLE_7_OLD =
+      And.of(EXAMPLE_1_OLD, Eq.of("swimming_pool", ScalarLiteral.of(true)));
 
   public static final Cql2Expression EXAMPLE_8 =
       And.of(
@@ -99,34 +96,23 @@ public class CqlFilterExamples {
               EXAMPLE_1,
               Like.of("material", ScalarLiteral.of("brick%")),
               Like.of("material", ScalarLiteral.of("%brick"))));
-  public static final CqlFilter EXAMPLE_8_OLD =
-      CqlFilter.of(
-          And.of(
-              EXAMPLE_6_OLD,
-              CqlPredicate.of(
-                  Or.of(
-                      EXAMPLE_1_OLD,
-                      CqlPredicate.of(Like.of("material", ScalarLiteral.of("brick%"))),
-                      CqlPredicate.of(Like.of("material", ScalarLiteral.of("%brick")))))));
+  public static final Cql2Expression EXAMPLE_8_OLD =
+      And.of(
+          EXAMPLE_6_OLD,
+          Or.of(
+              EXAMPLE_1_OLD,
+              Like.of("material", ScalarLiteral.of("brick%")),
+              Like.of("material", ScalarLiteral.of("%brick"))));
 
   public static final Cql2Expression EXAMPLE_9 =
       Or.of(And.of(EXAMPLE_1, Eq.of("material", ScalarLiteral.of("brick"))), EXAMPLE_6);
-  public static final CqlFilter EXAMPLE_9_OLD =
-      CqlFilter.of(
-          Or.of(
-              CqlPredicate.of(
-                  And.of(
-                      EXAMPLE_1_OLD,
-                      CqlPredicate.of(Eq.of("material", ScalarLiteral.of("brick"))))),
-              EXAMPLE_6_OLD));
+  public static final Cql2Expression EXAMPLE_9_OLD =
+      Or.of(And.of(EXAMPLE_1_OLD, Eq.of("material", ScalarLiteral.of("brick"))), EXAMPLE_6_OLD);
 
   public static final Cql2Expression EXAMPLE_10 =
       Or.of(Not.of(Lt.of("floors", ScalarLiteral.of(5))), EXAMPLE_6);
-  public static final CqlFilter EXAMPLE_10_OLD =
-      CqlFilter.of(
-          Or.of(
-              CqlPredicate.of(/*Not.of(*/ Lt.of("floors", ScalarLiteral.of(5)) /*)*/),
-              EXAMPLE_6_OLD));
+  public static final Cql2Expression EXAMPLE_10_OLD =
+      Or.of(/*Not.of(*/ Lt.of("floors", ScalarLiteral.of(5)) /*)*/, EXAMPLE_6_OLD);
 
   public static final Cql2Expression EXAMPLE_11 =
       And.of(
@@ -134,14 +120,12 @@ public class CqlFilterExamples {
               Like.of("owner", ScalarLiteral.of("mike%")),
               Like.of("owner", ScalarLiteral.of("Mike%"))),
           Lt.of("floors", ScalarLiteral.of(4)));
-  public static final CqlFilter EXAMPLE_11_OLD =
-      CqlFilter.of(
-          And.of(
-              CqlPredicate.of(
-                  Or.of(
-                      CqlPredicate.of(Like.of("owner", ScalarLiteral.of("mike%"))),
-                      CqlPredicate.of(Like.of("owner", ScalarLiteral.of("Mike%"))))),
-              CqlPredicate.of(Lt.of("floors", ScalarLiteral.of(4)))));
+  public static final Cql2Expression EXAMPLE_11_OLD =
+      And.of(
+          Or.of(
+              Like.of("owner", ScalarLiteral.of("mike%")),
+              Like.of("owner", ScalarLiteral.of("Mike%"))),
+          Lt.of("floors", ScalarLiteral.of(4)));
 
   public static final Cql2Expression EXAMPLE_12 =
       TBefore.of(Property.of("built"), TemporalLiteral.of("2012-06-05T00:00:00Z"));
@@ -286,19 +270,17 @@ public class CqlFilterExamples {
           Property.of("location"),
           SpatialLiteral.of(Geometry.Envelope.of(-10.0, -10.0, 10.0, 10.0, OgcCrs.CRS84)));
 
-  public static final CqlFilter EXAMPLE_16_OLD =
-      CqlFilter.of(
-          SpatialOperation.of(
-              SpatialOperator.S_INTERSECTS,
-              "location",
-              SpatialLiteral.of(
-                  Geometry.Polygon.of(
-                      OgcCrs.CRS84,
-                      ImmutableList.of(
-                          Geometry.Coordinate.of(-10.0, -10.0),
-                          Geometry.Coordinate.of(10.0, -10.0),
-                          Geometry.Coordinate.of(10.0, 10.0),
-                          Geometry.Coordinate.of(-10.0, -10.0))))));
+  public static final Cql2Expression EXAMPLE_16_OLD =
+      SIntersects.of(
+          Property.of("location"),
+          SpatialLiteral.of(
+              Geometry.Polygon.of(
+                  OgcCrs.CRS84,
+                  ImmutableList.of(
+                      Geometry.Coordinate.of(-10.0, -10.0),
+                      Geometry.Coordinate.of(10.0, -10.0),
+                      Geometry.Coordinate.of(10.0, 10.0),
+                      Geometry.Coordinate.of(-10.0, -10.0)))));
 
   public static final Cql2Expression EXAMPLE_17 =
       And.of(
@@ -306,16 +288,12 @@ public class CqlFilterExamples {
           SWithin.of(
               Property.of("geometry"),
               SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0, OgcCrs.CRS84))));
-  public static final CqlFilter EXAMPLE_17_OLD =
-      CqlFilter.of(
-          And.of(
-              EXAMPLE_1_OLD,
-              CqlPredicate.of(
-                  SpatialOperation.of(
-                      SpatialOperator.S_WITHIN,
-                      "geometry",
-                      SpatialLiteral.of(
-                          Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0, OgcCrs.CRS84))))));
+  public static final Cql2Expression EXAMPLE_17_OLD =
+      And.of(
+          EXAMPLE_1_OLD,
+          SWithin.of(
+              Property.of("geometry"),
+              SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0, OgcCrs.CRS84))));
 
   public static final Cql2Expression EXAMPLE_18 =
       Between.of(Property.of("floors"), ScalarLiteral.of(4), ScalarLiteral.of(8));

@@ -1,7 +1,12 @@
 
 maturity = 'MATURE'
+maintenance = 'FULL'
+description = 'Encode and decode JSON features.'
+descriptionDe = 'Enkodieren und dekodieren von JSON-Features.'
 
 dependencies {
+    provided 'de.interactive_instruments:xtraplatform-entities'
+    provided 'de.interactive_instruments:xtraplatform-streams'
     provided project(':xtraplatform-features')
     provided project(':xtraplatform-geometries')
     provided project(':xtraplatform-crs')

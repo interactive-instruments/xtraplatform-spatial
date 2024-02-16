@@ -8,13 +8,15 @@
 package de.ii.xtraplatform.features.sql.infra.db;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.zaxxer.hikari.pool.ProxyConnection;
 import de.ii.xtraplatform.base.domain.LogContext.MARKER;
 import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.app.FeatureSql;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.features.sql.domain.SqlClient;
+import de.ii.xtraplatform.features.sql.domain.SqlDialect;
+import de.ii.xtraplatform.features.sql.domain.SqlDialectGpkg;
+import de.ii.xtraplatform.features.sql.domain.SqlDialectPostGis;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.SqlRow;
 import de.ii.xtraplatform.streams.domain.Reactive;
@@ -29,7 +31,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -57,12 +58,12 @@ public class SqlClientRx implements SqlClient {
   private static final Collator COLLATOR_DEFAULT = Collator.getInstance(Locale.US);
 
   private final Database session;
-  private final Dialect dialect;
+  private final SqlDialect dialect;
   private final Collator collator;
 
   public SqlClientRx(Database session, Dialect dialect) {
     this.session = session;
-    this.dialect = dialect;
+    this.dialect = dialect == Dialect.GPKG ? new SqlDialectGpkg() : new SqlDialectPostGis();
     this.collator = dialect == Dialect.PGIS ? COLLATOR_DEFAULT : null;
   }
 
@@ -188,13 +189,17 @@ public class SqlClientRx implements SqlClient {
 
     String first = toStatementsWithLog.get(0).apply(feature);
 
-    Flowable<Tx<String>> txFlowable =
-        session
-            .update(first)
-            .transacted()
-            .returnGeneratedKeys()
-            .get(resultSet -> mapper.apply(resultSet, null))
-            .filter(tx -> !tx.isComplete());
+    Flowable<? extends Tx<?>> txFlowable =
+        // TODO: workaround for bug in rxjava2-jdbc, TransactedConnection.commit is called too
+        // often, therefore close is never called because counter < 0
+        toStatements.size() == 2
+            ? session.update(first).transacted().tx().filter(tx -> !tx.isComplete())
+            : session
+                .update(first)
+                .transacted()
+                .returnGeneratedKeys()
+                .get(resultSet -> mapper.apply(resultSet, null))
+                .filter(tx -> !tx.isComplete());
 
     for (int j = 1; j < toStatementsWithLog.size(); j++) {
       String next = toStatementsWithLog.get(j).apply(feature);
@@ -204,11 +209,15 @@ public class SqlClientRx implements SqlClient {
               tx ->
                   tx.update(next)
                       .returnGeneratedKeys()
-                      .get(resultSet -> mapper.apply(resultSet, tx.value()))
+                      .get(
+                          resultSet ->
+                              mapper.apply(
+                                  resultSet,
+                                  tx.value() instanceof String ? (String) tx.value() : null))
                       .filter(tx2 -> !tx2.isComplete()));
     }
 
-    Flowable<String> flowable = txFlowable.map(Tx::value);
+    Flowable<String> flowable = txFlowable.map(tx -> (String) tx.value());
 
     return Reactive.Source.publisher(RxJavaBridge.toV3Flowable(flowable));
   }
@@ -267,26 +276,8 @@ public class SqlClientRx implements SqlClient {
   }
 
   @Override
-  public Map<String, String> getDbInfo() {
-    switch (dialect) {
-      case GPKG:
-        return run(
-                "SELECT sqlite_version(),spatialite_version(),CASE CheckSpatialMetaData() WHEN 4 THEN 'GPKG' WHEN 3 THEN 'SPATIALITE' ELSE 'UNSUPPORTED' END;",
-                SqlQueryOptions.withColumnTypes(String.class, String.class, String.class))
-            .join()
-            .stream()
-            .findFirst()
-            .map(
-                sqlRow ->
-                    ImmutableMap.of(
-                        "sqlite_version", (String) sqlRow.getValues().get(0),
-                        "spatialite_version", (String) sqlRow.getValues().get(1),
-                        "spatial_metadata", (String) sqlRow.getValues().get(2)))
-            .orElse(ImmutableMap.of());
-      case PGIS:
-    }
-
-    return ImmutableMap.of();
+  public SqlDialect getSqlDialect() {
+    return dialect;
   }
 
   @Override

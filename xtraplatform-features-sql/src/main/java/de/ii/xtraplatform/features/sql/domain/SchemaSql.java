@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.immutables.value.Value;
 
-@Value.Immutable
+@Value.Immutable(lazyhash = true)
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
 public interface SchemaSql extends SchemaBase<SchemaSql> {
 

@@ -77,7 +77,7 @@ import org.immutables.value.Value;
  */
 @DocFile(
     path = "providers/feature",
-    name = "graphql.md",
+    name = "60-graphql.md",
     tables = {
       @DocTable(
           name = "properties",
@@ -137,7 +137,7 @@ import org.immutables.value.Value;
           },
           columnSet = ColumnSet.JSON_PROPERTIES),
     })
-@Value.Immutable
+@Value.Immutable(prehash = true)
 @BuildableMapEncodingEnabled
 @JsonDeserialize(builder = ImmutableFeatureProviderGraphQlData.Builder.class)
 public interface FeatureProviderGraphQlData

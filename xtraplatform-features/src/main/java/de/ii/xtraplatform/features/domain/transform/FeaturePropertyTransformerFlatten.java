@@ -7,45 +7,171 @@
  */
 package de.ii.xtraplatform.features.domain.transform;
 
+import com.google.common.base.Joiner;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.domain.FeatureTokenType;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
-import de.ii.xtraplatform.features.domain.SchemaBase.Type;
-import java.util.function.BiFunction;
+import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public interface FeaturePropertyTransformerFlatten extends FeaturePropertySchemaTransformer {
+public abstract class FeaturePropertyTransformerFlatten
+    implements FeaturePropertyTokenSliceTransformer, DynamicTargetSchemaTransformer {
 
-  String TYPE = "FLATTEN";
-
-  @Override
-  default String getType() {
-    return TYPE;
-  }
-
-  enum INCLUDE {
+  public enum INCLUDE {
     ALL,
     OBJECTS,
     ARRAYS
   }
 
+  public static final String TYPE = "FLATTEN";
+
+  @Override
+  public String getType() {
+    return TYPE;
+  }
+
   @Value.Default
-  default INCLUDE include() {
+  public INCLUDE include() {
     return INCLUDE.ALL;
   }
 
-  BiFunction<String, String, String> flattenedPathProvider();
+  @Value.Derived
+  public FeatureSchemaFlattener getFlattener() {
+    return new FeatureSchemaFlattener(getParameter());
+  }
 
   @Override
-  default FeatureSchema transform(String currentPropertyPath, FeatureSchema input) {
-    String flattenedPath = flattenedPathProvider().apply(getParameter(), input.getName());
-    return new ImmutableFeatureSchema.Builder()
-        .from(input)
-        .name(flattenedPath)
-        .type(
-            input.getType() == Type.VALUE_ARRAY
-                ? input.getValueType().orElse(Type.STRING)
-                : input.getType())
-        .build();
+  public List<Object> transform(String currentPropertyPath, List<Object> slice) {
+    List<Object> transformed = new ArrayList<>();
+    boolean isValue = false;
+    int contextIndex = 0;
+    boolean isArray = false;
+    boolean isArrayEnd = false;
+    boolean inArray = false;
+    boolean isObject = false;
+    boolean isObjectEnd = false;
+    boolean inGeometry = false;
+    Map<List<String>, Integer> arrays = new HashMap<>();
+    List<String> arrayPath = null;
+    List<String> currentPath = null;
+
+    for (Object token : slice) {
+      if (token instanceof FeatureTokenType) {
+        isValue = Objects.equals(token, FeatureTokenType.VALUE);
+        contextIndex = 0;
+        isArray = Objects.equals(token, FeatureTokenType.ARRAY);
+        isArrayEnd = Objects.equals(token, FeatureTokenType.ARRAY_END);
+        isObject = Objects.equals(token, FeatureTokenType.OBJECT);
+        isObjectEnd = Objects.equals(token, FeatureTokenType.OBJECT_END);
+      }
+
+      if (isObject && contextIndex == 2 && token instanceof SimpleFeatureGeometry) {
+        inGeometry = true;
+        transformed.add(FeatureTokenType.OBJECT);
+        transformed.add(currentPath);
+      }
+
+      if (contextIndex == 1 && token instanceof List) {
+        currentPath = (List<String>) token;
+
+        if (inGeometry && isObjectEnd) {
+          transformed.add(currentPath);
+          inGeometry = false;
+        }
+
+        if (isArray) {
+          arrayPath = currentPath;
+          arrays.put(arrayPath, 0);
+          inArray = true;
+        } else if (isArrayEnd) {
+          arrayPath = null;
+          inArray = false;
+        }
+
+        if (inArray && (isObject || isValue) && currentPath.size() == arrayPath.size()) {
+          arrays.computeIfPresent(arrayPath, (ignore, index) -> index + 1);
+        }
+
+        if (isValue && inArray) {
+          List<String> newPath = new ArrayList<>(arrayPath);
+          newPath.set(
+              newPath.size() - 1,
+              newPath.get(newPath.size() - 1) + "[" + arrays.get(arrayPath) + "]");
+          if (currentPath.size() > arrayPath.size()) {
+            newPath.add(currentPath.get(currentPath.size() - 1));
+          }
+          currentPath = newPath;
+        }
+      }
+
+      if (isValue || inGeometry) {
+        if (!inGeometry && contextIndex == 1 && token instanceof List) {
+          transformed.add(currentPath);
+        } else {
+          transformed.add(token);
+        }
+      }
+
+      contextIndex++;
+    }
+
+    return transformed;
+  }
+
+  @Override
+  public FeatureSchema transformSchema(FeatureSchema schema) {
+    if (!schema.isFeature()) {
+      return schema;
+    }
+
+    return schema.accept(getFlattener());
+  }
+
+  @Override
+  public void transformObject(
+      String currentPropertyPath,
+      List<Object> slice,
+      List<String> rootPath,
+      int start,
+      int end,
+      List<Object> result) {}
+
+  @Override
+  public boolean isApplicableDynamic(List<String> path) {
+    return path.stream().anyMatch(elem -> elem.matches(".*\\[[0-9]+\\]$"));
+  }
+
+  @Override
+  public List<String> transformPathDynamic(List<String> path) {
+    return path.stream()
+        .map(
+            elem -> {
+              if (elem.endsWith("]")) {
+                return elem.substring(0, elem.indexOf("[")) + "[]";
+              }
+              return elem;
+            })
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public List<FeatureSchema> transformSchemaDynamic(
+      List<FeatureSchema> schemas, List<String> path) {
+    String name =
+        Joiner.on(getParameter())
+            .join(path)
+            .replaceAll("\\[", getParameter())
+            .replaceAll("\\]", "");
+
+    return schemas.stream()
+        .map(schema -> new ImmutableFeatureSchema.Builder().from(schema).name(name).build())
+        .collect(Collectors.toList());
   }
 }

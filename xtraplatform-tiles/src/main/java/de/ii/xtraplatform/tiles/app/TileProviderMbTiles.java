@@ -12,7 +12,7 @@ import com.google.common.collect.Range;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.base.domain.util.Tuple;
-import de.ii.xtraplatform.blobs.domain.BlobStore;
+import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.entities.domain.Entity;
@@ -63,7 +63,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
     implements TileProvider {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileProviderMbTiles.class);
-  private final BlobStore tilesStore;
+  private final ResourceStore tilesStore;
   private final TileMatrixSetRepository tileMatrixSetRepository;
   private final Map<String, TilesetMetadata> metadata;
   private final Map<String, Map<String, Range<Integer>>> tmsRanges;
@@ -71,7 +71,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
 
   @AssistedInject
   public TileProviderMbTiles(
-      BlobStore blobStore,
+      ResourceStore blobStore,
       TileMatrixSetRepository tileMatrixSetRepository,
       @Assisted TileProviderMbtilesData data) {
     super(data);
