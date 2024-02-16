@@ -25,4 +25,15 @@ public interface TilesetMbTilesDefaults extends TilesetCommonDefaults {
   @DocIgnore
   @Override
   BuildableMap<MinMax, Builder> getLevels();
+
+  /**
+   * @langEn Tile Matrix Set of the tiles in the MBTiles file.
+   * @langDe Kachelschema der Kacheln in der MBTiles-Datei.
+   * @default WebMercatorQuad
+   * @since v4.0
+   */
+  @Value.Default
+  default String getTileMatrixSet() {
+    return "WebMercatorQuad";
+  }
 }

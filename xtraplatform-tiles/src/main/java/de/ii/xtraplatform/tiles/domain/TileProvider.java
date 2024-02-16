@@ -50,6 +50,10 @@ public interface TileProvider extends PersistentEntity {
     return (TileSeeding) this;
   }
 
+  default boolean tilesMayBeUnavailable() {
+    return false;
+  }
+
   default Optional<TileResult> validate(TileQuery tile) {
     Optional<TilesetMetadata> metadata = metadata(tile.getTileset());
 
