@@ -34,6 +34,7 @@ import de.ii.xtraplatform.tiles.domain.TileProviderMbtilesData;
 import de.ii.xtraplatform.tiles.domain.TileQuery;
 import de.ii.xtraplatform.tiles.domain.TileResult;
 import de.ii.xtraplatform.tiles.domain.TileStoreReadOnly;
+import de.ii.xtraplatform.tiles.domain.TilesetMbTiles;
 import de.ii.xtraplatform.tiles.domain.TilesetMetadata;
 import de.ii.xtraplatform.tiles.domain.VectorLayer;
 import de.ii.xtraplatform.tiles.domain.WithCenter;
@@ -89,7 +90,10 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
         getData().getTilesets().entrySet().stream()
             .map(
                 entry -> {
-                  Path source = Path.of(entry.getValue().getSource());
+                  TilesetMbTiles tileset =
+                      entry.getValue().mergeDefaults(getData().getTilesetDefaults());
+
+                  Path source = Path.of(tileset.getSource());
 
                   if (!source.isAbsolute()) {
                     if (source.startsWith("api-resources/tiles")) {
@@ -108,7 +112,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
                     source = localPath.get();
                   }
 
-                  String tms = entry.getValue().getTileMatrixSet();
+                  String tms = tileset.getTileMatrixSet();
 
                   return new SimpleImmutableEntry<>(toTilesetKey(entry.getKey(), tms), source);
                 })

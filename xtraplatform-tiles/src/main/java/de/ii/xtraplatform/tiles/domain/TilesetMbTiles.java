@@ -10,18 +10,21 @@ package de.ii.xtraplatform.tiles.domain;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.base.Preconditions;
 import de.ii.xtraplatform.docs.DocIgnore;
+import de.ii.xtraplatform.entities.domain.maptobuilder.Buildable;
+import de.ii.xtraplatform.entities.domain.maptobuilder.BuildableBuilder;
 import de.ii.xtraplatform.entities.domain.maptobuilder.BuildableMap;
-import de.ii.xtraplatform.tiles.domain.ImmutableMinMax.Builder;
+import java.util.Objects;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableTilesetMbTiles.Builder.class)
-public interface TilesetMbTiles extends TilesetCommon {
+public interface TilesetMbTiles extends TilesetCommon, Buildable<TilesetMbTiles> {
 
   @DocIgnore
   @Override
-  BuildableMap<MinMax, Builder> getLevels();
+  BuildableMap<MinMax, ImmutableMinMax.Builder> getLevels();
 
   @DocIgnore
   @Override
@@ -39,12 +42,10 @@ public interface TilesetMbTiles extends TilesetCommon {
    * @langEn Tile Matrix Set of the tiles in the MBTiles file.
    * @langDe Kachelschema der Kacheln in der MBTiles-Datei.
    * @default WebMercatorQuad
-   * @since v3.6
+   * @since v4.0
    */
-  @Value.Default
-  default String getTileMatrixSet() {
-    return "WebMercatorQuad";
-  }
+  @Nullable
+  String getTileMatrixSet();
 
   @Value.Check
   default void checkSingleTileMatrixSet() {
@@ -52,5 +53,29 @@ public interface TilesetMbTiles extends TilesetCommon {
         getLevels().size() <= 1,
         "There must be no more than one tile matrix set associated with an MBTiles file. Found: %s.",
         getLevels().size());
+  }
+
+  @Override
+  default ImmutableTilesetMbTiles.Builder getBuilder() {
+    return new ImmutableTilesetMbTiles.Builder().from(this);
+  }
+
+  abstract class Builder implements BuildableBuilder<TilesetMbTiles> {}
+
+  default TilesetMbTiles mergeDefaults(TilesetMbTilesDefaults defaults) {
+    ImmutableTilesetMbTiles.Builder withDefaults = getBuilder();
+
+    if (this.getLevels().isEmpty()) {
+      withDefaults.levels(defaults.getLevels());
+    }
+    if (this.getCenter().isEmpty() && defaults.getCenter().isPresent()) {
+      withDefaults.center(defaults.getCenter());
+    }
+
+    if (Objects.isNull(this.getTileMatrixSet())) {
+      withDefaults.tileMatrixSet(defaults.getTileMatrixSet());
+    }
+
+    return withDefaults.build();
   }
 }
