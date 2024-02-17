@@ -35,4 +35,8 @@ public enum SimpleFeatureGeometry {
   public boolean isValid() {
     return this != NONE;
   }
+
+  public boolean isSpecific() {
+    return isValid() && this != ANY && this != GEOMETRY_COLLECTION;
+  }
 }
