@@ -226,12 +226,19 @@ public interface ObjectSql {
 
   default Map.Entry<String, String> toWkt(
       PropertySql propertySql, Optional<CrsTransformer> crsTransformer, EpsgCrs nativeCrs) {
-    // TODO: error if not set
     SimpleFeatureGeometry geometryType =
         propertySql
-            .getSchema()
-            .flatMap(SchemaSql::getGeometryType)
-            .orElse(SimpleFeatureGeometry.POINT);
+            .getGeometryType()
+            .or(
+                () ->
+                    propertySql
+                        .getSchema()
+                        .flatMap(SchemaSql::getGeometryType)
+                        .filter(SimpleFeatureGeometry::isSpecific))
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "Cannot encode geometry as WKT, no specific geometry type found."));
     SimpleFeatureGeometryFromToWkt wktType =
         SimpleFeatureGeometryFromToWkt.fromSimpleFeatureGeometry(geometryType);
     Integer dimension = 2;
