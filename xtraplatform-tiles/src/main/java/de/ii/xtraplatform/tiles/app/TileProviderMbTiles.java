@@ -34,6 +34,7 @@ import de.ii.xtraplatform.tiles.domain.TileProviderMbtilesData;
 import de.ii.xtraplatform.tiles.domain.TileQuery;
 import de.ii.xtraplatform.tiles.domain.TileResult;
 import de.ii.xtraplatform.tiles.domain.TileStoreReadOnly;
+import de.ii.xtraplatform.tiles.domain.TilesetMbTiles;
 import de.ii.xtraplatform.tiles.domain.TilesetMetadata;
 import de.ii.xtraplatform.tiles.domain.VectorLayer;
 import de.ii.xtraplatform.tiles.domain.WithCenter;
@@ -46,7 +47,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,7 +90,10 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
         getData().getTilesets().entrySet().stream()
             .map(
                 entry -> {
-                  Path source = Path.of(entry.getValue().getSource());
+                  TilesetMbTiles tileset =
+                      entry.getValue().mergeDefaults(getData().getTilesetDefaults());
+
+                  Path source = Path.of(tileset.getSource());
 
                   if (!source.isAbsolute()) {
                     if (source.startsWith("api-resources/tiles")) {
@@ -109,11 +112,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
                     source = localPath.get();
                   }
 
-                  Set<String> tmsSet = entry.getValue().getLevels().keySet();
-                  if (tmsSet.isEmpty()) {
-                    tmsSet = getData().getTilesetDefaults().getLevels().keySet();
-                  }
-                  String tms = tmsSet.isEmpty() ? "WebMercatorQuad" : tmsSet.iterator().next();
+                  String tms = tileset.getTileMatrixSet();
 
                   return new SimpleImmutableEntry<>(toTilesetKey(entry.getKey(), tms), source);
                 })
@@ -158,6 +157,11 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
   @Override
   public boolean supportsGeneration() {
     return false;
+  }
+
+  @Override
+  public boolean tilesMayBeUnavailable() {
+    return true;
   }
 
   @Override
