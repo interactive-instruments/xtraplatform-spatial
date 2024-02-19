@@ -210,11 +210,13 @@ public class TileStoreMbTiles implements TileStore {
     MbtilesTileset tileset = tileSets.get(key(tile));
     boolean written = false;
     int count = 0;
+    String reason = null;
     while (!written && count++ < 3) {
       try {
         tileset.writeTile(tile, content.readAllBytes());
         written = true;
       } catch (SQLException e) {
+        reason = e.getMessage();
         if (LOGGER.isTraceEnabled()) {
           LOGGER.trace(
               "Failed to write tile {}/{}/{}/{} for tileset '{}'. Reason: {}. Trying again...",
@@ -223,7 +225,7 @@ public class TileStoreMbTiles implements TileStore {
               tile.getRow(),
               tile.getCol(),
               tile.getTileset(),
-              e.getMessage());
+              reason);
         }
         try {
           Thread.sleep(100);
@@ -236,12 +238,13 @@ public class TileStoreMbTiles implements TileStore {
     if (!written) {
       if (LOGGER.isWarnEnabled()) {
         LOGGER.warn(
-            "Failed to write tile {}/{}/{}/{} for tileset '{}'.",
+            "Failed to write tile {}/{}/{}/{} for tileset '{}'. Reason: {}.",
             tile.getTileMatrixSet().getId(),
             tile.getLevel(),
             tile.getRow(),
             tile.getCol(),
-            tile.getTileset());
+            tile.getTileset(),
+            reason);
       }
     }
   }
