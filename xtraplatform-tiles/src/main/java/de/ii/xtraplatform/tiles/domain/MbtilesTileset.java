@@ -89,7 +89,7 @@ public class MbtilesTileset {
     try {
       // change settings to reduce overheads at the cost of protection against corrupt databases
       // in case of an error
-      SqlHelper.execute(connection, "PRAGMA journal_mode=MEMORY");
+      SqlHelper.execute(connection, "PRAGMA journal_mode=WAL");
       SqlHelper.execute(connection, "PRAGMA temp_store=MEMORY");
       SqlHelper.execute(connection, "PRAGMA locking_mode=EXCLUSIVE");
       SqlHelper.execute(connection, "PRAGMA synchronous=OFF");
@@ -239,9 +239,9 @@ public class MbtilesTileset {
 
   public MbtilesMetadata getMetadata() throws SQLException, IOException {
     ImmutableMbtilesMetadata.Builder builder = ImmutableMbtilesMetadata.builder();
-    Connection connection = getConnection(true, true);
     String sql = "SELECT name, value FROM metadata";
-    try (Statement statement = connection.createStatement();
+    try (Connection connection = getConnection(true, true);
+        Statement statement = connection.createStatement();
         ResultSet rs = statement.executeQuery(sql)) {
       while (rs.next()) {
         final String name = rs.getString("name");
@@ -357,8 +357,6 @@ public class MbtilesTileset {
           }
         }
       }
-    } finally {
-      releaseConnection(connection);
     }
 
     return builder.build();
@@ -370,12 +368,12 @@ public class MbtilesTileset {
     int row = tile.getTileMatrixSet().getTmsRow(level, tile.getRow());
     int col = tile.getCol();
     boolean gzip = Objects.equals(tile.getMediaType(), FeatureEncoderMVT.FORMAT);
-    Connection connection = getConnection(true, true);
     String sql =
         String.format(
             "SELECT tile_data FROM tiles WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
             level, row, col);
-    try (Statement statement = connection.createStatement();
+    try (Connection connection = getConnection(true, true);
+        Statement statement = connection.createStatement();
         ResultSet rs = statement.executeQuery(sql)) {
       if (rs.next()) {
         result =
@@ -384,20 +382,12 @@ public class MbtilesTileset {
                     ? new GZIPInputStream(rs.getBinaryStream("tile_data"))
                     : rs.getBinaryStream("tile_data"));
       }
-    } catch (SQLException e) {
-      throw new IllegalStateException(
-          String.format(
-              "Could not fetch tile %d/%d/%d. Query execution failed: %s", level, row, col, sql),
-          e);
-    } finally {
-      releaseConnection(connection);
     }
     return result;
   }
 
   public Optional<Boolean> tileIsEmpty(TileCoordinates tile) throws SQLException, IOException {
     Optional<Boolean> result = Optional.empty();
-    Connection connection = getConnection(true, true);
     int level = tile.getLevel();
     int row = tile.getTileMatrixSet().getTmsRow(level, tile.getRow());
     int col = tile.getCol();
@@ -405,13 +395,12 @@ public class MbtilesTileset {
         String.format(
             "SELECT tile_id FROM tile_map WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
             level, row, col);
-    try (Statement statement = connection.createStatement();
+    try (Connection connection = getConnection(true, true);
+        Statement statement = connection.createStatement();
         ResultSet rs = statement.executeQuery(sql)) {
       if (rs.next()) {
         result = Optional.of(rs.getInt("tile_id") == EMPTY_TILE_ID);
       }
-    } finally {
-      releaseConnection(connection);
     }
     return result;
   }
@@ -422,13 +411,12 @@ public class MbtilesTileset {
   }
 
   public void walk(Walker walker) throws SQLException, IOException {
-    Connection connection = getConnection(true, false);
     // we need to close this result set, before we start to walk;
     // first determine the number of tiles to process and store the tile coordinates in an array
     String sql = "SELECT COUNT(zoom_level) FROM tile_map";
     int[][] tiles = new int[0][3];
     int numTiles = 0;
-    try {
+    try (Connection connection = getConnection(true, false)) {
       try (Statement statement = connection.createStatement();
           ResultSet rs = statement.executeQuery(sql)) {
         if (rs.next()) {
@@ -454,8 +442,6 @@ public class MbtilesTileset {
         LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
       }
       throw e;
-    } finally {
-      releaseConnection(connection);
     }
 
     // the connection is closed, we can start to walk
@@ -473,13 +459,13 @@ public class MbtilesTileset {
   }
 
   public boolean tileExists(int level, int row, int col) throws SQLException, IOException {
-    Connection connection = getConnection(true, true);
     String sql =
         String.format(
             "SELECT tile_data FROM tiles WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
             level, row, col);
     boolean exists;
-    try (Statement statement = connection.createStatement();
+    try (Connection connection = getConnection(true, true);
+        Statement statement = connection.createStatement();
         ResultSet rs = statement.executeQuery(sql)) {
       exists = rs.next();
     } catch (SQLException e) {
@@ -492,28 +478,17 @@ public class MbtilesTileset {
             sql);
       }
       throw e;
-    } finally {
-      releaseConnection(connection);
     }
     return exists;
   }
 
   public boolean hasAnyTiles() throws SQLException, IOException {
-    Connection connection = getConnection(true, true);
     String sql = "SELECT COUNT(*) FROM tile_blobs";
-    long count = 0;
-    try (Statement statement = connection.createStatement();
+    long count;
+    try (Connection connection = getConnection(true, true);
+        Statement statement = connection.createStatement();
         ResultSet rs = statement.executeQuery(sql)) {
       count = rs.getLong(1);
-    } catch (SQLException e) {
-      if (LOGGER.isErrorEnabled()) {
-        LOGGER.error(
-            "Could not determine existence of tiles. Proceeding with the assumption that no tiles exist. Query: {}.",
-            sql);
-      }
-      throw e;
-    } finally {
-      releaseConnection(connection);
     }
     return count > 1;
   }
