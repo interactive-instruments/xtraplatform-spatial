@@ -92,7 +92,7 @@ public class MbtilesTileset {
       SqlHelper.execute(connection, "PRAGMA journal_mode=WAL");
       SqlHelper.execute(connection, "PRAGMA temp_store=MEMORY");
       SqlHelper.execute(connection, "PRAGMA locking_mode=EXCLUSIVE");
-      SqlHelper.execute(connection, "PRAGMA synchronous=OFF");
+      SqlHelper.execute(connection, "PRAGMA synchronous=NORMAL");
       // create tables and views
       SqlHelper.execute(connection, "BEGIN TRANSACTION IMMEDIATE");
       SqlHelper.execute(connection, "CREATE TABLE metadata (name text, value text)");
