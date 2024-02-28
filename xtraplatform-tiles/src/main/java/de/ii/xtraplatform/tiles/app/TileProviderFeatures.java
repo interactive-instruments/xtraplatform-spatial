@@ -13,6 +13,7 @@ import com.google.common.collect.Range;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.base.domain.AppContext;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
@@ -98,11 +99,19 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
       Cql cql,
       ResourceStore blobStore,
       TileWalker tileWalker,
+      VolatileRegistry volatileRegistry,
       @Assisted TileProviderFeaturesData data) {
-    super(data);
+    super(volatileRegistry, data, "access", "generation", "seeding");
 
     this.tileGenerator =
-        new TileGeneratorFeatures(data, crsInfo, crsTransformerFactory, entityRegistry, cql);
+        new TileGeneratorFeatures(
+            data,
+            crsInfo,
+            crsTransformerFactory,
+            entityRegistry,
+            cql,
+            volatileRegistry,
+            appContext.getConfiguration().getModules().getStartup());
     this.tileStores =
         new ConcurrentHashMap<>(
             Map.of(
@@ -269,6 +278,10 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
 
   @Override
   protected boolean onStartup() throws InterruptedException {
+    onVolatileStart();
+
+    addSubcomponent(tilesStore, "access", "generation", "seeding");
+    addSubcomponent(tileGenerator, "generation", "seeding");
 
     loadMetadata();
 
@@ -329,11 +342,6 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   @Override
   public TileGenerator generator() {
     return tileGenerator;
-  }
-
-  @Override
-  public String getType() {
-    return TileProviderFeaturesData.PROVIDER_TYPE;
   }
 
   @Override

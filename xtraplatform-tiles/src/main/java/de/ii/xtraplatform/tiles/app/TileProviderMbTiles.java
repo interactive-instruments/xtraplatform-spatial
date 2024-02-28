@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Range;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.base.domain.util.Tuple;
 import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
@@ -74,8 +75,9 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
   public TileProviderMbTiles(
       ResourceStore blobStore,
       TileMatrixSetRepository tileMatrixSetRepository,
+      VolatileRegistry volatileRegistry,
       @Assisted TileProviderMbtilesData data) {
-    super(data);
+    super(volatileRegistry, data);
 
     this.tilesStore = blobStore.with(TileProviderFeatures.TILES_DIR_NAME);
     this.tileMatrixSetRepository = tileMatrixSetRepository;
@@ -85,6 +87,8 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
 
   @Override
   protected boolean onStartup() throws InterruptedException {
+    onVolatileStart();
+
     // we know there is exactly one tileset and one tile matrix set
     Map<String, Path> tilesetSources =
         getData().getTilesets().entrySet().stream()
@@ -162,11 +166,6 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
   @Override
   public boolean tilesMayBeUnavailable() {
     return true;
-  }
-
-  @Override
-  public String getType() {
-    return TileProviderMbtilesData.PROVIDER_TYPE;
   }
 
   private void loadMetadata(Map<String, Path> tilesetSources) {

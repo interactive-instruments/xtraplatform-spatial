@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableMap;
 import dagger.assisted.AssistedFactory;
 import de.ii.xtraplatform.base.domain.AppContext;
 import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
@@ -59,6 +60,7 @@ public class TileProviderFeaturesFactory
       Cql cql,
       ResourceStore blobStore,
       TileWalker tileWalker,
+      VolatileRegistry volatileRegistry,
       TileProviderFeaturesFactoryAssisted factoryAssisted) {
     super(factoryAssisted);
     this.entityRegistry = entityRegistry;

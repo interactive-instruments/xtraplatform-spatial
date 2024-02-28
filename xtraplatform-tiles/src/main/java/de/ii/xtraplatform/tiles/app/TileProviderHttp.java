@@ -10,6 +10,7 @@ package de.ii.xtraplatform.tiles.app;
 import com.google.common.collect.Range;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.entities.domain.Entity;
 import de.ii.xtraplatform.entities.domain.Entity.SubType;
 import de.ii.xtraplatform.features.domain.ProviderData;
@@ -50,8 +51,8 @@ public class TileProviderHttp extends AbstractTileProvider<TileProviderHttpData>
   private final Map<String, TilesetMetadata> metadata;
 
   @AssistedInject
-  public TileProviderHttp(@Assisted TileProviderHttpData data) {
-    super(data);
+  public TileProviderHttp(VolatileRegistry volatileRegistry, @Assisted TileProviderHttpData data) {
+    super(volatileRegistry, data);
     this.metadata = new LinkedHashMap<>();
 
     Map<String, String> tilesetSources =
@@ -104,11 +105,6 @@ public class TileProviderHttp extends AbstractTileProvider<TileProviderHttpData>
   @Override
   public boolean supportsGeneration() {
     return false;
-  }
-
-  @Override
-  public String getType() {
-    return TileProviderHttpData.PROVIDER_TYPE;
   }
 
   private void loadMetadata() {

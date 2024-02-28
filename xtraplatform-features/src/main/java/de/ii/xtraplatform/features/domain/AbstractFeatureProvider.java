@@ -12,6 +12,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.base.domain.resiliency.DelayedVolatile;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.entities.domain.AbstractPersistentEntity;
@@ -69,8 +71,9 @@ public abstract class AbstractFeatureProvider<
   private final Values<Codelist> codelistStore;
   private final FeatureChangeHandler changeHandler;
   private final ScheduledExecutorService delayedDisposer;
+  private final VolatileRegistry volatileRegistry;
   private Reactive.Runner streamRunner;
-  private FeatureProviderConnector<T, U, V> connector;
+  private final DelayedVolatile<FeatureProviderConnector<T, U, V>> connector;
   private boolean datasetChanged;
   private String previousDataset;
 
@@ -80,14 +83,21 @@ public abstract class AbstractFeatureProvider<
       CrsTransformerFactory crsTransformerFactory,
       ProviderExtensionRegistry extensionRegistry,
       Values<Codelist> codelistStore,
-      FeatureProviderDataV2 data) {
-    super(data);
+      FeatureProviderDataV2 data,
+      VolatileRegistry volatileRegistry) {
+    super(data, volatileRegistry, FeatureQueries.KEY);
     this.connectorFactory = connectorFactory;
     this.reactive = reactive;
     this.crsTransformerFactory = crsTransformerFactory;
     this.extensionRegistry = extensionRegistry;
     this.codelistStore = codelistStore;
+    this.volatileRegistry = volatileRegistry;
     this.changeHandler = new FeatureChangeHandlerImpl();
+    this.connector =
+        new DelayedVolatile<>(
+            volatileRegistry,
+            String.format("connector.%s", data.getProviderSubType()),
+            FeatureQueries.KEY);
     this.delayedDisposer =
         MoreExecutors.getExitingScheduledExecutorService(
             (ScheduledThreadPoolExecutor)
@@ -97,13 +107,17 @@ public abstract class AbstractFeatureProvider<
 
   @Override
   protected boolean onStartup() throws InterruptedException {
+    // TODO
+    onVolatileStart();
+    addSubcomponent(connector);
+
     this.datasetChanged =
-        Objects.nonNull(connector) && !connector.isSameDataset(getConnectionInfo());
+        connector.isPresent() && !connector.get().isSameDataset(getConnectionInfo());
     this.previousDataset =
-        Optional.ofNullable(connector)
+        Optional.ofNullable(connector.get())
             .map(FeatureProviderConnector::getDatasetIdentifier)
             .orElse("");
-    boolean previousAlive = softClosePrevious(streamRunner, connector);
+    boolean previousAlive = softClosePrevious(streamRunner, connector.get());
     boolean isShared = getConnectionInfo().isShared();
     String connectorId = getConnectorId(previousAlive, isShared);
 
@@ -112,13 +126,16 @@ public abstract class AbstractFeatureProvider<
             getData().getId(),
             getRunnerCapacity(getConnectionInfo()),
             getRunnerQueueSize(getConnectionInfo()));
-    this.connector =
+
+    FeatureProviderConnector<T, U, V> connector1 =
         (FeatureProviderConnector<T, U, V>)
             connectorFactory.createConnector(
                 getData().getProviderSubType(), connectorId, getConnectionInfo());
+    this.connector.set(connector1);
 
+    // TODO: ignore when startupMode=ASYNC
     if (!getConnector().isConnected()) {
-      connectorFactory.disposeConnector(connector);
+      connectorFactory.disposeConnector(connector1);
 
       Optional<Throwable> connectionError = getConnector().getConnectionError();
       String message = connectionError.map(Throwable::getMessage).orElse("unknown reason");
@@ -126,11 +143,12 @@ public abstract class AbstractFeatureProvider<
       if (connectionError.isPresent() && LOGGER.isDebugEnabled()) {
         LOGGER.debug("Stacktrace:", connectionError.get());
       }
+      // TODO: volatile defective
       return false;
     }
 
     if (isShared) {
-      connectorFactory.onDispose(connector, LogContext.withMdc(this::onSharedConnectorDispose));
+      connectorFactory.onDispose(connector1, LogContext.withMdc(this::onSharedConnectorDispose));
     }
 
     Optional<String> runnerError = getRunnerError(getConnectionInfo());
@@ -138,9 +156,11 @@ public abstract class AbstractFeatureProvider<
     if (runnerError.isPresent()) {
       LOGGER.error(
           "Feature provider with id '{}' could not be started: {}", getId(), runnerError.get());
+      // TODO: volatile defective
       return false;
     }
 
+    // TODO: validation does not make sense when startupMode=ASYNC, move to editor/CLI
     if (getTypeInfoValidator().isPresent() && getData().getTypeValidation() != MODE.NONE) {
       final boolean isSuccess = validate();
 
@@ -150,6 +170,7 @@ public abstract class AbstractFeatureProvider<
             getId(),
             getData().getTypeValidation().name().toLowerCase(),
             "validation failed");
+        // TODO: volatile defective
         return false;
       }
     }
@@ -172,8 +193,11 @@ public abstract class AbstractFeatureProvider<
             extension -> {
               if (extension.isSupported(getConnector())) {
                 extension.on(LIFECYCLE_HOOK.STARTED, this, getConnector());
+                // TODO: addSubcomponent
               }
             });
+
+    super.onStarted();
   }
 
   @Override
@@ -198,7 +222,9 @@ public abstract class AbstractFeatureProvider<
 
   @Override
   protected void onStopped() {
-    connectorFactory.disposeConnector(connector);
+    if (connector.isPresent()) {
+      connectorFactory.disposeConnector(connector.get());
+    }
     LOGGER.info("Feature provider with id '{}' stopped.", getId());
   }
 
@@ -231,7 +257,7 @@ public abstract class AbstractFeatureProvider<
 
   private void onSharedConnectorDispose() {
     if (((WithConnectionInfo<?>) getData()).getConnectionInfo().isShared()
-        && getState() != STATE.RELOADING) {
+        && getEntityState() != STATE.RELOADING) {
       LOGGER.debug("Shared connector has changed, reloading.");
       doReload();
     }
@@ -240,11 +266,12 @@ public abstract class AbstractFeatureProvider<
   private String getConnectorId(boolean previousAlive, boolean isShared) {
     Optional<Integer> previousIteration =
         previousAlive
-            ? connector.getProviderId().contains(".")
+            ? connector.get().getProviderId().contains(".")
                 ? Optional.of(
                         connector
+                            .get()
                             .getProviderId()
-                            .substring(connector.getProviderId().lastIndexOf('.') + 1))
+                            .substring(connector.get().getProviderId().lastIndexOf('.') + 1))
                     .flatMap(
                         i -> {
                           try {
@@ -327,7 +354,7 @@ public abstract class AbstractFeatureProvider<
   protected abstract FeatureQueryEncoder<U, V> getQueryEncoder();
 
   protected FeatureProviderConnector<T, U, V> getConnector() {
-    return Objects.requireNonNull(connector);
+    return Objects.requireNonNull(connector.get());
   }
 
   protected Reactive.Runner getStreamRunner() {
@@ -365,6 +392,7 @@ public abstract class AbstractFeatureProvider<
     return getQueryEncoder().getCapabilities();
   }
 
+  // TODO: throw exception when connector absent
   @Override
   public FeatureStream getFeatureStream(FeatureQuery query) {
     validateQuery(query);
@@ -497,6 +525,7 @@ public abstract class AbstractFeatureProvider<
     return path;
   }
 
+  // TODO: throw exception when connector absent
   protected <W extends ResultBase> CompletionStage<W> runQuery(
       BiFunction<FeatureTokenSource, Map<String, String>, Stream<W>> stream,
       Query query,

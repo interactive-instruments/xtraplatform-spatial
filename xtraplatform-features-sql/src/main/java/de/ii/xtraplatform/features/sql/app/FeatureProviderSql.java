@@ -15,6 +15,7 @@ import com.google.common.collect.ImmutableMap;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
@@ -163,6 +164,7 @@ public class FeatureProviderSql
       ValueStore valueStore,
       ProviderExtensionRegistry extensionRegistry,
       DecoderFactories decoderFactories,
+      VolatileRegistry volatileRegistry,
       @Assisted FeatureProviderDataV2 data) {
     super(
         connectorFactory,
@@ -170,7 +172,8 @@ public class FeatureProviderSql
         crsTransformerFactory,
         extensionRegistry,
         valueStore.forType(Codelist.class),
-        data);
+        data,
+        volatileRegistry);
 
     this.crsTransformerFactory = crsTransformerFactory;
     this.crsInfo = crsInfo;

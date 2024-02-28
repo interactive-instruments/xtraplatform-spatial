@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableMap;
 import dagger.Lazy;
 import dagger.assisted.AssistedFactory;
 import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
@@ -86,6 +87,7 @@ public class FeatureProviderSqlFactory
       ValueStore valueStore,
       ProviderExtensionRegistry extensionRegistry,
       DecoderFactories decoderFactories,
+      VolatileRegistry volatileRegistry,
       ProviderSqlFactoryAssisted providerSqlFactoryAssisted) {
     super(providerSqlFactoryAssisted);
     this.schemaResolvers = schemaResolvers;

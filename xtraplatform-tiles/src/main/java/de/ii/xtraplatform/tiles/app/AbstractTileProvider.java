@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.tiles.app;
 
 import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.entities.domain.AbstractPersistentEntity;
 import de.ii.xtraplatform.services.domain.AbstractService;
 import de.ii.xtraplatform.tiles.domain.TileProvider;
@@ -21,12 +22,21 @@ public abstract class AbstractTileProvider<T extends TileProviderData>
     extends AbstractPersistentEntity<T> implements TileProvider {
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractService.class);
 
-  public AbstractTileProvider(T data) {
-    super(data);
+  public AbstractTileProvider(VolatileRegistry volatileRegistry, T data, String... capabilities) {
+    super(data, volatileRegistry, capabilities);
+  }
+
+  @Override
+  protected boolean onStartup() throws InterruptedException {
+    onVolatileStart();
+
+    return super.onStartup();
   }
 
   @Override
   protected void onStarted() {
+    onVolatileStarted();
+
     LOGGER.info("Tile provider with id '{}' started successfully.", getId());
   }
 

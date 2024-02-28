@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.sql.infra.db;
 
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.health.HealthCheck;
 import com.codahale.metrics.health.HealthCheckRegistry;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap.Builder;
@@ -16,6 +17,9 @@ import com.zaxxer.hikari.HikariDataSource;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.base.domain.AppContext;
+import de.ii.xtraplatform.base.domain.resiliency.AbstractVolatilePolling;
+import de.ii.xtraplatform.base.domain.resiliency.Volatile2.Polling;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.app.FeatureProviderSql;
@@ -25,6 +29,8 @@ import de.ii.xtraplatform.features.sql.domain.SqlClient;
 import de.ii.xtraplatform.features.sql.domain.SqlConnector;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
@@ -42,7 +48,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author zahnen
  */
-public class SqlConnectorRx implements SqlConnector {
+public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnector, Polling {
 
   public static final String CONNECTOR_TYPE = "SLICK";
   private static final SqlQueryOptions NO_OPTIONS = SqlQueryOptions.withColumnTypes(String.class);
@@ -70,10 +76,12 @@ public class SqlConnectorRx implements SqlConnector {
   public SqlConnectorRx(
       SqlDataSourceFactory sqlDataSourceFactory,
       AppContext appContext,
+      VolatileRegistry volatileRegistry,
       @Assisted MetricRegistry metricRegistry,
       @Assisted HealthCheckRegistry healthCheckRegistry,
       @Assisted String providerId,
       @Assisted ConnectionInfoSql connectionInfo) {
+    super(volatileRegistry);
     this.sqlDataSourceFactory = sqlDataSourceFactory;
     this.connectionInfo = connectionInfo;
     this.poolName = String.format("db.%s", providerId);
@@ -129,6 +137,8 @@ public class SqlConnectorRx implements SqlConnector {
   public void start() {
     try {
       HikariConfig hikariConfig = createHikariConfig();
+      // TODO: if startupMode=ASYNC, start with minimumIdle=0 and initializationFailTimeout=-1, let
+      // polling do the rest
       this.dataSource = new HikariDataSource(hikariConfig);
       this.session = createSession(dataSource);
       this.sqlClient = new SqlClientRx(session, connectionInfo.getDialect());
@@ -293,7 +303,7 @@ public class SqlConnectorRx implements SqlConnector {
     sqlDataSourceFactory.getInitSql(connectionInfo).ifPresent(config::setConnectionInitSql);
 
     config.setMetricRegistry(metricRegistry);
-    config.setHealthCheckRegistry(healthCheckRegistry);
+    // config.setHealthCheckRegistry(healthCheckRegistry);
 
     return config;
   }
@@ -347,5 +357,74 @@ public class SqlConnectorRx implements SqlConnector {
     }
 
     return password;
+  }
+
+  @Override
+  public int getIntervalMs() {
+    return 1000;
+  }
+
+  @Override
+  public Optional<String> getInstanceId() {
+    return Optional.of(providerId);
+  }
+
+  // TODO: throw Volatile(Unavailable)Exception in methods, also SqlClient
+  // TODO: catch SQLExceptions in methods, also SqlClient, check isUnavailable
+  // TODO: what is defective?
+  // TODO: SqlClient also Volatile
+  @Override
+  public de.ii.xtraplatform.base.domain.util.Tuple<State, String> check() {
+    if (Objects.isNull(sqlClient)) {
+      // TODO: retry
+      if (Objects.nonNull(connectionError)) {
+        return de.ii.xtraplatform.base.domain.util.Tuple.of(
+            State.LIMITED, connectionError.getMessage());
+      }
+      return de.ii.xtraplatform.base.domain.util.Tuple.of(State.UNAVAILABLE, null);
+    }
+
+    // TODO: keep connection open?
+    LOGGER.debug("GET CONN");
+    try (Connection connection = dataSource.getConnection()) {
+      LOGGER.debug("GOT CONN");
+      // connection.isValid(1);
+      sqlClient.getSqlDialect().getDbInfo(connection);
+    } catch (SQLException e) {
+      LOGGER.debug(
+          "SQL {} {} {} {}", e.getClass(), e.getSQLState(), e.getErrorCode(), e.getMessage());
+
+      if (isUnavailable(e)) {
+        dataSource.getHikariConfigMXBean().setMinimumIdle(0);
+        dataSource.getHikariPoolMXBean().softEvictConnections();
+
+        return de.ii.xtraplatform.base.domain.util.Tuple.of(State.UNAVAILABLE, null);
+      }
+
+      return de.ii.xtraplatform.base.domain.util.Tuple.of(State.LIMITED, e.getMessage());
+    } catch (Throwable e) {
+      LOGGER.debug("SQL OTHER {}", e.getMessage());
+    }
+
+    dataSource.getHikariConfigMXBean().setMinimumIdle(minConnections);
+
+    LOGGER.debug("VALID");
+
+    return de.ii.xtraplatform.base.domain.util.Tuple.of(State.AVAILABLE, null);
+  }
+
+  @Override
+  public Optional<HealthCheck> asHealthCheck() {
+    return Optional.empty();
+  }
+
+  // TODO: SQLite
+  private static boolean isUnavailable(SQLException e) {
+    // see https://www.postgresql.org/docs/current/errcodes-appendix.html
+    return Objects.isNull(e.getSQLState()) // no connection
+        || e.getSQLState().startsWith("53") // Insufficient Resources
+        || e.getSQLState().startsWith("57") // Operator Intervention
+        || e.getSQLState().startsWith("58") // System Error
+        || e.getSQLState().startsWith("XX"); // Internal Error
   }
 }
