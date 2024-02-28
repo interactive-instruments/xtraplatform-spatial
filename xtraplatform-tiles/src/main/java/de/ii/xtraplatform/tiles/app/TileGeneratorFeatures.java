@@ -160,7 +160,6 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
     onVolatileStarted();
   }
 
-  // TODO: use
   private FeatureProvider2 getFeatureProvider(TilesetFeatures tileset) {
     String featureProviderId =
         tileset.getFeatureProvider().orElse(TileProviderFeatures.clean(data.getId()));

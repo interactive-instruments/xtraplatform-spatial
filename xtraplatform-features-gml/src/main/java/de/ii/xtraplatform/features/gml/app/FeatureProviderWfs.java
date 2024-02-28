@@ -113,7 +113,8 @@ public class FeatureProviderWfs
         crsTransformerFactory,
         extensionRegistry,
         valueStore.forType(Codelist.class),
-        data);
+        data, /*TODO*/
+        null);
 
     this.crsTransformerFactory = crsTransformerFactory;
     this.cql = cql;
