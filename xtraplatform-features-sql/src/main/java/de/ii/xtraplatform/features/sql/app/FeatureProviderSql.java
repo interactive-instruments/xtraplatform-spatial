@@ -540,14 +540,8 @@ public class FeatureProviderSql
   }
 
   @Override
-  public boolean supportsTransactions() {
-    return super.supportsTransactions()
-        && getData().getConnectionInfo().getDialect() == Dialect.PGIS;
-  }
-
-  @Override
-  public boolean supportsCrs() {
-    return super.supportsCrs() && getData().getNativeCrs().isPresent();
+  public boolean supportsMutationsInternal() {
+    return getData().getConnectionInfo().getDialect() == Dialect.PGIS;
   }
 
   @Override

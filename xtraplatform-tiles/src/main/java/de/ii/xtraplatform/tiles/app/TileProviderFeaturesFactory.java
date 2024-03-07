@@ -187,10 +187,10 @@ public class TileProviderFeaturesFactory
                         String.format(
                             "Feature provider with id '%s' not found.", featureProviderId)));
 
-    if (!featureProvider.supportsQueries()) {
+    if (!featureProvider.queries().isSupported()) {
       throw new IllegalStateException("Feature provider has no Queries support.");
     }
-    if (!featureProvider.supportsCrs()) {
+    if (!featureProvider.crs().isSupported()) {
       throw new IllegalStateException("Feature provider has no CRS support.");
     }
 

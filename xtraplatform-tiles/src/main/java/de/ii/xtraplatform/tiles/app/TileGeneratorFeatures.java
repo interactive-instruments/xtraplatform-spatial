@@ -7,11 +7,9 @@
  */
 package de.ii.xtraplatform.tiles.app;
 
-import com.codahale.metrics.health.HealthCheck;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Range;
-import de.ii.xtraplatform.base.domain.ModulesConfiguration.Startup;
 import de.ii.xtraplatform.base.domain.resiliency.AbstractVolatileComposed;
 import de.ii.xtraplatform.base.domain.resiliency.DelayedVolatile;
 import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
@@ -105,26 +103,21 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
       EntityRegistry entityRegistry,
       Cql cql,
       VolatileRegistry volatileRegistry,
-      Startup startup) {
-    super("generator", volatileRegistry);
+      boolean asyncStartup) {
+    super("generator", volatileRegistry, true);
     this.data = data;
     this.crsInfo = crsInfo;
     this.crsTransformerFactory = crsTransformerFactory;
     this.entityRegistry = entityRegistry;
     this.cql = cql;
     this.featureProviders = new LinkedHashMap<>();
-    this.async = startup == Startup.ASYNC;
+    this.async = asyncStartup;
 
     if (async) {
       init(volatileRegistry);
     } else {
       setState(State.AVAILABLE);
     }
-  }
-
-  @Override
-  public Optional<HealthCheck> asHealthCheck() {
-    return Optional.empty();
   }
 
   private void init(VolatileRegistry volatileRegistry) {
@@ -165,7 +158,7 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
         tileset.getFeatureProvider().orElse(TileProviderFeatures.clean(data.getId()));
 
     if (async) {
-      DelayedVolatile<FeatureProvider2> provider = featureProviders.get(tileset.getId());
+      DelayedVolatile<FeatureProvider2> provider = featureProviders.get(featureProviderId);
 
       // TODO: only crs, extents, queries needed
       if (!provider.isAvailable()) {
@@ -247,14 +240,14 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
         data.getTilesets().get(tileQuery.getTileset()).mergeDefaults(data.getTilesetDefaults());
     FeatureProvider2 featureProvider = getFeatureProvider(tileset);
 
-    if (!featureProvider.supportsQueries()) {
+    if (!featureProvider.queries().isSupported()) {
       throw new IllegalStateException("Feature provider has no Queries support.");
     }
-    if (!featureProvider.supportsCrs()) {
+    if (!featureProvider.crs().isSupported()) {
       throw new IllegalStateException("Feature provider has no CRS support.");
     }
 
-    EpsgCrs nativeCrs = featureProvider.crs().getNativeCrs();
+    EpsgCrs nativeCrs = featureProvider.crs().get().getNativeCrs();
     Map<String, FeatureSchema> types = featureProvider.getData().getTypes();
     FeatureQuery featureQuery =
         getFeatureQuery(
@@ -265,7 +258,7 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
             getBounds(tileQuery),
             tileQuery.getGenerationParametersTransient());
 
-    return featureProvider.queries().getFeatureStream(featureQuery);
+    return featureProvider.queries().get().getFeatureStream(featureQuery);
   }
 
   private Optional<BoundingBox> getBounds(TileQuery tileQuery) {
@@ -390,13 +383,13 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
     FeatureProvider2 featureProvider =
         getFeatureProvider(tileset.mergeDefaults(data.getTilesetDefaults()));
 
-    if (!featureProvider.supportsExtents()) {
+    if (!featureProvider.extents().isAvailable()) {
       return Optional.empty();
     }
 
     String featureType = tileset.getFeatureType().orElse(tileset.getId());
 
-    return featureProvider.extents().getSpatialExtent(featureType, OgcCrs.CRS84);
+    return featureProvider.extents().get().getSpatialExtent(featureType, OgcCrs.CRS84);
   }
 
   private FeatureQuery getFeatureQuery(

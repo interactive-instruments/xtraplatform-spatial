@@ -13,6 +13,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.base.domain.resiliency.DelayedVolatile;
+import de.ii.xtraplatform.base.domain.resiliency.Volatile2;
 import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
@@ -47,6 +48,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
+import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,7 +87,7 @@ public abstract class AbstractFeatureProvider<
       Values<Codelist> codelistStore,
       FeatureProviderDataV2 data,
       VolatileRegistry volatileRegistry) {
-    super(data, volatileRegistry, FeatureQueries.KEY);
+    super(data, volatileRegistry);
     this.connectorFactory = connectorFactory;
     this.reactive = reactive;
     this.crsTransformerFactory = crsTransformerFactory;
@@ -96,8 +98,7 @@ public abstract class AbstractFeatureProvider<
     this.connector =
         new DelayedVolatile<>(
             volatileRegistry,
-            String.format("connector.%s", data.getProviderSubType()),
-            FeatureQueries.KEY);
+            String.format("connector.%s", data.getProviderSubType().toLowerCase()));
     this.delayedDisposer =
         MoreExecutors.getExitingScheduledExecutorService(
             (ScheduledThreadPoolExecutor)
@@ -106,10 +107,45 @@ public abstract class AbstractFeatureProvider<
   }
 
   @Override
+  protected State reconcileStateNoComponents(@Nullable String capability) {
+    return State.AVAILABLE;
+  }
+
+  @Override
   protected boolean onStartup() throws InterruptedException {
-    // TODO
     onVolatileStart();
-    addSubcomponent(connector);
+    // TODO: or schemas/FeatureSchemas
+    addCapability("base");
+    if (queries().isSupported()) {
+      addCapability(FeatureQueries.CAPABILITY);
+    }
+    if (extents().isSupported()) {
+      addCapability(FeatureExtents.CAPABILITY);
+    }
+    if (passThrough().isSupported()) {
+      addCapability(FeatureQueriesPassThrough.CAPABILITY);
+    }
+    if (mutations().isSupported()) {
+      addCapability(FeatureTransactions.CAPABILITY);
+    }
+    if (crs().isSupported()) {
+      addCapability(FeatureCrs.CAPABILITY);
+    }
+    if (metadata().isSupported()) {
+      addCapability(FeatureMetadata.CAPABILITY);
+    }
+    if (multiQueries().isSupported()) {
+      addCapability(MultiFeatureQueries.CAPABILITY);
+    }
+    addSubcomponent(crsTransformerFactory, FeatureCrs.CAPABILITY);
+    addSubcomponent(
+        connector,
+        FeatureQueries.CAPABILITY,
+        FeatureExtents.CAPABILITY,
+        FeatureQueriesPassThrough.CAPABILITY,
+        FeatureTransactions.CAPABILITY,
+        FeatureMetadata.CAPABILITY,
+        MultiFeatureQueries.CAPABILITY);
 
     this.datasetChanged =
         connector.isPresent() && !connector.get().isSameDataset(getConnectionInfo());
@@ -175,6 +211,7 @@ public abstract class AbstractFeatureProvider<
       }
     }
 
+    addSubcomponent(Volatile2.available("AbstractFeatureProvider"), "base");
     return true;
   }
 
@@ -185,8 +222,12 @@ public abstract class AbstractFeatureProvider<
             .map(map -> String.format(" (%s)", map.toString().replace("{", "").replace("}", "")))
             .orElse("");
 
-    LOGGER.info("Feature provider with id '{}' started successfully.{}", getId(), startupInfo);
-
+    if (isAvailable()) {
+      LOGGER.info("Feature provider with id '{}' started successfully.{}", getId(), startupInfo);
+    } else {
+      LOGGER.warn(
+          "Feature provider with id '{}' started with limitations.{}", getId(), startupInfo);
+    }
     extensionRegistry
         .getAll()
         .forEach(

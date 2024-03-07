@@ -14,6 +14,8 @@ import org.threeten.extra.Interval;
 
 public interface FeatureExtents {
 
+  String CAPABILITY = "extents";
+
   Optional<BoundingBox> getSpatialExtent(String typeName);
 
   Optional<BoundingBox> getSpatialExtent(String typeName, EpsgCrs crs);

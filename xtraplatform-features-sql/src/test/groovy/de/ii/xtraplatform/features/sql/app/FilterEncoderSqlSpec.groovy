@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.features.sql.app
 
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry
 import de.ii.xtraplatform.blobs.domain.ResourceStore
 import de.ii.xtraplatform.cql.app.CqlFilterExamples
 import de.ii.xtraplatform.cql.app.CqlImpl
@@ -33,7 +34,8 @@ class FilterEncoderSqlSpec extends Specification {
 
         filterEncoder = new FilterEncoderSql(OgcCrs.CRS84, new SqlDialectPostGis(), null, null, new CqlImpl(), null)
         ResourceStore resourceStore = Stub()
-        CrsTransformerFactoryProj transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")), resourceStore)
+        VolatileRegistry volatileRegistry = Stub()
+        CrsTransformerFactoryProj transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")), resourceStore, volatileRegistry)
         transformerFactory.onStart()
         filterEncoder2 = new FilterEncoderSql(OgcCrs.CRS84, new SqlDialectPostGis(), (CrsTransformerFactory) transformerFactory, null, new CqlImpl(), null)
 

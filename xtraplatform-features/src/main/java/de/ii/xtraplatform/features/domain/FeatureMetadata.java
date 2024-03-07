@@ -11,5 +11,7 @@ import java.util.Optional;
 
 public interface FeatureMetadata {
 
+  String CAPABILITY = "metadata";
+
   Optional<Metadata> getMetadata();
 }

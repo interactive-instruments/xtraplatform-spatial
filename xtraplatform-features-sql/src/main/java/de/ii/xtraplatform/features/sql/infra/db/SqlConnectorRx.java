@@ -66,11 +66,13 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
   private final String applicationName;
   private final String providerId;
   private final AtomicInteger refCounter;
+  private final boolean asyncStartup;
 
   private Database session;
   private HikariDataSource dataSource;
   private SqlClient sqlClient;
   private Throwable connectionError;
+  private Connection pollConnection;
 
   @AssistedInject
   public SqlConnectorRx(
@@ -106,6 +108,7 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
         String.format("%s %s - %s", appContext.getName(), appContext.getVersion(), providerId);
     this.providerId = providerId;
     this.refCounter = new AtomicInteger(0);
+    this.asyncStartup = appContext.getConfiguration().getModules().isStartupAsync();
   }
 
   @Override
@@ -144,8 +147,9 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
       this.sqlClient = new SqlClientRx(session, connectionInfo.getDialect());
     } catch (Throwable e) {
       // TODO: handle properly, service start should fail with error message, show in manager
-      // LOGGER.error("CONNECTING TO DB FAILED", e);
+      LOGGER.error("CONNECTING TO DB FAILED", e);
       this.connectionError = e;
+      setMessage(e.getMessage());
     }
   }
 
@@ -169,6 +173,13 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
     if (Objects.nonNull(dataSource)) {
       try {
         dataSource.close();
+      } catch (Throwable e) {
+        // ignore
+      }
+    }
+    if (Objects.nonNull(pollConnection)) {
+      try {
+        pollConnection.close();
       } catch (Throwable e) {
         // ignore
       }
@@ -293,8 +304,8 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
     config.setUsername(connectionInfo.getUser().orElse(""));
     config.setPassword(getPassword(connectionInfo));
     config.setMaximumPoolSize(maxConnections);
-    config.setMinimumIdle(minConnections);
-    config.setInitializationFailTimeout(getInitFailTimeout(connectionInfo));
+    config.setMinimumIdle(asyncStartup ? 0 : minConnections);
+    config.setInitializationFailTimeout(asyncStartup ? -1 : getInitFailTimeout(connectionInfo));
     config.setIdleTimeout(parseMs(connectionInfo.getPool().getIdleTimeout()));
     config.setPoolName(poolName);
     config.setKeepaliveTime(300000);
@@ -304,6 +315,10 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
 
     config.setMetricRegistry(metricRegistry);
     // config.setHealthCheckRegistry(healthCheckRegistry);
+
+    if (asyncStartup) {
+      config.setConnectionTimeout(1000);
+    }
 
     return config;
   }
@@ -385,11 +400,16 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
     }
 
     // TODO: keep connection open?
-    LOGGER.debug("GET CONN");
-    try (Connection connection = dataSource.getConnection()) {
-      LOGGER.debug("GOT CONN");
-      // connection.isValid(1);
-      sqlClient.getSqlDialect().getDbInfo(connection);
+    try {
+      if (Objects.isNull(pollConnection) || !pollConnection.isValid(1)) {
+        // LOGGER.debug("GET CONN");
+        this.pollConnection = dataSource.getConnection();
+        boolean valid = pollConnection.isValid(1);
+        // sqlClient.getSqlDialect().getDbInfo(connection);
+
+        LOGGER.debug("VALID {}", valid);
+        // LOGGER.debug("GOT CONN");
+      }
     } catch (SQLException e) {
       LOGGER.debug(
           "SQL {} {} {} {}", e.getClass(), e.getSQLState(), e.getErrorCode(), e.getMessage());
@@ -398,7 +418,7 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
         dataSource.getHikariConfigMXBean().setMinimumIdle(0);
         dataSource.getHikariPoolMXBean().softEvictConnections();
 
-        return de.ii.xtraplatform.base.domain.util.Tuple.of(State.UNAVAILABLE, null);
+        return de.ii.xtraplatform.base.domain.util.Tuple.of(State.UNAVAILABLE, e.getMessage());
       }
 
       return de.ii.xtraplatform.base.domain.util.Tuple.of(State.LIMITED, e.getMessage());
@@ -408,7 +428,7 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
 
     dataSource.getHikariConfigMXBean().setMinimumIdle(minConnections);
 
-    LOGGER.debug("VALID");
+    // LOGGER.debug("VALID");
 
     return de.ii.xtraplatform.base.domain.util.Tuple.of(State.AVAILABLE, null);
   }
@@ -422,6 +442,7 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
   private static boolean isUnavailable(SQLException e) {
     // see https://www.postgresql.org/docs/current/errcodes-appendix.html
     return Objects.isNull(e.getSQLState()) // no connection
+        || e.getSQLState().startsWith("08") // Connection Exception
         || e.getSQLState().startsWith("53") // Insufficient Resources
         || e.getSQLState().startsWith("57") // Operator Intervention
         || e.getSQLState().startsWith("58") // System Error

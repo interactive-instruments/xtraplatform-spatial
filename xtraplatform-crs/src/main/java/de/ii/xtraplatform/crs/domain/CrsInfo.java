@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.crs.domain;
 
+import de.ii.xtraplatform.base.domain.resiliency.Volatile2;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -14,7 +15,7 @@ import java.util.OptionalInt;
 import javax.measure.Unit;
 import org.opengis.referencing.cs.AxisDirection;
 
-public interface CrsInfo {
+public interface CrsInfo extends Volatile2 {
 
   boolean isSupported(EpsgCrs crs);
 

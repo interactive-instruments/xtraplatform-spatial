@@ -213,11 +213,6 @@ public class FeatureProviderWfs
   }
 
   @Override
-  public boolean supportsCrs() {
-    return super.supportsCrs() && getData().getNativeCrs().isPresent();
-  }
-
-  @Override
   public EpsgCrs getNativeCrs() {
     return getData().getNativeCrs().get();
   }

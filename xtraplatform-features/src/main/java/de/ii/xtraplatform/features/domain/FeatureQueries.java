@@ -11,7 +11,7 @@ import java.util.List;
 
 public interface FeatureQueries {
 
-  String KEY = "queries";
+  String CAPABILITY = "queries";
 
   FeatureProviderCapabilities getCapabilities();
 

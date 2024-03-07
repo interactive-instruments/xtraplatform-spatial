@@ -81,14 +81,16 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   static final String TILES_DIR_NAME = "tiles";
 
   private final TileGeneratorFeatures tileGenerator;
-  private final TileEncoders tileEncoders;
-  private final ChainedTileProvider generatorProviderChain;
-  private final ChainedTileProvider combinerProviderChain;
   private final Map<Type, Map<Storage, TileStore>> tileStores;
   private final List<TileCache> generatorCaches;
   private final List<TileCache> combinerCaches;
   private final Map<String, TilesetMetadata> metadata;
   private final ResourceStore tilesStore;
+  private final TileWalker tileWalker;
+  private final boolean asyncStartup;
+  private TileEncoders tileEncoders;
+  private ChainedTileProvider generatorProviderChain;
+  private ChainedTileProvider combinerProviderChain;
 
   @AssistedInject
   public TileProviderFeatures(
@@ -103,6 +105,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
       @Assisted TileProviderFeaturesData data) {
     super(volatileRegistry, data, "access", "generation", "seeding");
 
+    this.asyncStartup = appContext.getConfiguration().getModules().isStartupAsync();
     this.tileGenerator =
         new TileGeneratorFeatures(
             data,
@@ -111,7 +114,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
             entityRegistry,
             cql,
             volatileRegistry,
-            appContext.getConfiguration().getModules().getStartup());
+            asyncStartup);
     this.tileStores =
         new ConcurrentHashMap<>(
             Map.of(
@@ -122,15 +125,34 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     this.generatorCaches = new ArrayList<>();
     this.combinerCaches = new ArrayList<>();
     this.metadata = new LinkedHashMap<>();
-
     this.tilesStore = blobStore.with(TILES_DIR_NAME, clean(data.getId()));
+    this.tileWalker = tileWalker;
+  }
+
+  @Override
+  protected boolean onStartup() throws InterruptedException {
+    onVolatileStart();
+
+    addSubcomponent(tilesStore, "access", "generation", "seeding");
+    addSubcomponent(tileGenerator, "generation", "seeding");
+
+    if (asyncStartup) {
+      getVolatileRegistry().onAvailable(this::init, tilesStore, tileGenerator);
+    } else {
+      init();
+    }
+
+    return super.onStartup();
+  }
+
+  private void init() {
     ChainedTileProvider current = tileGenerator;
 
-    for (int i = 0; i < data.getCaches().size(); i++) {
-      Cache cache = data.getCaches().get(i);
+    for (int i = 0; i < getData().getCaches().size(); i++) {
+      Cache cache = getData().getCaches().get(i);
       ResourceStore cacheStore =
           tilesStore.with(String.format("cache_%s", cache.getType().getSuffix()));
-      TileStore tileStore = getTileStore(cache, cacheStore, data.getId(), data.getTilesets());
+      TileStore tileStore = getTileStore(cache, cacheStore, getId(), getData().getTilesets());
 
       if (cache.getType() == Type.DYNAMIC) {
         current =
@@ -145,14 +167,14 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
 
     this.generatorProviderChain = current;
 
-    this.tileEncoders = new TileEncoders(data, generatorProviderChain);
+    this.tileEncoders = new TileEncoders(getData(), generatorProviderChain);
     current = tileEncoders;
 
-    for (int i = 0; i < data.getCaches().size(); i++) {
-      Cache cache = data.getCaches().get(i);
+    for (int i = 0; i < getData().getCaches().size(); i++) {
+      Cache cache = getData().getCaches().get(i);
       ResourceStore cacheStore =
           tilesStore.with(String.format("cache_%s", cache.getType().getSuffix()));
-      TileStore tileStore = getTileStore(cache, cacheStore, data.getId(), data.getTilesets());
+      TileStore tileStore = getTileStore(cache, cacheStore, getId(), getData().getTilesets());
 
       if (cache.getType() == Type.DYNAMIC) {
         current =
@@ -166,6 +188,8 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     }
 
     this.combinerProviderChain = current;
+
+    loadMetadata();
   }
 
   private TileStore getTileStore(
@@ -274,18 +298,6 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
               return Stream.of(layer);
             })
         .collect(ImmutableList.toImmutableList());
-  }
-
-  @Override
-  protected boolean onStartup() throws InterruptedException {
-    onVolatileStart();
-
-    addSubcomponent(tilesStore, "access", "generation", "seeding");
-    addSubcomponent(tileGenerator, "generation", "seeding");
-
-    loadMetadata();
-
-    return super.onStartup();
   }
 
   @Override

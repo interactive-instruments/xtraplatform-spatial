@@ -7,9 +7,15 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import de.ii.xtraplatform.base.domain.resiliency.OptionalVolatileCapability;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileComposed;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry.ChangeHandler;
 import de.ii.xtraplatform.entities.domain.PersistentEntity;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Supplier;
 
-public interface FeatureProvider2 extends PersistentEntity {
+public interface FeatureProvider2 extends PersistentEntity, VolatileComposed {
 
   String PROVIDER_TYPE = "FEATURE";
 
@@ -21,100 +27,117 @@ public interface FeatureProvider2 extends PersistentEntity {
   @Override
   FeatureProviderDataV2 getData();
 
-  /*
-      default String getProviderType() {
-          return getData().getProviderType();
-      }
-
-      default String getFeatureProviderType() {
-          return getData().getFeatureProviderType();
-      }
-  */
-
+  // TODO: FeatureChanges?
   FeatureChangeHandler getChangeHandler();
 
-  default boolean supportsQueries() {
-    return this instanceof FeatureQueries;
+  default OptionalVolatileCapability<FeatureQueries> queries() {
+    return new FeatureVolatileCapability<>(FeatureQueries.class, FeatureQueries.CAPABILITY, this);
   }
 
-  default FeatureQueries queries() {
-    if (!supportsQueries()) {
-      throw new UnsupportedOperationException("Queries not supported");
-    }
-    return (FeatureQueries) this;
+  default OptionalVolatileCapability<FeatureExtents> extents() {
+    return new FeatureVolatileCapability<>(FeatureExtents.class, FeatureExtents.CAPABILITY, this);
   }
 
-  default boolean supportsExtents() {
-    return this instanceof FeatureExtents && supportsCrs();
+  default OptionalVolatileCapability<FeatureQueriesPassThrough> passThrough() {
+    return new FeatureVolatileCapability<>(
+        FeatureQueriesPassThrough.class, FeatureQueriesPassThrough.CAPABILITY, this);
   }
 
-  default FeatureExtents extents() {
-    if (!supportsExtents()) {
-      throw new UnsupportedOperationException("Extents not supported");
-    }
-    return (FeatureExtents) this;
+  default boolean supportsMutationsInternal() {
+    return false;
   }
 
-  default boolean supportsPassThrough() {
-    return this instanceof FeatureQueriesPassThrough;
+  default OptionalVolatileCapability<FeatureTransactions> mutations() {
+    return new FeatureVolatileCapability<>(
+        FeatureTransactions.class,
+        FeatureTransactions.CAPABILITY,
+        this,
+        this::supportsMutationsInternal);
   }
 
-  default FeatureQueriesPassThrough passThrough() {
-    if (!supportsQueries()) {
-      throw new UnsupportedOperationException("Queries not supported");
-    }
-    return (FeatureQueriesPassThrough) this;
+  default boolean supportsCrsInternal() {
+    return getData().getNativeCrs().isPresent();
   }
 
-  default boolean supportsTransactions() {
-    return this instanceof FeatureTransactions;
+  default OptionalVolatileCapability<FeatureCrs> crs() {
+    return new FeatureVolatileCapability<>(
+        FeatureCrs.class, FeatureCrs.CAPABILITY, this, this::supportsCrsInternal);
   }
 
-  default FeatureTransactions transactions() {
-    if (!supportsTransactions()) {
-      throw new UnsupportedOperationException("Transactions not supported");
-    }
-    return (FeatureTransactions) this;
+  default OptionalVolatileCapability<FeatureMetadata> metadata() {
+    return new FeatureVolatileCapability<>(FeatureMetadata.class, FeatureMetadata.CAPABILITY, this);
   }
 
-  default boolean supportsCrs() {
-    return this instanceof FeatureCrs;
+  default OptionalVolatileCapability<MultiFeatureQueries> multiQueries() {
+    return new FeatureVolatileCapability<>(
+        MultiFeatureQueries.class, MultiFeatureQueries.CAPABILITY, this);
   }
 
-  default FeatureCrs crs() {
-    if (!supportsCrs()) {
-      throw new UnsupportedOperationException("CRS not supported");
-    }
-    return (FeatureCrs) this;
-  }
-
-  default boolean supportsMetadata() {
-    return this instanceof FeatureMetadata;
-  }
-
-  default FeatureMetadata metadata() {
-    if (!supportsMetadata()) {
-      throw new UnsupportedOperationException("Metadata not supported");
-    }
-    return (FeatureMetadata) this;
-  }
-
-  default boolean supportsMultiQueries() {
-    return this instanceof MultiFeatureQueries;
-  }
-
-  default MultiFeatureQueries multiQueries() {
-    if (!supportsMultiQueries()) {
-      throw new UnsupportedOperationException("MultiQueries not supported");
-    }
-    return (MultiFeatureQueries) this;
-  }
-
+  // TODO: to QueryCapabilities
   default boolean supportsSorting() {
     return false;
   }
 
+  // TODO: to QueryCapabilities
   default boolean supportsHighLoad() {
     return false;
+  }
+
+  default String getCapabilityKey(String subKey) {
+    return String.format("%s/%s", getUniqueKey(), subKey);
+  }
+
+  class FeatureVolatileCapability<T> implements OptionalVolatileCapability<T> {
+
+    private final Class<T> clazz;
+    private final String key;
+    private final VolatileComposed composed;
+    private final Supplier<Boolean> onlyIf;
+
+    public FeatureVolatileCapability(Class<T> clazz, String key, VolatileComposed composed) {
+      this(clazz, key, composed, null);
+    }
+
+    public FeatureVolatileCapability(
+        Class<T> clazz, String key, VolatileComposed composed, Supplier<Boolean> onlyIf) {
+      this.clazz = clazz;
+      this.key = key;
+      this.composed = composed;
+      this.onlyIf = onlyIf;
+    }
+
+    @Override
+    public State getState() {
+      return composed.getState(key);
+    }
+
+    @Override
+    public Optional<String> getMessage() {
+      return composed.getMessage(key);
+    }
+
+    @Override
+    public Runnable onStateChange(ChangeHandler handler, boolean initialCall) {
+      return composed.onStateChange(key, handler, initialCall);
+    }
+
+    @Override
+    public boolean isSupported() {
+      return clazz.isAssignableFrom(composed.getClass())
+          && (Objects.isNull(onlyIf) || onlyIf.get());
+    }
+
+    @Override
+    public boolean isAvailable() {
+      return isSupported() && OptionalVolatileCapability.super.isAvailable();
+    }
+
+    @Override
+    public T get() {
+      if (!isSupported()) {
+        throw new UnsupportedOperationException(key + " not supported");
+      }
+      return clazz.cast(composed);
+    }
   }
 }
