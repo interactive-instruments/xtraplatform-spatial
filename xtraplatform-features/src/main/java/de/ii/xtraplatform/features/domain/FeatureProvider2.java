@@ -9,6 +9,8 @@ package de.ii.xtraplatform.features.domain;
 
 import de.ii.xtraplatform.base.domain.resiliency.OptionalVolatileCapability;
 import de.ii.xtraplatform.base.domain.resiliency.VolatileComposed;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistered;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry.ChangeHandler;
 import de.ii.xtraplatform.entities.domain.PersistentEntity;
 import java.util.Objects;
@@ -87,7 +89,7 @@ public interface FeatureProvider2 extends PersistentEntity, VolatileComposed {
     return String.format("%s/%s", getUniqueKey(), subKey);
   }
 
-  class FeatureVolatileCapability<T> implements OptionalVolatileCapability<T> {
+  class FeatureVolatileCapability<T> implements OptionalVolatileCapability<T>, VolatileRegistered {
 
     private final Class<T> clazz;
     private final String key;
@@ -104,6 +106,11 @@ public interface FeatureProvider2 extends PersistentEntity, VolatileComposed {
       this.key = key;
       this.composed = composed;
       this.onlyIf = onlyIf;
+    }
+
+    @Override
+    public String getUniqueKey() {
+      return String.format("%s/%s", composed.getUniqueKey(), key);
     }
 
     @Override
@@ -138,6 +145,11 @@ public interface FeatureProvider2 extends PersistentEntity, VolatileComposed {
         throw new UnsupportedOperationException(key + " not supported");
       }
       return clazz.cast(composed);
+    }
+
+    @Override
+    public VolatileRegistry getVolatileRegistry() {
+      return ((VolatileRegistered) composed).getVolatileRegistry();
     }
   }
 }
