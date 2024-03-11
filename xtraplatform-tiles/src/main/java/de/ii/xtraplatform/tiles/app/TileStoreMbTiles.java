@@ -119,18 +119,18 @@ public class TileStoreMbTiles implements TileStore {
     try {
       return tileSets.containsKey(key(tile)) && tileSets.get(key(tile)).tileExists(tile);
     } catch (SQLException | IOException e) {
+      // this test is only used during seeding to check, if a tile already exists;
+      // if this cannot be determined due to a locked db, we assume that the tile
+      // does not yet exist; the worst case is that the tile is unnecessarily reseeded
       if (LOGGER.isWarnEnabled()) {
         LOGGER.warn(
-            "Failed to check existence of tile {}/{}/{}/{} for tileset '{}'. Reason: {}",
+            "Could not determine, if tile {}/{}/{}/{} in tileset '{}' exists. Proceeding with the assumption that the tiles does not yet exist. Reason: {}.",
             tile.getTileMatrixSet().getId(),
             tile.getLevel(),
             tile.getRow(),
             tile.getCol(),
             tile.getTileset(),
             e.getMessage());
-        if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
-          LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
-        }
       }
     }
     return false;
@@ -162,18 +162,17 @@ public class TileStoreMbTiles implements TileStore {
         return tileSets.get(key(tile)).tileIsEmpty(tile);
       }
     } catch (SQLException e) {
-      if (LOGGER.isWarnEnabled()) {
-        LOGGER.warn(
-            "Failed to retrieve tile {}/{}/{}/{} for tileset '{}'. Reason: {}",
+      // This information is only relevant for the optional "OATiles-hint" header,
+      // we only log this on debug level
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug(
+            "Could not determine, if tile {}/{}/{}/{} in tileset '{}' is empty. Reason: {}",
             tile.getTileMatrixSet().getId(),
             tile.getLevel(),
             tile.getRow(),
             tile.getCol(),
             tile.getTileset(),
             e.getMessage());
-        if (LOGGER.isDebugEnabled(LogContext.MARKER.STACKTRACE)) {
-          LOGGER.debug(LogContext.MARKER.STACKTRACE, "Stacktrace: ", e);
-        }
       }
     }
     return Optional.empty();
@@ -188,6 +187,10 @@ public class TileStoreMbTiles implements TileStore {
                   try {
                     return !mbtilesTileset.hasAnyTiles();
                   } catch (SQLException | IOException e) {
+                    if (LOGGER.isWarnEnabled()) {
+                      LOGGER.warn(
+                          "Could not determine existence of tiles in an MBTiles file. Proceeding with the assumption that tiles exist.");
+                    }
                     return false;
                   }
                 });
@@ -210,11 +213,13 @@ public class TileStoreMbTiles implements TileStore {
     MbtilesTileset tileset = tileSets.get(key(tile));
     boolean written = false;
     int count = 0;
+    String reason = null;
     while (!written && count++ < 3) {
       try {
         tileset.writeTile(tile, content.readAllBytes());
         written = true;
       } catch (SQLException e) {
+        reason = e.getMessage();
         if (LOGGER.isTraceEnabled()) {
           LOGGER.trace(
               "Failed to write tile {}/{}/{}/{} for tileset '{}'. Reason: {}. Trying again...",
@@ -223,7 +228,7 @@ public class TileStoreMbTiles implements TileStore {
               tile.getRow(),
               tile.getCol(),
               tile.getTileset(),
-              e.getMessage());
+              reason);
         }
         try {
           Thread.sleep(100);
@@ -236,12 +241,13 @@ public class TileStoreMbTiles implements TileStore {
     if (!written) {
       if (LOGGER.isWarnEnabled()) {
         LOGGER.warn(
-            "Failed to write tile {}/{}/{}/{} for tileset '{}'.",
+            "Failed to write tile {}/{}/{}/{} for tileset '{}'. Reason: {}.",
             tile.getTileMatrixSet().getId(),
             tile.getLevel(),
             tile.getRow(),
             tile.getCol(),
-            tile.getTileset());
+            tile.getTileset(),
+            reason);
       }
     }
   }
