@@ -53,6 +53,15 @@ public class TileEncoderMvt implements TileEncoder {
       TileQuery tileQuery = ImmutableTileQuery.builder().from(tile).tileset(tileset).build();
       TileResult layer = tileProvider.get(tileQuery);
 
+      int count = 1;
+      while (layer.isError() && count++ < 3) {
+        try {
+          Thread.sleep(100);
+        } catch (Throwable ignore) {
+        }
+        layer = tileProvider.get(tileQuery);
+      }
+
       if (layer.isError()) {
         if (LOGGER.isWarnEnabled()) {
           LOGGER.warn(

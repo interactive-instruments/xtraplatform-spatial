@@ -20,6 +20,7 @@ import de.ii.xtraplatform.features.domain.PropertyBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql;
 import de.ii.xtraplatform.geometries.domain.ImmutableCoordinatesTransformer;
+import de.ii.xtraplatform.geometries.domain.ImmutableCoordinatesTransformer.Builder;
 import de.ii.xtraplatform.geometries.domain.ImmutableCoordinatesWriterWkt;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.io.IOException;
@@ -256,12 +257,10 @@ public interface ObjectSql {
       coordinatesTransformerBuilder.targetDimension(dimension);
     }
 
-    Writer coordinatesWriter = coordinatesTransformerBuilder.build();
-
     geometryWriter.append(wktType.toString());
 
     try {
-      toWktArray(propertySql, geometryWriter, coordinatesWriter);
+      toWktArray(propertySql, geometryWriter, coordinatesTransformerBuilder);
     } catch (IOException e) {
 
     }
@@ -274,26 +273,37 @@ public interface ObjectSql {
   }
 
   // TODO: test all geo types
-  default void toWktArray(PropertySql propertySql, Writer structureWriter, Writer coordinatesWriter)
+  default void toWktArray(
+      PropertySql propertySql, Writer structureWriter, Builder coordinatesWriterBuilder)
       throws IOException {
     if (propertySql.getType() == PropertyBase.Type.ARRAY) {
       structureWriter.append("(");
     }
-    for (int i = 0; i < propertySql.getNestedProperties().size(); i++) {
-      PropertySql propertySql1 = propertySql.getNestedProperties().get(i);
-      if (propertySql1.getType() == PropertyBase.Type.ARRAY) {
-        toWktArray(propertySql1, structureWriter, coordinatesWriter);
-        if (i < propertySql.getNestedProperties().size() - 1) {
-          structureWriter.append(",");
-        }
-      } else {
-        coordinatesWriter.append(propertySql1.getValue());
+
+    if (propertySql.getType() == PropertyBase.Type.ARRAY
+        && !propertySql.getNestedProperties().isEmpty()
+        && propertySql.getNestedProperties().get(0).getType() == Type.VALUE) {
+      Writer coordinatesWriter = coordinatesWriterBuilder.build();
+
+      for (int i = 0; i < propertySql.getNestedProperties().size(); i++) {
+        coordinatesWriter.append(propertySql.getNestedProperties().get(i).getValue());
         if (i < propertySql.getNestedProperties().size() - 1) {
           coordinatesWriter.append(",");
         }
       }
+
+      coordinatesWriter.flush();
+    } else {
+      for (int i = 0; i < propertySql.getNestedProperties().size(); i++) {
+        PropertySql propertySql1 = propertySql.getNestedProperties().get(i);
+        if (propertySql1.getType() == PropertyBase.Type.ARRAY) {
+          toWktArray(propertySql1, structureWriter, coordinatesWriterBuilder);
+          if (i < propertySql.getNestedProperties().size() - 1) {
+            structureWriter.append(",");
+          }
+        }
+      }
     }
-    coordinatesWriter.flush();
 
     if (propertySql.getType() == PropertyBase.Type.ARRAY) {
       structureWriter.append(")");

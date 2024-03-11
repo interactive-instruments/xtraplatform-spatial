@@ -151,7 +151,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     for (int i = 0; i < getData().getCaches().size(); i++) {
       Cache cache = getData().getCaches().get(i);
       ResourceStore cacheStore =
-          tilesStore.with(String.format("cache_%s", cache.getType().getSuffix()));
+          tilesStore.writableWith(String.format("cache_%s", cache.getType().getSuffix()));
       TileStore tileStore = getTileStore(cache, cacheStore, getId(), getData().getTilesets());
 
       if (cache.getType() == Type.DYNAMIC) {
@@ -173,7 +173,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     for (int i = 0; i < getData().getCaches().size(); i++) {
       Cache cache = getData().getCaches().get(i);
       ResourceStore cacheStore =
-          tilesStore.with(String.format("cache_%s", cache.getType().getSuffix()));
+          tilesStore.writableWith(String.format("cache_%s", cache.getType().getSuffix()));
       TileStore tileStore = getTileStore(cache, cacheStore, getId(), getData().getTilesets());
 
       if (cache.getType() == Type.DYNAMIC) {
