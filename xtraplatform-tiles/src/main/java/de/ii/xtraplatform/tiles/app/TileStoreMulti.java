@@ -214,7 +214,8 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
     if (inProgress()) {
       return false;
     }
-    ResourceStore stagingStore = cacheStore.with(String.format("%d", Instant.now().toEpochMilli()));
+    ResourceStore stagingStore =
+        cacheStore.writableWith(String.format("%d", Instant.now().toEpochMilli()));
 
     stagingStore.put(Path.of(".staging"), new ByteArrayInputStream(new byte[0]));
 
@@ -367,7 +368,7 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
     return cacheStore
         .walk(Path.of(""), 1, (p, a) -> !a.isValue())
         .skip(1)
-        .map(dir -> cacheStore.with(dir.getFileName().toString()))
+        .map(dir -> cacheStore.writableWith(dir.getFileName().toString()))
         .sorted(Comparator.comparing(ResourceStore::getPrefix).reversed());
   }
 
