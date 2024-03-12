@@ -69,21 +69,19 @@ import org.immutables.value.Value;
  * ```
  * </code>
  * @langEn ## Storage
- *     <p>Codelists reside under the relative path `store/entities/codelists/{codelistId}.yml` in
- *     the data directory (old) or in the [Store
- *     (new)](../application/20-configuration/10-store-new.md) as values with type `codelists`.
- *     <p>When using the new store layout, codelists have a path instead of an id. That means for
- *     example `values/codelists/bar.yml` would work like before, but you could additionally define
+ *     <p>Codelists reside in the [Store](../application/20-configuration/10-store-new.md) as values
+ *     with type `codelists`.
+ *     <p>Codelists have a path instead of an id. That means for example `values/codelists/bar.yml`
+ *     would be referenced as `bar`, but you could additionally define
  *     `values/codelists/foo/bar.yml`. To reference that codelist somewhere else in the
  *     configuration you would need to use `foo/bar`.
  * @langDe ## Speicherung
- *     <p>Die Codelisten liegen als YAML-Dateien im ldproxy-Datenverzeichnis unter dem relativen
- *     Pfad `store/entities/codelists/{codelistId}.yml` (alt) oder im [Store
- *     (neu)](../application/20-configuration/10-store-new.md) als Values mit Typ `codelists`.
- *     <p>Wenn das neue Store-Layout verwendet wird, haben Codelisten einen Pfad anstatt einer Id.
- *     Das heißt z.B. `values/codelists/bar.yml` würde wie vorher funktionieren, aber man könnte
- *     zusätzlich `values/codelists/foo/bar.yml` definieren. Um diese Codelist an anderer Stelle in
- *     der Konfiguration zu referenzieren würde man `foo/bar` verwenden.
+ *     <p>Die Codelisten liegen im [Store](../application/20-configuration/10-store-new.md) als
+ *     Values mit Typ `codelists`.
+ *     <p>Codelisten haben einen Pfad anstatt einer Id. Das heißt z.B. `values/codelists/bar.yml`
+ *     würde als `bar` referenziert, aber man könnte zusätzlich `values/codelists/foo/bar.yml`
+ *     definieren. Um diese Codelist an anderer Stelle in der Konfiguration zu referenzieren würde
+ *     man `foo/bar` verwenden.
  * @ref:cfgProperties {@link de.ii.xtraplatform.codelists.domain.ImmutableCodelist}
  */
 @DocFile(

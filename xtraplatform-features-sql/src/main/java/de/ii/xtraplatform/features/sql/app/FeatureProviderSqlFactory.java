@@ -135,8 +135,6 @@ public class FeatureProviderSqlFactory
                     new ImmutablePoolSettings.Builder()
                         .maxConnections(-1)
                         .minConnections(1)
-                        .initFailFast(true)
-                        .initFailTimeout("1")
                         .idleTimeout("10m")
                         .shared(false)
                         .build())

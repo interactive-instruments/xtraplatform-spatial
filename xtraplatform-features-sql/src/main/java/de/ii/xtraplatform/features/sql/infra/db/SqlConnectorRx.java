@@ -256,10 +256,10 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
               "schemas",
               Objects.equals(this.connectionInfo.getSchemas(), connectionInfoSql.getSchemas()))
           .put(
-              "initFailFast",
+              "initFailTimeout",
               Objects.equals(
-                  this.connectionInfo.getPool().getInitFailFast(),
-                  connectionInfoSql.getPool().getInitFailFast()))
+                  this.connectionInfo.getPool().getInitFailTimeout(),
+                  connectionInfoSql.getPool().getInitFailTimeout()))
           .put(
               "idleTimeout",
               Objects.equals(
@@ -348,10 +348,7 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
   }
 
   private static long getInitFailTimeout(ConnectionInfoSql connectionInfo) {
-    if (!connectionInfo.getPool().getInitFailFast()) {
-      return -1;
-    }
-    return parseMs(connectionInfo.getPool().getInitFailTimeout());
+    return parseMs(Objects.requireNonNullElse(connectionInfo.getPool().getInitFailTimeout(), "1"));
   }
 
   private static long parseMs(String duration) {
