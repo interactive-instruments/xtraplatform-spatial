@@ -139,7 +139,6 @@ public class TileProviderFeaturesFactory
             new ImmutableTileProviderFeaturesData.Builder()
                 .from(data)
                 .auto(Optional.empty())
-                .autoPersist(Optional.empty())
                 .build();
       } catch (Throwable e) {
         if (LOGGER.isErrorEnabled()) {
