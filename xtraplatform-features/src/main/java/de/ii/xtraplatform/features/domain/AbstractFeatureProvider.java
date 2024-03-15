@@ -17,6 +17,7 @@ import de.ii.xtraplatform.base.domain.resiliency.Volatile2;
 import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.entities.domain.AbstractPersistentEntity;
 import de.ii.xtraplatform.entities.domain.ValidationResult;
 import de.ii.xtraplatform.entities.domain.ValidationResult.MODE;
@@ -42,6 +43,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -55,7 +57,7 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractFeatureProvider<
         T, U, V extends FeatureProviderConnector.QueryOptions, W extends SchemaBase<W>>
     extends AbstractPersistentEntity<FeatureProviderDataV2>
-    implements FeatureProvider2, FeatureQueries {
+    implements FeatureProviderEntity, FeatureProvider, FeatureInfo, FeatureQueries {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractFeatureProvider.class);
   protected static final WithScope WITH_SCOPE_RETURNABLE = new WithScope(Scope.RETURNABLE);
@@ -71,7 +73,7 @@ public abstract class AbstractFeatureProvider<
   private final CrsTransformerFactory crsTransformerFactory;
   private final ProviderExtensionRegistry extensionRegistry;
   private final Values<Codelist> codelistStore;
-  private final FeatureChangeHandler changeHandler;
+  private final FeatureChanges changeHandler;
   private final ScheduledExecutorService delayedDisposer;
   private final VolatileRegistry volatileRegistry;
   private Reactive.Runner streamRunner;
@@ -107,6 +109,16 @@ public abstract class AbstractFeatureProvider<
   }
 
   @Override
+  public String getType() {
+    return ProviderData.ENTITY_TYPE;
+  }
+
+  @Override
+  public FeatureProviderDataV2 getData() {
+    return super.getData();
+  }
+
+  @Override
   protected State reconcileStateNoComponents(@Nullable String capability) {
     return State.AVAILABLE;
   }
@@ -114,8 +126,8 @@ public abstract class AbstractFeatureProvider<
   @Override
   protected boolean onStartup() throws InterruptedException {
     onVolatileStart();
-    // TODO: or schemas/FeatureSchemas
-    addCapability("base");
+    addCapability(FeatureInfo.CAPABILITY);
+    addCapability(FeatureChanges.CAPABILITY);
     if (queries().isSupported()) {
       addCapability(FeatureQueries.CAPABILITY);
     }
@@ -211,7 +223,11 @@ public abstract class AbstractFeatureProvider<
       }
     }
 
-    addSubcomponent(Volatile2.available("AbstractFeatureProvider"), "base");
+    addSubcomponent(
+        Volatile2.available("AbstractFeatureProvider"),
+        FeatureInfo.CAPABILITY,
+        FeatureChanges.CAPABILITY);
+
     return true;
   }
 
@@ -267,6 +283,21 @@ public abstract class AbstractFeatureProvider<
       connectorFactory.disposeConnector(connector.get());
     }
     LOGGER.info("Feature provider with id '{}' stopped.", getId());
+  }
+
+  @Override
+  public Optional<EpsgCrs> getCrs() {
+    return getData().getNativeCrs();
+  }
+
+  @Override
+  public Optional<FeatureSchema> getSchema(String type) {
+    return Optional.ofNullable(getData().getTypes().get(type));
+  }
+
+  @Override
+  public Set<FeatureSchema> getSchemas() {
+    return Set.copyOf(getData().getTypes().values());
   }
 
   private boolean softClosePrevious(
@@ -470,7 +501,7 @@ public abstract class AbstractFeatureProvider<
   }
 
   @Override
-  public FeatureChangeHandler getChangeHandler() {
+  public FeatureChanges changes() {
     return changeHandler;
   }
 

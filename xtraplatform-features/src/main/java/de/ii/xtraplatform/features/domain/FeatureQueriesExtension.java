@@ -145,7 +145,9 @@ public interface FeatureQueriesExtension {
   boolean isSupported(FeatureProviderConnector<?, ?, ?> connector);
 
   void on(
-      LIFECYCLE_HOOK hook, FeatureProvider2 provider, FeatureProviderConnector<?, ?, ?> connector);
+      LIFECYCLE_HOOK hook,
+      FeatureProviderEntity provider,
+      FeatureProviderConnector<?, ?, ?> connector);
 
   void on(
       QUERY_HOOK hook,

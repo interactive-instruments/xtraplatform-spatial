@@ -28,7 +28,8 @@ import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.entities.domain.EntityRegistry;
-import de.ii.xtraplatform.features.domain.FeatureProvider2;
+import de.ii.xtraplatform.features.domain.FeatureProvider;
+import de.ii.xtraplatform.features.domain.FeatureProviderEntity;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureStream;
@@ -61,6 +62,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import javax.measure.Unit;
@@ -93,7 +95,7 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
   private final EntityRegistry entityRegistry;
   private final TileProviderFeaturesData data;
   private final Cql cql;
-  private final Map<String, DelayedVolatile<FeatureProvider2>> featureProviders;
+  private final Map<String, DelayedVolatile<FeatureProvider>> featureProviders;
   private final boolean async;
 
   public TileGeneratorFeatures(
@@ -134,7 +136,7 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
         continue;
       }
 
-      DelayedVolatile<FeatureProvider2> delayedVolatile =
+      DelayedVolatile<FeatureProvider> delayedVolatile =
           new DelayedVolatile<>(
               volatileRegistry,
               String.format("generator.%s", featureProviderId),
@@ -144,7 +146,7 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
       featureProviders.putIfAbsent(featureProviderId, delayedVolatile);
 
       entityRegistry
-          .getEntity(FeatureProvider2.class, featureProviderId)
+          .getEntity(FeatureProviderEntity.class, featureProviderId)
           .ifPresent(delayedVolatile::set);
 
       addSubcomponent(delayedVolatile);
@@ -153,12 +155,12 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
     onVolatileStarted();
   }
 
-  private FeatureProvider2 getFeatureProvider(TilesetFeatures tileset) {
+  private FeatureProvider getFeatureProvider(TilesetFeatures tileset) {
     String featureProviderId =
         tileset.getFeatureProvider().orElse(TileProviderFeatures.clean(data.getId()));
 
     if (async) {
-      DelayedVolatile<FeatureProvider2> provider = featureProviders.get(featureProviderId);
+      DelayedVolatile<FeatureProvider> provider = featureProviders.get(featureProviderId);
 
       // TODO: only crs, extents, queries needed
       if (!provider.isAvailable()) {
@@ -170,7 +172,7 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
     }
 
     return entityRegistry
-        .getEntity(FeatureProvider2.class, featureProviderId)
+        .getEntity(FeatureProviderEntity.class, featureProviderId)
         .orElseThrow(
             () ->
                 new IllegalStateException(
@@ -238,7 +240,7 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
   public FeatureStream getTileSource(TileQuery tileQuery) {
     TilesetFeatures tileset =
         data.getTilesets().get(tileQuery.getTileset()).mergeDefaults(data.getTilesetDefaults());
-    FeatureProvider2 featureProvider = getFeatureProvider(tileset);
+    FeatureProvider featureProvider = getFeatureProvider(tileset);
 
     if (!featureProvider.queries().isSupported()) {
       throw new IllegalStateException("Feature provider has no Queries support.");
@@ -248,7 +250,7 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
     }
 
     EpsgCrs nativeCrs = featureProvider.crs().get().getNativeCrs();
-    Map<String, FeatureSchema> types = featureProvider.getData().getTypes();
+    Set<FeatureSchema> types = featureProvider.info().getSchemas();
     FeatureQuery featureQuery =
         getFeatureQuery(
             tileQuery,
@@ -314,10 +316,9 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
   public TileGenerationSchema getGenerationSchema(String tilesetId) {
     TilesetFeatures tileset =
         data.getTilesets().get(tilesetId).mergeDefaults(data.getTilesetDefaults());
-    FeatureProvider2 featureProvider = getFeatureProvider(tileset);
-    Map<String, FeatureSchema> featureTypes = featureProvider.getData().getTypes();
+    FeatureProvider featureProvider = getFeatureProvider(tileset);
     String featureType = tileset.getFeatureType().orElse(tilesetId);
-    FeatureSchema featureSchema = featureTypes.get(featureType);
+    FeatureSchema featureSchema = featureProvider.info().getSchema(featureType).orElse(null);
 
     return new TileGenerationSchema() {
       @Override
@@ -353,10 +354,10 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
       throw new IllegalArgumentException(String.format("Unknown tileset '%s'", tilesetId));
     }
 
-    FeatureProvider2 featureProvider =
+    FeatureProvider featureProvider =
         getFeatureProvider(tileset.mergeDefaults(data.getTilesetDefaults()));
     String featureType = tileset.getFeatureType().orElse(tileset.getId());
-    FeatureSchema featureSchema = featureProvider.getData().getTypes().get(featureType);
+    FeatureSchema featureSchema = featureProvider.info().getSchema(featureType).orElse(null);
 
     if (Objects.isNull(featureSchema)) {
       throw new IllegalArgumentException(
@@ -380,7 +381,7 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
       throw new IllegalArgumentException(String.format("Unknown tileset '%s'", tilesetId));
     }
 
-    FeatureProvider2 featureProvider =
+    FeatureProvider featureProvider =
         getFeatureProvider(tileset.mergeDefaults(data.getTilesetDefaults()));
 
     if (!featureProvider.extents().isAvailable()) {
@@ -395,12 +396,16 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
   private FeatureQuery getFeatureQuery(
       TileQuery tile,
       TilesetFeatures tileset,
-      Map<String, FeatureSchema> featureTypes,
+      Set<FeatureSchema> featureTypes,
       EpsgCrs nativeCrs,
       Optional<BoundingBox> bounds,
       Optional<TileGenerationParametersTransient> userParameters) {
     String featureType = tileset.getFeatureType().orElse(tileset.getId());
-    FeatureSchema featureSchema = featureTypes.get(featureType);
+    FeatureSchema featureSchema =
+        featureTypes.stream()
+            .filter(type -> Objects.equals(type.getName(), featureType))
+            .findFirst()
+            .orElse(null);
     // TODO: validate tileset during provider startup
     if (featureSchema == null) {
       throw new IllegalStateException(

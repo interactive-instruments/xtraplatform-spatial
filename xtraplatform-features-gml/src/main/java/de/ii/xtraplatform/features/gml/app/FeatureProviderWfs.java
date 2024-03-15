@@ -27,7 +27,7 @@ import de.ii.xtraplatform.features.domain.FeatureCrs;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureExtents;
 import de.ii.xtraplatform.features.domain.FeatureMetadata;
-import de.ii.xtraplatform.features.domain.FeatureProvider2;
+import de.ii.xtraplatform.features.domain.FeatureProvider;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector.QueryOptions;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
@@ -69,7 +69,7 @@ import org.threeten.extra.Interval;
 @Entity(
     type = ProviderData.ENTITY_TYPE,
     subTypes = {
-      @SubType(key = ProviderData.PROVIDER_TYPE_KEY, value = FeatureProvider2.PROVIDER_TYPE),
+      @SubType(key = ProviderData.PROVIDER_TYPE_KEY, value = FeatureProvider.PROVIDER_TYPE),
       @SubType(
           key = ProviderData.PROVIDER_SUB_TYPE_KEY,
           value = FeatureProviderWfs.PROVIDER_SUB_TYPE)
@@ -78,7 +78,7 @@ import org.threeten.extra.Interval;
 public class FeatureProviderWfs
     extends AbstractFeatureProvider<
         byte[], String, FeatureProviderConnector.QueryOptions, FeatureSchema>
-    implements FeatureProvider2,
+    implements FeatureProvider,
         FeatureQueries,
         FeatureCrs,
         FeatureExtents,

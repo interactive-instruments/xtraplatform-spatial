@@ -12,25 +12,23 @@ import de.ii.xtraplatform.base.domain.resiliency.VolatileComposed;
 import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistered;
 import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry.ChangeHandler;
-import de.ii.xtraplatform.entities.domain.PersistentEntity;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-public interface FeatureProvider2 extends PersistentEntity, VolatileComposed {
+public interface FeatureProvider extends VolatileComposed {
 
   String PROVIDER_TYPE = "FEATURE";
 
-  @Override
-  default String getType() {
-    return ProviderData.ENTITY_TYPE;
+  default String getId() {
+    return info().getId();
   }
 
-  @Override
-  FeatureProviderDataV2 getData();
+  default FeatureInfo info() {
+    return (FeatureInfo) this;
+  }
 
-  // TODO: FeatureChanges?
-  FeatureChangeHandler getChangeHandler();
+  FeatureChanges changes();
 
   default OptionalVolatileCapability<FeatureQueries> queries() {
     return new FeatureVolatileCapability<>(FeatureQueries.class, FeatureQueries.CAPABILITY, this);
@@ -57,13 +55,9 @@ public interface FeatureProvider2 extends PersistentEntity, VolatileComposed {
         this::supportsMutationsInternal);
   }
 
-  default boolean supportsCrsInternal() {
-    return getData().getNativeCrs().isPresent();
-  }
-
   default OptionalVolatileCapability<FeatureCrs> crs() {
     return new FeatureVolatileCapability<>(
-        FeatureCrs.class, FeatureCrs.CAPABILITY, this, this::supportsCrsInternal);
+        FeatureCrs.class, FeatureCrs.CAPABILITY, this, info().getCrs()::isPresent);
   }
 
   default OptionalVolatileCapability<FeatureMetadata> metadata() {

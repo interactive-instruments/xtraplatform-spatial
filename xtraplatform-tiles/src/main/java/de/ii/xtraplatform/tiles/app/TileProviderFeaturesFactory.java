@@ -22,7 +22,8 @@ import de.ii.xtraplatform.entities.domain.EntityDataBuilder;
 import de.ii.xtraplatform.entities.domain.EntityFactory;
 import de.ii.xtraplatform.entities.domain.EntityRegistry;
 import de.ii.xtraplatform.entities.domain.PersistentEntity;
-import de.ii.xtraplatform.features.domain.FeatureProvider2;
+import de.ii.xtraplatform.features.domain.FeatureProvider;
+import de.ii.xtraplatform.features.domain.FeatureProviderEntity;
 import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
 import de.ii.xtraplatform.tiles.domain.ImmutableMinMax;
 import de.ii.xtraplatform.tiles.domain.ImmutableTileProviderFeaturesData;
@@ -177,9 +178,9 @@ public class TileProviderFeaturesFactory
         data.getTilesetDefaults()
             .getFeatureProvider()
             .orElse(TileProviderFeatures.clean(data.getId()));
-    FeatureProvider2 featureProvider =
+    FeatureProvider featureProvider =
         entityRegistry
-            .getEntity(FeatureProvider2.class, featureProviderId)
+            .getEntity(FeatureProviderEntity.class, featureProviderId)
             .orElseThrow(
                 () ->
                     new IllegalStateException(
@@ -197,7 +198,7 @@ public class TileProviderFeaturesFactory
         new Builder().id("__all__").addCombine(TilesetFeatures.COMBINE_ALL).build();
 
     Map<String, TilesetFeatures> tilesets =
-        featureProvider.getData().getTypes().values().stream()
+        featureProvider.info().getSchemas().stream()
             .filter(featureSchema -> featureSchema.getPrimaryGeometry().isPresent())
             .map(
                 featureSchema -> {
