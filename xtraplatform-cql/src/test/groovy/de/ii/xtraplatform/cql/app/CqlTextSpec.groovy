@@ -65,6 +65,7 @@ import java.awt.Polygon
 import java.nio.file.Path
 import java.text.Format
 import java.time.LocalDate
+import java.util.concurrent.CompletableFuture
 
 class CqlTextSpec extends Specification {
 
@@ -81,6 +82,7 @@ class CqlTextSpec extends Specification {
         cql = new CqlImpl()
         resourceStore = Stub()
         volatileRegistry = Stub()
+        volatileRegistry.onAvailable(*_) >> CompletableFuture.completedFuture(null)
     }
 
     def 'Floors greater than 5'() {

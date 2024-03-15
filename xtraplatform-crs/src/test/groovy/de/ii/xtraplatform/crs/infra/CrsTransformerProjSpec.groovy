@@ -17,6 +17,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import java.nio.file.Path
+import java.util.concurrent.CompletableFuture
 
 class CrsTransformerProjSpec extends Specification {
 
@@ -28,8 +29,9 @@ class CrsTransformerProjSpec extends Specification {
     def setupSpec() {
         ResourceStore resourceStore = Stub()
         VolatileRegistry volatileRegistry = Stub()
+        volatileRegistry.onAvailable(*_) >> CompletableFuture.completedFuture(null)
         transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")), resourceStore, volatileRegistry)
-        transformerFactory.onStart()
+        transformerFactory.onStart(false).toCompletableFuture().join()
     }
 
     def 'find transformer - #dim (#src, #trgt)'() {

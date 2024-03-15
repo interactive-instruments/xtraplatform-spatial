@@ -16,6 +16,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
 import de.ii.xtraplatform.base.domain.AppLifeCycle;
 import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.base.domain.resiliency.AbstractVolatile;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSet;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetData;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetRepository;
@@ -23,9 +25,10 @@ import de.ii.xtraplatform.values.domain.ValueStore;
 import de.ii.xtraplatform.values.domain.Values;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -34,33 +37,36 @@ import org.slf4j.LoggerFactory;
 /** Access to the cache for tile files. */
 @Singleton
 @AutoBind
-public class TileMatrixSetRepositoryImpl implements TileMatrixSetRepository, AppLifeCycle {
+public class TileMatrixSetRepositoryImpl extends AbstractVolatile
+    implements TileMatrixSetRepository, AppLifeCycle {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileMatrixSetRepositoryImpl.class);
   private final Values<TileMatrixSetData> customTileMatrixSetsStore;
   private final Map<String, TileMatrixSet> tileMatrixSets;
+  private final VolatileRegistry volatileRegistry;
 
   /** set data directory */
   @Inject
-  public TileMatrixSetRepositoryImpl(ValueStore valueStore) {
+  public TileMatrixSetRepositoryImpl(ValueStore valueStore, VolatileRegistry volatileRegistry) {
+    super(volatileRegistry, "app/tilematrixsets");
     this.customTileMatrixSetsStore = valueStore.forType(TileMatrixSetData.class);
-    this.tileMatrixSets = new HashMap<>();
+    this.tileMatrixSets = new LinkedHashMap<>();
+    this.volatileRegistry = volatileRegistry;
   }
 
   @Override
-  public void onStart() {
-    if (tileMatrixSets.isEmpty()) initCache();
+  public CompletionStage<Void> onStart(boolean isStartupAsync) {
+    onVolatileStart();
+    return volatileRegistry.onAvailable(customTileMatrixSetsStore).thenRun(this::initCache);
   }
 
   @Override
   public Optional<TileMatrixSet> get(String tileMatrixSetId) {
-    if (tileMatrixSets.isEmpty()) initCache();
     return Optional.ofNullable(tileMatrixSets.get(tileMatrixSetId));
   }
 
   @Override
   public Map<String, TileMatrixSet> getAll() {
-    if (tileMatrixSets.isEmpty()) initCache();
     return new ImmutableMap.Builder<String, TileMatrixSet>().putAll(tileMatrixSets).build();
   }
 
@@ -79,6 +85,8 @@ public class TileMatrixSetRepositoryImpl implements TileMatrixSetRepository, App
               tileMatrixSets.put(
                   tileMatrixSetData.getId(), new TileMatrixSetImpl(tileMatrixSetData));
             });
+
+    setState(State.AVAILABLE);
   }
 
   static Optional<TileMatrixSet> fromWellKnownId(String tileMatrixSetId) {

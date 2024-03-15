@@ -217,6 +217,8 @@ public abstract class AbstractFeatureProvider<
 
   @Override
   protected void onStarted() {
+    super.onStarted();
+
     String startupInfo =
         getStartupInfo()
             .map(map -> String.format(" (%s)", map.toString().replace("{", "").replace("}", "")))
@@ -237,8 +239,6 @@ public abstract class AbstractFeatureProvider<
                 // TODO: addSubcomponent
               }
             });
-
-    super.onStarted();
   }
 
   @Override

@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -110,46 +111,57 @@ public class CrsTransformerFactoryProj extends AbstractVolatile
   }
 
   @Override
-  public void onStart() {
-    // TODO: wait for ResourceStore?
+  public int getPriority() {
+    return 100;
+  }
+
+  @Override
+  public CompletionStage<Void> onStart(boolean isStartupAsync) {
     onVolatileStart();
 
-    State state = State.AVAILABLE;
+    return getVolatileRegistry()
+        .onAvailable(projStore)
+        .thenRun(
+            () -> {
+              State state = State.AVAILABLE;
 
-    try {
-      projLoader.load();
+              try {
+                projLoader.load();
 
-      Optional<Path> customPath = Optional.empty();
-      try {
-        customPath = projStore.asLocalPath(Path.of(""), false);
-      } catch (IOException e) {
-        LogContext.error(LOGGER, e, "Could not initialize PROJ custom data directory");
-        state = State.LIMITED;
-        setMessage("Could not initialize PROJ custom data directory: " + e.getMessage());
-      }
+                Optional<Path> customPath = Optional.empty();
+                try {
+                  customPath = projStore.asLocalPath(Path.of(""), false);
+                } catch (IOException e) {
+                  LogContext.error(LOGGER, e, "Could not initialize PROJ custom data directory");
+                  state = State.LIMITED;
+                  setMessage("Could not initialize PROJ custom data directory: " + e.getMessage());
+                }
 
-      String[] locations =
-          customPath.isPresent()
-              ? new String[] {
-                projLoader.getDataDirectory().toString(), customPath.get().normalize().toString()
+                String[] locations =
+                    customPath.isPresent()
+                        ? new String[] {
+                          projLoader.getDataDirectory().toString(),
+                          customPath.get().normalize().toString()
+                        }
+                        : new String[] {projLoader.getDataDirectory().toString()};
+
+                Proj.setSearchPath(locations);
+                Proj.version()
+                    .ifPresent(
+                        version ->
+                            LOGGER.debug("PROJ version: {}, locations: {}", version, locations));
+                System.setProperty("org.kortforsyningen.proj.maxThreadsPerInstance", "16");
+
+                setState(state);
+              } catch (Throwable e) {
+                LogContext.error(LOGGER, e, "Could not initialize PROJ");
+                setMessage("Could not initialize PROJ: " + e.getMessage());
+
+                if (!asyncStartup) {
+                  throw e;
+                }
               }
-              : new String[] {projLoader.getDataDirectory().toString()};
-
-      Proj.setSearchPath(locations);
-      Proj.version()
-          .ifPresent(
-              version -> LOGGER.debug("PROJ version: {}, locations: {}", version, locations));
-      System.setProperty("org.kortforsyningen.proj.maxThreadsPerInstance", "16");
-
-      setState(state);
-    } catch (Throwable e) {
-      LogContext.error(LOGGER, e, "Could not initialize PROJ");
-      setMessage("Could not initialize PROJ: " + e.getMessage());
-
-      if (!asyncStartup) {
-        throw e;
-      }
-    }
+            });
   }
 
   @Override
