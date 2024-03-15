@@ -7,11 +7,12 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
+import de.ii.xtraplatform.base.domain.resiliency.VolatileComposed;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.entities.domain.PersistentEntity;
 import java.util.Optional;
 
-public interface TileProvider extends PersistentEntity {
+public interface TileProvider extends PersistentEntity, VolatileComposed {
 
   @Override
   TileProviderData getData();
