@@ -135,6 +135,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
 
     addSubcomponent(tilesStore, "access", "generation", "seeding");
     addSubcomponent(tileGenerator, "generation", "seeding");
+    addSubcomponent(tileWalker, "seeding");
 
     if (asyncStartup) {
       getVolatileRegistry().onAvailable(tilesStore, tileGenerator).thenRun(this::init);

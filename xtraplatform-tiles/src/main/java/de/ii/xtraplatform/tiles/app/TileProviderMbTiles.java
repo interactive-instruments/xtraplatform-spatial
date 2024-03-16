@@ -67,6 +67,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
   private static final Logger LOGGER = LoggerFactory.getLogger(TileProviderMbTiles.class);
   private final ResourceStore tilesStore;
   private final TileMatrixSetRepository tileMatrixSetRepository;
+  private final VolatileRegistry volatileRegistry;
   private final Map<String, TilesetMetadata> metadata;
   private final Map<String, Map<String, Range<Integer>>> tmsRanges;
   private ChainedTileProvider providerChain;
@@ -81,6 +82,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
 
     this.tilesStore = blobStore.with(TileProviderFeatures.TILES_DIR_NAME);
     this.tileMatrixSetRepository = tileMatrixSetRepository;
+    this.volatileRegistry = volatileRegistry;
     this.metadata = new LinkedHashMap<>();
     this.tmsRanges = new LinkedHashMap<>();
   }
@@ -88,6 +90,11 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
   @Override
   protected boolean onStartup() throws InterruptedException {
     onVolatileStart();
+
+    addSubcomponent(tilesStore);
+    addSubcomponent(tileMatrixSetRepository);
+
+    volatileRegistry.onAvailable(tilesStore).toCompletableFuture().join();
 
     // we know there is exactly one tileset and one tile matrix set
     Map<String, Path> tilesetSources =
