@@ -223,10 +223,7 @@ public abstract class AbstractFeatureProvider<
       }
     }
 
-    addSubcomponent(
-        Volatile2.available("AbstractFeatureProvider"),
-        FeatureInfo.CAPABILITY,
-        FeatureChanges.CAPABILITY);
+    addSubcomponent(Volatile2.available("base"), FeatureInfo.CAPABILITY, FeatureChanges.CAPABILITY);
 
     return true;
   }
@@ -235,17 +232,19 @@ public abstract class AbstractFeatureProvider<
   protected void onStarted() {
     super.onStarted();
 
+    onStateChange(
+        (from, to) -> {
+          LOGGER.info("Feature provider with id '{}' state changed: {}", getId(), getState());
+        },
+        true);
+
     String startupInfo =
         getStartupInfo()
             .map(map -> String.format(" (%s)", map.toString().replace("{", "").replace("}", "")))
             .orElse("");
 
-    if (isAvailable()) {
-      LOGGER.info("Feature provider with id '{}' started successfully.{}", getId(), startupInfo);
-    } else {
-      LOGGER.warn(
-          "Feature provider with id '{}' started with limitations.{}", getId(), startupInfo);
-    }
+    LOGGER.info("Feature provider with id '{}' started successfully.{}", getId(), startupInfo);
+
     extensionRegistry
         .getAll()
         .forEach(

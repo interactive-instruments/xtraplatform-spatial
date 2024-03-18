@@ -42,7 +42,7 @@ public class TileWalkerImpl extends AbstractVolatileComposed implements TileWalk
       TileMatrixSetRepository tileMatrixSetRepository,
       CrsTransformerFactory crsTransformerFactory,
       VolatileRegistry volatileRegistry) {
-    super(volatileRegistry);
+    super("tileWalker", volatileRegistry, true);
     this.tileMatrixSetRepository = tileMatrixSetRepository;
     this.crsTransformerFactory = crsTransformerFactory;
 

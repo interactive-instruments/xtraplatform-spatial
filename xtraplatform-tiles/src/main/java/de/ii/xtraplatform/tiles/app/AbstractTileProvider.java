@@ -35,7 +35,13 @@ public abstract class AbstractTileProvider<T extends TileProviderData>
 
   @Override
   protected void onStarted() {
-    onVolatileStarted();
+    super.onStarted();
+
+    onStateChange(
+        (from, to) -> {
+          LOGGER.info("Tile provider with id '{}' state changed: {}", getId(), getState());
+        },
+        true);
 
     LOGGER.info("Tile provider with id '{}' started successfully.", getId());
   }

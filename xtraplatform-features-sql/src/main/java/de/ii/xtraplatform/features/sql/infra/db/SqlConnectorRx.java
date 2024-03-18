@@ -17,6 +17,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.base.domain.AppContext;
+import de.ii.xtraplatform.base.domain.LogContext.MARKER;
 import de.ii.xtraplatform.base.domain.resiliency.AbstractVolatilePolling;
 import de.ii.xtraplatform.base.domain.resiliency.Volatile2.Polling;
 import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
@@ -140,14 +141,10 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
   public void start() {
     try {
       HikariConfig hikariConfig = createHikariConfig();
-      // TODO: if startupMode=ASYNC, start with minimumIdle=0 and initializationFailTimeout=-1, let
-      // polling do the rest
       this.dataSource = new HikariDataSource(hikariConfig);
       this.session = createSession(dataSource);
       this.sqlClient = new SqlClientRx(session, connectionInfo.getDialect());
     } catch (Throwable e) {
-      // TODO: handle properly, service start should fail with error message, show in manager
-      LOGGER.error("CONNECTING TO DB FAILED", e);
       this.connectionError = e;
       setMessage(e.getMessage());
     }
@@ -381,10 +378,6 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
     return Optional.of(providerId);
   }
 
-  // TODO: throw Volatile(Unavailable)Exception in methods, also SqlClient
-  // TODO: catch SQLExceptions in methods, also SqlClient, check isUnavailable
-  // TODO: what is defective?
-  // TODO: SqlClient also Volatile
   @Override
   public de.ii.xtraplatform.base.domain.util.Tuple<State, String> check() {
     if (Objects.isNull(sqlClient)) {
@@ -396,21 +389,17 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
       return de.ii.xtraplatform.base.domain.util.Tuple.of(State.UNAVAILABLE, null);
     }
 
-    // TODO: keep connection open?
     try {
       if (Objects.isNull(pollConnection) || !pollConnection.isValid(1)) {
-        // LOGGER.debug("GET CONN");
         this.pollConnection = dataSource.getConnection();
         boolean valid = pollConnection.isValid(1);
         // sqlClient.getSqlDialect().getDbInfo(connection);
-
-        LOGGER.debug("VALID {}", valid);
-        // LOGGER.debug("GOT CONN");
       }
     } catch (SQLException e) {
-      LOGGER.debug(
-          "SQL {} {} {} {}", e.getClass(), e.getSQLState(), e.getErrorCode(), e.getMessage());
-
+      if (LOGGER.isDebugEnabled(MARKER.DI)) {
+        LOGGER.debug(
+            "SQL {} {} {} {}", e.getClass(), e.getSQLState(), e.getErrorCode(), e.getMessage());
+      }
       if (isUnavailable(e)) {
         dataSource.getHikariConfigMXBean().setMinimumIdle(0);
         dataSource.getHikariPoolMXBean().softEvictConnections();
@@ -420,12 +409,12 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
 
       return de.ii.xtraplatform.base.domain.util.Tuple.of(State.LIMITED, e.getMessage());
     } catch (Throwable e) {
-      LOGGER.debug("SQL OTHER {}", e.getMessage());
+      if (LOGGER.isDebugEnabled(MARKER.DI)) {
+        LOGGER.debug("SQL OTHER {}", e.getMessage());
+      }
     }
 
     dataSource.getHikariConfigMXBean().setMinimumIdle(minConnections);
-
-    // LOGGER.debug("VALID");
 
     return de.ii.xtraplatform.base.domain.util.Tuple.of(State.AVAILABLE, null);
   }
