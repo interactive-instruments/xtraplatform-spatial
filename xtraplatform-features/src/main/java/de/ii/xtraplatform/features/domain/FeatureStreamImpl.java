@@ -201,7 +201,7 @@ public class FeatureStreamImpl implements FeatureStream {
         new FeatureTokenTransformerCoordinates(crsTransformer);
 
     FeatureTokenTransformerRemoveEmptyOptionals cleaner =
-        new FeatureTokenTransformerRemoveEmptyOptionals();
+        new FeatureTokenTransformerRemoveEmptyOptionals(propertyTransformations);
 
     FeatureTokenSource tokenSourceTransformed =
         featureTokenSource.via(schemaMapper).via(valueMapper).via(cleaner);

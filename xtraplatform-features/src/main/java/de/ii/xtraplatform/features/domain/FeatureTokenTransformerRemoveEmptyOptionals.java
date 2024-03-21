@@ -7,18 +7,37 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTransformer {
 
   private final List<String> nestingStack;
   private final List<FeatureSchema> schemaStack;
+  private final Map<String, Boolean> removeNullValues;
 
-  public FeatureTokenTransformerRemoveEmptyOptionals() {
+  public FeatureTokenTransformerRemoveEmptyOptionals(
+      Map<String, PropertyTransformations> propertyTransformations) {
     this.nestingStack = new ArrayList<>();
     this.schemaStack = new ArrayList<>();
+    this.removeNullValues =
+        propertyTransformations.keySet().stream()
+            .map(
+                type ->
+                    Map.entry(
+                        type,
+                        !propertyTransformations
+                            .get(type)
+                            .hasTransformation(
+                                PropertyTransformations.WILDCARD,
+                                pt ->
+                                    pt.getRemoveNullValues().isPresent()
+                                        && pt.getRemoveNullValues().get() == false)))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   @Override
@@ -105,8 +124,9 @@ public class FeatureTokenTransformerRemoveEmptyOptionals extends FeatureTokenTra
       return;
     }
 
-    // skip, if the value has been transformed to null
-    if (Objects.nonNull(context.value())) {
+    if (Objects.nonNull(context.value())
+        || context.schema().get().isRequired()
+        || !removeNullValues.getOrDefault(context.type(), true)) {
       openIfNecessary(context);
 
       super.onValue(context);
