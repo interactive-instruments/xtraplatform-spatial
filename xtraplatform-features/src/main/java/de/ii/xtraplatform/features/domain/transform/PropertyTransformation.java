@@ -140,6 +140,17 @@ public interface PropertyTransformation
   Optional<String> getFlatten();
 
   /**
+   * @langEn Remove properties with value `null`, including properties transformed with `nullify`.
+   *     Can only be applied on the feature level in the provider or using the wildcard property
+   *     name `*` otherwise.
+   * @langDe Properties mit Wert `null` entfernen, inklusive Properties die mit `nullify`
+   *     transformiert wurden. Kann nur auf der Feature-Ebene im Provider oder an anderen Stellen
+   *     mittels des Wildcard Property-Names `*` angewendet werden.
+   * @default true
+   */
+  Optional<Boolean> getRemoveNullValues();
+
+  /**
    * @langEn Reduces an object to a string using the same syntax as `stringFormat` but with
    *     additional replacements for the object property names.
    * @langDe Reduziert ein Objekt zu einem String mithilfe der `stringFormat`-Syntax aber mit
