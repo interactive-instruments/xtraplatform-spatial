@@ -8,6 +8,8 @@
 package de.ii.xtraplatform.feature.changes.sql.app;
 
 import com.github.azahnen.dagger.annotations.AutoBind;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.base.domain.util.Tuple;
 import de.ii.xtraplatform.feature.changes.sql.domain.FeatureChangesPgConfiguration;
@@ -33,6 +35,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -79,7 +82,11 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
 
   @Inject
   public FeatureChangesPgListener() {
-    this.executorService = new ScheduledThreadPoolExecutor(1);
+    this.executorService =
+        MoreExecutors.getExitingScheduledExecutorService(
+            (ScheduledThreadPoolExecutor)
+                Executors.newScheduledThreadPool(
+                    1, new ThreadFactoryBuilder().setNameFormat("feature.changes-%d").build()));
     this.subscriptions = new ConcurrentHashMap<>();
   }
 

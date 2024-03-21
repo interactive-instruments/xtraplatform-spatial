@@ -21,6 +21,7 @@ import de.ii.xtraplatform.base.domain.LogContext.MARKER;
 import de.ii.xtraplatform.base.domain.resiliency.AbstractVolatilePolling;
 import de.ii.xtraplatform.base.domain.resiliency.Volatile2.Polling;
 import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileUnavailableException;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.app.FeatureProviderSql;
@@ -28,7 +29,10 @@ import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.features.sql.domain.SqlClient;
 import de.ii.xtraplatform.features.sql.domain.SqlConnector;
+import de.ii.xtraplatform.features.sql.domain.SqlQueryBatch;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
+import de.ii.xtraplatform.features.sql.domain.SqlRow;
+import de.ii.xtraplatform.streams.domain.Reactive.Source;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -110,6 +114,15 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
     this.providerId = providerId;
     this.refCounter = new AtomicInteger(0);
     this.asyncStartup = appContext.getConfiguration().getModules().isStartupAsync();
+
+    /*RxJavaPlugins.setErrorHandler(
+    e -> {
+      if (e instanceof UndeliverableException) {
+        LogContext.error(LOGGER, e.getCause(), "RXUD");
+      } else {
+        LogContext.error(LOGGER, e, "RX");
+      }
+    });*/
   }
 
   @Override
@@ -314,14 +327,14 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
     // config.setHealthCheckRegistry(healthCheckRegistry);
 
     if (asyncStartup) {
-      config.setConnectionTimeout(1000);
+      config.setConnectionTimeout(5000);
     }
 
     return config;
   }
 
   private Database createSession(HikariDataSource dataSource) {
-    int maxIdleTime = minConnections == maxConnections ? 0 : 600;
+    int maxIdleTime = 5; // minConnections == maxConnections ? 0 : 600;
     DatabaseType healthCheck =
         connectionInfo.getDialect() == Dialect.GPKG ? DatabaseType.SQLITE : DatabaseType.POSTGRES;
     int idleTimeBeforeHealthCheck = 60;
@@ -379,6 +392,35 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
   }
 
   @Override
+  protected synchronized void onVolatileStart() {
+    super.onVolatileStart();
+
+    if (asyncStartup) {
+      if (getState() == State.UNAVAILABLE) {
+        LOGGER.warn("Could not establish connection to database: {}", getDatasetIdentifier());
+      }
+
+      onStateChange(
+          (from, to) -> {
+            if (to == State.AVAILABLE) {
+              LOGGER.info("Re-established connection to database: {}", getDatasetIdentifier());
+            } else if (to == State.UNAVAILABLE) {
+              LOGGER.warn("Lost connection to database: {}", getDatasetIdentifier());
+            }
+          },
+          false);
+    }
+  }
+
+  @Override
+  public Source<SqlRow> getSourceStream(SqlQueryBatch queryBatch, SqlQueryOptions options) {
+    if (!isAvailable()) {
+      throw new VolatileUnavailableException("Connector is not available");
+    }
+    return SqlConnector.super.getSourceStream(queryBatch, options);
+  }
+
+  @Override
   public de.ii.xtraplatform.base.domain.util.Tuple<State, String> check() {
     if (Objects.isNull(sqlClient)) {
       // TODO: retry
@@ -390,9 +432,17 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
     }
 
     try {
-      if (Objects.isNull(pollConnection) || !pollConnection.isValid(1)) {
+      if (Objects.nonNull(pollConnection) && !pollConnection.isValid(1)) {
+        try {
+          pollConnection.close();
+        } catch (Throwable e) {
+          // ignore
+        }
+        this.pollConnection = null;
+      }
+      if (Objects.isNull(pollConnection)) {
         this.pollConnection = dataSource.getConnection();
-        boolean valid = pollConnection.isValid(1);
+        // boolean valid = pollConnection.isValid(1);
         // sqlClient.getSqlDialect().getDbInfo(connection);
       }
     } catch (SQLException e) {
