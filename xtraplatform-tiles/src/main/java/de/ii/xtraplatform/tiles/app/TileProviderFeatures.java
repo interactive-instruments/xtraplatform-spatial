@@ -13,7 +13,9 @@ import com.google.common.collect.Range;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.base.domain.AppContext;
+import de.ii.xtraplatform.base.domain.resiliency.OptionalVolatileCapability;
 import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
+import de.ii.xtraplatform.base.domain.util.Tuple;
 import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
@@ -22,6 +24,7 @@ import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.entities.domain.Entity;
 import de.ii.xtraplatform.entities.domain.Entity.SubType;
 import de.ii.xtraplatform.entities.domain.EntityRegistry;
+import de.ii.xtraplatform.features.domain.FeatureProvider.FeatureVolatileCapability;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ProviderData;
 import de.ii.xtraplatform.services.domain.TaskContext;
@@ -32,6 +35,7 @@ import de.ii.xtraplatform.tiles.domain.ChainedTileProvider;
 import de.ii.xtraplatform.tiles.domain.ImmutableSeedingOptions;
 import de.ii.xtraplatform.tiles.domain.ImmutableTilesetMetadata;
 import de.ii.xtraplatform.tiles.domain.SeedingOptions;
+import de.ii.xtraplatform.tiles.domain.TileAccess;
 import de.ii.xtraplatform.tiles.domain.TileCache;
 import de.ii.xtraplatform.tiles.domain.TileGenerationParameters;
 import de.ii.xtraplatform.tiles.domain.TileGenerationSchema;
@@ -75,7 +79,7 @@ import org.slf4j.LoggerFactory;
     },
     data = TileProviderFeaturesData.class)
 public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeaturesData>
-    implements TileProvider, TileSeeding {
+    implements TileProvider, TileAccess, TileSeeding {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileProviderFeatures.class);
   static final String TILES_DIR_NAME = "tiles";
@@ -137,13 +141,19 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     addSubcomponent(tileGenerator, "generation", "seeding");
     addSubcomponent(tileWalker, "seeding");
 
-    if (asyncStartup) {
-      getVolatileRegistry().onAvailable(tilesStore, tileGenerator).thenRun(this::init);
-    } else {
+    if (!asyncStartup) {
       init();
     }
 
     return super.onStartup();
+  }
+
+  @Override
+  protected Tuple<State, String> volatileInit() {
+    if (asyncStartup) {
+      init();
+    }
+    return super.volatileInit();
   }
 
   private void init() {
@@ -302,7 +312,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   }
 
   @Override
-  public Optional<TilesetMetadata> metadata(String tileset) {
+  public Optional<TilesetMetadata> getMetadata(String tileset) {
     return Optional.ofNullable(metadata.get(tileset));
   }
 
@@ -348,13 +358,8 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   }
 
   @Override
-  public boolean supportsGeneration() {
-    return true;
-  }
-
-  @Override
-  public TileGenerator generator() {
-    return tileGenerator;
+  public OptionalVolatileCapability<TileGenerator> generator() {
+    return new FeatureVolatileCapability<>(tileGenerator, TileGenerator.CAPABILITY, this);
   }
 
   @Override

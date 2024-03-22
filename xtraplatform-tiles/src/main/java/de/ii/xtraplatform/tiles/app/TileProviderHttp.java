@@ -16,6 +16,7 @@ import de.ii.xtraplatform.entities.domain.Entity.SubType;
 import de.ii.xtraplatform.features.domain.ProviderData;
 import de.ii.xtraplatform.tiles.domain.ChainedTileProvider;
 import de.ii.xtraplatform.tiles.domain.ImmutableTilesetMetadata;
+import de.ii.xtraplatform.tiles.domain.TileAccess;
 import de.ii.xtraplatform.tiles.domain.TileProvider;
 import de.ii.xtraplatform.tiles.domain.TileProviderData;
 import de.ii.xtraplatform.tiles.domain.TileProviderHttpData;
@@ -44,7 +45,7 @@ import org.slf4j.LoggerFactory;
     },
     data = TileProviderHttpData.class)
 public class TileProviderHttp extends AbstractTileProvider<TileProviderHttpData>
-    implements TileProvider {
+    implements TileProvider, TileAccess {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileProviderHttp.class);
   private final ChainedTileProvider providerChain;
@@ -87,7 +88,7 @@ public class TileProviderHttp extends AbstractTileProvider<TileProviderHttpData>
   }
 
   @Override
-  public Optional<TilesetMetadata> metadata(String tileset) {
+  public Optional<TilesetMetadata> getMetadata(String tileset) {
     return Optional.ofNullable(metadata.get(tileset));
   }
 
@@ -100,11 +101,6 @@ public class TileProviderHttp extends AbstractTileProvider<TileProviderHttpData>
     }
 
     return providerChain.get(tile);
-  }
-
-  @Override
-  public boolean supportsGeneration() {
-    return false;
   }
 
   private void loadMetadata() {

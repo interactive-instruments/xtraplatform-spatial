@@ -11,6 +11,7 @@ import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.entities.domain.AbstractPersistentEntity;
 import de.ii.xtraplatform.services.domain.AbstractService;
+import de.ii.xtraplatform.tiles.domain.TileAccess;
 import de.ii.xtraplatform.tiles.domain.TileProvider;
 import de.ii.xtraplatform.tiles.domain.TileProviderData;
 import de.ii.xtraplatform.tiles.domain.TilesetMetadata;
@@ -19,7 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class AbstractTileProvider<T extends TileProviderData>
-    extends AbstractPersistentEntity<T> implements TileProvider {
+    extends AbstractPersistentEntity<T> implements TileProvider, TileAccess {
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractService.class);
 
   public AbstractTileProvider(VolatileRegistry volatileRegistry, T data, String... capabilities) {
@@ -62,7 +63,7 @@ public abstract class AbstractTileProvider<T extends TileProviderData>
   }
 
   @Override
-  public Optional<TilesetMetadata> metadata(String tileset) {
+  public Optional<TilesetMetadata> getMetadata(String tileset) {
     return Optional.empty();
   }
 }

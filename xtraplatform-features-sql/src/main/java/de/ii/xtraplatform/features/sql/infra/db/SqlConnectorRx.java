@@ -21,6 +21,7 @@ import de.ii.xtraplatform.base.domain.LogContext.MARKER;
 import de.ii.xtraplatform.base.domain.resiliency.AbstractVolatilePolling;
 import de.ii.xtraplatform.base.domain.resiliency.Volatile2.Polling;
 import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry.ChangeHandler;
 import de.ii.xtraplatform.base.domain.resiliency.VolatileUnavailableException;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.Tuple;
@@ -39,6 +40,7 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
@@ -49,6 +51,7 @@ import org.davidmoten.rx.jdbc.Database;
 import org.davidmoten.rx.jdbc.pool.DatabaseType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 /**
  * @author zahnen
@@ -391,6 +394,18 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
     return Optional.of(providerId);
   }
 
+  public static ChangeHandler withMdc(ChangeHandler consumer) {
+    Map<String, String> mdc = MDC.getCopyOfContextMap();
+
+    if (Objects.nonNull(mdc)) {
+      return (u, v) -> {
+        MDC.setContextMap(mdc);
+        consumer.change(u, v);
+      };
+    }
+    return consumer;
+  }
+
   @Override
   protected synchronized void onVolatileStart() {
     super.onVolatileStart();
@@ -401,13 +416,14 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
       }
 
       onStateChange(
-          (from, to) -> {
-            if (to == State.AVAILABLE) {
-              LOGGER.info("Re-established connection to database: {}", getDatasetIdentifier());
-            } else if (to == State.UNAVAILABLE) {
-              LOGGER.warn("Lost connection to database: {}", getDatasetIdentifier());
-            }
-          },
+          withMdc(
+              (from, to) -> {
+                if (to == State.AVAILABLE) {
+                  LOGGER.info("Re-established connection to database: {}", getDatasetIdentifier());
+                } else if (to == State.UNAVAILABLE) {
+                  LOGGER.warn("Lost connection to database: {}", getDatasetIdentifier());
+                }
+              }),
           false);
     }
   }

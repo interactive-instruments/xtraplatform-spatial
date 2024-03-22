@@ -86,17 +86,28 @@ public interface FeatureProvider extends VolatileComposed {
   class FeatureVolatileCapability<T> implements OptionalVolatileCapability<T>, VolatileRegistered {
 
     private final Class<T> clazz;
+    private final T obj;
     private final String key;
     private final VolatileComposed composed;
     private final Supplier<Boolean> onlyIf;
 
     public FeatureVolatileCapability(Class<T> clazz, String key, VolatileComposed composed) {
-      this(clazz, key, composed, null);
+      this(clazz, null, key, composed, null);
+    }
+
+    public FeatureVolatileCapability(T obj, String key, VolatileComposed composed) {
+      this((Class<T>) obj.getClass(), obj, key, composed, null);
     }
 
     public FeatureVolatileCapability(
         Class<T> clazz, String key, VolatileComposed composed, Supplier<Boolean> onlyIf) {
+      this(clazz, null, key, composed, onlyIf);
+    }
+
+    public FeatureVolatileCapability(
+        Class<T> clazz, T obj, String key, VolatileComposed composed, Supplier<Boolean> onlyIf) {
       this.clazz = clazz;
+      this.obj = obj;
       this.key = key;
       this.composed = composed;
       this.onlyIf = onlyIf;
@@ -124,7 +135,7 @@ public interface FeatureProvider extends VolatileComposed {
 
     @Override
     public boolean isSupported() {
-      return clazz.isAssignableFrom(composed.getClass())
+      return (Objects.nonNull(obj) || clazz.isAssignableFrom(composed.getClass()))
           && (Objects.isNull(onlyIf) || onlyIf.get());
     }
 
@@ -138,7 +149,7 @@ public interface FeatureProvider extends VolatileComposed {
       if (!isSupported()) {
         throw new UnsupportedOperationException(key + " not supported");
       }
-      return clazz.cast(composed);
+      return Objects.nonNull(obj) ? obj : clazz.cast(composed);
     }
 
     @Override

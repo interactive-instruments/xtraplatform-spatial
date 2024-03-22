@@ -27,6 +27,7 @@ import de.ii.xtraplatform.tiles.domain.MbtilesMetadata;
 import de.ii.xtraplatform.tiles.domain.MbtilesMetadata.MbtilesFormat;
 import de.ii.xtraplatform.tiles.domain.MbtilesTileset;
 import de.ii.xtraplatform.tiles.domain.MinMax;
+import de.ii.xtraplatform.tiles.domain.TileAccess;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSet;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetRepository;
 import de.ii.xtraplatform.tiles.domain.TileProvider;
@@ -62,7 +63,7 @@ import org.slf4j.LoggerFactory;
     },
     data = TileProviderMbtilesData.class)
 public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtilesData>
-    implements TileProvider {
+    implements TileProvider, TileAccess {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileProviderMbTiles.class);
   private final ResourceStore tilesStore;
@@ -150,7 +151,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
   }
 
   @Override
-  public Optional<TilesetMetadata> metadata(String tileset) {
+  public Optional<TilesetMetadata> getMetadata(String tileset) {
     return Optional.ofNullable(metadata.get(tileset));
   }
 
@@ -163,11 +164,6 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
     }
 
     return providerChain.get(tile);
-  }
-
-  @Override
-  public boolean supportsGeneration() {
-    return false;
   }
 
   @Override
