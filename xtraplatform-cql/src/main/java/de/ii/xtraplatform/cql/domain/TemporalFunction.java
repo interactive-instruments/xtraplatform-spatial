@@ -7,9 +7,20 @@
  */
 package de.ii.xtraplatform.cql.domain;
 
-public enum ArrayOperator implements CqlNode {
-  A_EQUALS,
-  A_CONTAINS,
-  A_CONTAINEDBY,
-  A_OVERLAPS
+public enum TemporalFunction implements CqlNode {
+  T_AFTER,
+  T_BEFORE,
+  T_CONTAINS,
+  T_DISJOINT,
+  T_DURING,
+  T_EQUALS,
+  T_FINISHEDBY,
+  T_FINISHES,
+  T_INTERSECTS,
+  T_MEETS,
+  T_METBY,
+  T_OVERLAPPEDBY,
+  T_OVERLAPS,
+  T_STARTEDBY,
+  T_STARTS
 }

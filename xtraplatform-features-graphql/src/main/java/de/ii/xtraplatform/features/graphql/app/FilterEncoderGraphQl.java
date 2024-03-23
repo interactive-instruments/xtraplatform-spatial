@@ -24,8 +24,9 @@ import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.cql.domain.CqlNode;
 import de.ii.xtraplatform.cql.domain.CqlVisitor;
 import de.ii.xtraplatform.cql.domain.Function;
+import de.ii.xtraplatform.cql.domain.Geometry.Bbox;
 import de.ii.xtraplatform.cql.domain.Geometry.Coordinate;
-import de.ii.xtraplatform.cql.domain.Geometry.Envelope;
+import de.ii.xtraplatform.cql.domain.Geometry.GeometryCollection;
 import de.ii.xtraplatform.cql.domain.Geometry.LineString;
 import de.ii.xtraplatform.cql.domain.Geometry.MultiLineString;
 import de.ii.xtraplatform.cql.domain.Geometry.MultiPoint;
@@ -344,6 +345,13 @@ public class FilterEncoderGraphQl {
 
     @Override
     public Map<String, String> visit(
+        GeometryCollection geometryCollection, List<Map<String, String>> children) {
+      throw new IllegalArgumentException(
+          "GeometryCollection geometries are not supported in filter expressions for GraphQL feature providers.");
+    }
+
+    @Override
+    public Map<String, String> visit(
         MultiLineString multiLineString, List<Map<String, String>> children) {
       throw new IllegalArgumentException(
           "MultiLineString geometries are not supported in filter expressions for GraphQL feature providers.");
@@ -357,7 +365,7 @@ public class FilterEncoderGraphQl {
     }
 
     @Override
-    public Map<String, String> visit(Envelope envelope, List<Map<String, String>> children) {
+    public Map<String, String> visit(Bbox bbox, List<Map<String, String>> children) {
       if (queryGeneration.getCollection().getArguments().getGeometry().isEmpty()) {
         return Map.of();
       }
@@ -365,8 +373,7 @@ public class FilterEncoderGraphQl {
         throw new IllegalArgumentException(
             "No valid argument geometry filter found, valid filters are [toWkt].");
       }
-      List<Double> coords =
-          transformCoordinatesIfNecessary(envelope.getCoordinates(), envelope.getCrs());
+      List<Double> coords = transformCoordinatesIfNecessary(bbox.getCoordinates(), bbox.getCrs());
       String wkt =
           String.format(
               Locale.US,

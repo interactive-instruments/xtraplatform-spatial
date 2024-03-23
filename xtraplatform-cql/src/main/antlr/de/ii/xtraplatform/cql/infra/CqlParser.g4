@@ -3,21 +3,22 @@ options { tokenVocab=CqlLexer; superClass=CqlTextParser.CqlParserCustom; }
 
 /*
 #=============================================================================#
-# A CQL2 filter is a logically connected boolean expression of one or more
-# predicates.
-# These rules differ from the CQL2 BNF to clarify the predecence of AND, OR,
-# NOT, etc. and reliably parse an CQL2 expression into an abstract
-# representation.
+# A CQL2 filter is a logically connected expression of one or more predicates.
+# Predicates include scalar or comparison predicates, spatial predicates or
+# temporal predicates.
+#
+# Arithmetic expressions are not implemented yet.
 #=============================================================================#
 */
 
 cqlFilter : booleanExpression EOF;
-booleanExpression : booleanTerm | booleanExpression OR booleanTerm;
-booleanTerm : booleanFactor | booleanTerm AND booleanFactor;
+booleanExpression : booleanTerm (OR booleanTerm)*;
+booleanTerm : booleanFactor (AND booleanFactor)*;
 booleanFactor : (NOT)? booleanPrimary;
 booleanPrimary : predicate
-                | booleanLiteral
-                | LEFTPAREN booleanExpression RIGHTPAREN;
+               | booleanLiteral
+               | LEFTPAREN booleanExpression RIGHTPAREN
+               | function;
 
 /*
 #=============================================================================#
@@ -34,117 +35,114 @@ nestedCqlFilter: {isNotInsideNestedFilter($ctx)}? booleanExpression;
 */
 
 predicate : comparisonPredicate
-            | spatialPredicate
-            | temporalPredicate
-            | arrayPredicate;
+          | spatialPredicate
+          | temporalPredicate
+          | arrayPredicate;
 
 /*
 #=============================================================================#
 # A comparison predicate evaluates if two scalar expression statisfy the
-# specified comparison operator.  The comparion operators include an operator
-# to evaluate regular expressions (LIKE), a range evaluation operator and
-# an operator to test if a scalar expression is NULL or not.
+# specified comparison operator.  The comparion operators includes an operator
+# to evaluate pattern matching expressions (LIKE), a range evaluation operator
+# and an operator to test if a scalar expression is NULL or not.
 #=============================================================================#
 */
 
 comparisonPredicate : binaryComparisonPredicate
-                        | isLikePredicate
-                        | isBetweenPredicate
-                        | isInListPredicate
-                        | isNullPredicate;
+                    | isLikePredicate
+                    | isBetweenPredicate
+                    | isInListPredicate
+                    | isNullPredicate;
 
 binaryComparisonPredicate : scalarExpression ComparisonOperator scalarExpression;
 
 isLikePredicate :  characterExpression (NOT)? LIKE patternExpression;
 
-characterExpression : characterClause
-                    | propertyName
-                    | function;
-
-patternExpression : characterClause;
-
-/*
-#=============================================================================#
-# UPPER() and LOWER() are extensions to CQL2
-#=============================================================================#
-*/
-characterClause : characterLiteral
-                | CASEI LEFTPAREN characterExpression RIGHTPAREN
-                | ACCENTI LEFTPAREN characterExpression RIGHTPAREN
-                | LOWER LEFTPAREN characterExpression RIGHTPAREN
-                | UPPER LEFTPAREN characterExpression RIGHTPAREN;
-
 isBetweenPredicate : numericExpression (NOT)? BETWEEN numericExpression AND numericExpression;
 
-numericExpression : numericLiteral
-                  | propertyName
-                  | function
-                  /*
-                  | arithmeticExpression*/;
-
-isInListPredicate : scalarExpression (NOT)? IN LEFTPAREN scalarExpression ( COMMA scalarExpression )* RIGHTPAREN;
-
-/*
-#=============================================================================#
-# This differs from the CQL2 BNF. See scalarExpression for the reasons.
-#=============================================================================#
-*/
+isInListPredicate : scalarExpression (NOT)? IN LEFTPAREN scalarExpression (COMMA scalarExpression)* RIGHTPAREN;
 
 isNullPredicate : isNullOperand IS (NOT)? NULL;
 
 isNullOperand : characterClause
               | numericLiteral
               | booleanLiteral
-              | instantLiteral
-              | geomLiteral
+              | instantInstance
+              | geometryLiteral
               | propertyName
               | function;
-
 /*
 #=============================================================================#
-# A scalar expression is the property name, a character literal, a numeric
-# literal, a boolean literal, an instant literal, a function invocation that
-# returns a scalar value, or an arithmetic expression.
-# This differs from the CQL2 rule. The use of booleanExpression is problematic,
-# because everything is a booleanExpression. In addition, the CQL2 rule
-# includes propertyName and function in every expression).
+# Scalar expressions
 #=============================================================================#
 */
-scalarExpression : propertyName
-                 | characterClause
-                 | numericLiteral
-                 | booleanLiteral
-                 | instantLiteral
-                 | function
-                 /*
-                 | arithmeticExpression*/;
 
-//CHANGE: support compound property names
-//CHANGE: support nested filters
-propertyName : (Identifier (LEFTSQUAREBRACKET nestedCqlFilter RIGHTSQUAREBRACKET)? PERIOD)* Identifier;
+scalarExpression : characterClause
+                 | numericLiteral
+                 | instantInstance
+                 /*
+                 | arithmeticExpression
+                 */
+                 // booleanLiteral is booleanExpression in CQL2, but ANTLR
+                 // rejects it due to left-recursion
+                 | booleanLiteral
+                 | propertyName
+                 | function;
+
+characterExpression : characterClause
+                    | propertyName
+                    | function;
+
+patternExpression : characterLiteral
+                  | CASEI LEFTPAREN patternExpression RIGHTPAREN
+                  | ACCENTI LEFTPAREN patternExpression RIGHTPAREN
+                  // UPPER() and LOWER() are extensions to CQL2
+                  | LOWER LEFTPAREN patternExpression RIGHTPAREN
+                  | UPPER LEFTPAREN patternExpression RIGHTPAREN;
+
+characterClause : characterLiteral
+                | CASEI LEFTPAREN characterExpression RIGHTPAREN
+                | ACCENTI LEFTPAREN characterExpression RIGHTPAREN
+                // UPPER() and LOWER() are extensions to CQL2
+                | LOWER LEFTPAREN characterExpression RIGHTPAREN
+                | UPPER LEFTPAREN characterExpression RIGHTPAREN;
 
 characterLiteral : CharacterStringLiteral;
+
+numericExpression : numericLiteral
+                  | propertyName
+                  | function
+                  /*
+                  | arithmeticExpression
+                  */;
 
 numericLiteral : NumericLiteral;
 
 booleanLiteral : BooleanLiteral;
 
+// Support for compound property names is a CQL2 extension
+// Support for nested filters is a CQL2 extension
+propertyName : (Identifier (LEFTSQUAREBRACKET nestedCqlFilter RIGHTSQUAREBRACKET)? PERIOD)* Identifier;
+
 /*
 #=============================================================================#
 # A spatial predicate evaluates if two spatial expressions satisfy the
-# specified spatial operator.
+# condition implied by a standardized spatial comparison function.  If the
+# conditions of the spatial comparison function are met, the function returns
+# a Boolean value of true.  Otherwise the function returns false.
 #=============================================================================#
 */
 
-spatialPredicate :  SpatialOperator LEFTPAREN geomExpression COMMA geomExpression RIGHTPAREN;
+spatialPredicate :  SpatialFunction LEFTPAREN geomExpression COMMA geomExpression RIGHTPAREN;
 
 /*
 # A geometric expression is a property name of a geometry-valued property,
 # a geometric literal (expressed as WKT) or a function that returns a
 # geometric value.
 */
-geomExpression : propertyName
-               | geomLiteral
+
+geomExpression : spatialInstance
+               | propertyName
                | function;
 
 /*
@@ -156,14 +154,16 @@ geomExpression : propertyName
 #=============================================================================#
 */
 
-geomLiteral: point
-             | linestring
-             | polygon
-             | multiPoint
-             | multiLinestring
-             | multiPolygon
-             | geometryCollection
-             | envelope;
+spatialInstance : geometryLiteral
+                | geometryCollection
+                | bbox;
+
+geometryLiteral : point
+                | linestring
+                | polygon
+                | multiPoint
+                | multiLinestring
+                | multiPolygon;
 
 point : POINT LEFTPAREN coordinate RIGHTPAREN;
 
@@ -181,9 +181,9 @@ multiLinestring : MULTILINESTRING LEFTPAREN linestringDef (COMMA linestringDef)*
 
 multiPolygon : MULTIPOLYGON LEFTPAREN polygonDef (COMMA polygonDef)* RIGHTPAREN;
 
-geometryCollection : GEOMETRYCOLLECTION LEFTPAREN geomLiteral (COMMA geomLiteral)* RIGHTPAREN;
+geometryCollection : GEOMETRYCOLLECTION LEFTPAREN geometryLiteral (COMMA geometryLiteral)* RIGHTPAREN;
 
-envelope: ENVELOPE LEFTPAREN westBoundLon COMMA southBoundLat COMMA (minElev COMMA)? eastBoundLon  COMMA northBoundLat (COMMA maxElev)? RIGHTPAREN;
+bbox: BBOX LEFTPAREN westBoundLon COMMA southBoundLat COMMA (minElev COMMA)? eastBoundLon  COMMA northBoundLat (COMMA maxElev)? RIGHTPAREN;
 
 coordinate : xCoord yCoord (zCoord)?;
 
@@ -205,32 +205,32 @@ minElev : NumericLiteral;
 
 maxElev : NumericLiteral;
 
-
 /*
 #=============================================================================#
 # A temporal predicate evaluates if two temporal expressions satisfy the
 # specified temporal operator.
 #=============================================================================#
 */
-temporalPredicate : TemporalOperator LEFTPAREN temporalExpression COMMA temporalExpression RIGHTPAREN;
+
+temporalPredicate : TemporalFunction LEFTPAREN temporalExpression COMMA temporalExpression RIGHTPAREN;
 
 temporalExpression : temporalClause
                    | propertyName
                    | function;
 
-temporalClause: instantLiteral | interval;
+temporalClause: instantInstance | interval;
 
-instantLiteral: DATE LEFTPAREN DateString RIGHTPAREN
-              | TIMESTAMP LEFTPAREN TimestampString RIGHTPAREN
-              | NOW LEFTPAREN RIGHTPAREN;
+instantInstance: DATE LEFTPAREN DateString RIGHTPAREN
+               | TIMESTAMP LEFTPAREN TimestampString RIGHTPAREN
+               | NOW LEFTPAREN RIGHTPAREN; // NOW() is a CQL2 extension
 
 interval: INTERVAL LEFTPAREN intervalParameter COMMA intervalParameter RIGHTPAREN;
 
 intervalParameter: propertyName
                  | DateString
                  | TimestampString
+                 | NOW LEFTPAREN RIGHTPAREN // NOW() is a CQL2 extension
                  | DotDotString
-                 | NOW LEFTPAREN RIGHTPAREN
                  | function;
 
 /*
@@ -242,18 +242,14 @@ intervalParameter: propertyName
 #=============================================================================#
 */
 
-arrayPredicate: ArrayOperator LEFTPAREN arrayExpression COMMA arrayExpression RIGHTPAREN;
+arrayPredicate: ArrayFunction LEFTPAREN arrayExpression COMMA arrayExpression RIGHTPAREN;
 
-arrayExpression: propertyName | arrayClause | function;
+arrayExpression: propertyName
+               | arrayClause
+               | function;
 
-arrayClause: LEFTSQUAREBRACKET RIGHTSQUAREBRACKET
-           | LEFTSQUAREBRACKET arrayElement ( COMMA arrayElement )* RIGHTSQUAREBRACKET;
-
-/*
-#=============================================================================#
-# This differs from the CQL2 BNF. See scalarExpression for the reasons.
-#=============================================================================#
-*/
+arrayClause: LEFTPAREN RIGHTPAREN
+           | LEFTPAREN arrayElement ( COMMA arrayElement )* RIGHTPAREN;
 
 arrayElement: characterClause
             | numericLiteral
@@ -263,7 +259,8 @@ arrayElement: characterClause
             | propertyName
             | function
             /*
-            | arithmeticExpression*/;
+            | arithmeticExpression
+            */;
 
 /*
 #=============================================================================#
@@ -280,13 +277,14 @@ positionalArgument : argument ( COMMA argument )*;
 argument : characterClause
          | numericLiteral
          | booleanLiteral
-         | geomLiteral
+         | geometryLiteral
          | temporalClause
          | arrayClause
          | propertyName
          | function
          /*
-         | arithmeticExpression*/;
+         | arithmeticExpression
+         */;
 
 /*
 #=============================================================================#
@@ -295,17 +293,21 @@ argument : characterClause
 # an arithmetic operators (+,-,*,/) and another arithmetic operand.
 #=============================================================================#
 */
-/* IGNORE FOR NOW
-arithmeticExpression : arithmeticExpression PLUS arithmeticTerm
-                     | arithmeticExpression MINUS arithmeticTerm
-                     | arithmeticTerm;
-arithmeticTerm : arithmeticTerm ASTERISK powerTerm
-               | arithmeticTerm SOLIDUS powerTerm
-               | powerTerm;
-powerTerm : arithmeticFactor CARET powerTerm
-          | arithmeticFactor;
+/* Unsupported for now
+
+arithmeticExpression : arithmeticTerm (arithmeticOperatorPlusMinus arithmeticTerm)?;
+
+arithmeticOperatorPlusMinus : PLUS | MINUS;
+
+arithmeticTerm : powerTerm (arithmeticOperatorMultDiv powerTerm)?;
+
+arithmeticOperatorMultDiv : ASTERISK | SOLIDUS | PERCENT | DIV;
+
+powerTerm : arithmeticFactor (CARET arithmeticFactor)?;
+
 arithmeticFactor : LEFTPAREN arithmeticExpression RIGHTPAREN
-                 | arithmeticOperand;
+                 | (MINUS)? arithmeticOperand;
+
 arithmeticOperand : numericLiteral
                   | propertyName
                   | function;

@@ -18,10 +18,10 @@ import org.immutables.value.Value;
 public interface SpatialOperation extends BinaryOperation<SpatialLiteral>, CqlNode {
 
   @JsonValue
-  SpatialOperator getOperator();
+  SpatialFunction getOperator();
 
   static SpatialOperation of(
-      SpatialOperator operator, String property, SpatialLiteral temporalLiteral) {
+      SpatialFunction operator, String property, SpatialLiteral temporalLiteral) {
     return new ImmutableSpatialOperation.Builder()
         .operator(operator)
         .operands(ImmutableList.of(Property.of(property), temporalLiteral))

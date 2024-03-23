@@ -64,8 +64,10 @@ public interface CqlVisitor<T> {
       return visit((Geometry.MultiLineString) node, children);
     } else if (node instanceof Geometry.MultiPolygon) {
       return visit((Geometry.MultiPolygon) node, children);
-    } else if (node instanceof Geometry.Envelope) {
-      return visit((Geometry.Envelope) node, children);
+    } else if (node instanceof Geometry.Bbox) {
+      return visit((Geometry.Bbox) node, children);
+    } else if (node instanceof Geometry.GeometryCollection) {
+      return visit((Geometry.GeometryCollection) node, children);
     } else if (node instanceof SpatialLiteral) {
       return visit((SpatialLiteral) node, children);
     } else if (node instanceof Function) {
@@ -127,7 +129,9 @@ public interface CqlVisitor<T> {
 
   T visit(Geometry.MultiPolygon multiPolygon, List<T> children);
 
-  T visit(Geometry.Envelope envelope, List<T> children);
+  T visit(Geometry.GeometryCollection multiPolygon, List<T> children);
+
+  T visit(Geometry.Bbox envelope, List<T> children);
 
   T visit(Function function, List<T> children);
 

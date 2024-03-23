@@ -16,7 +16,7 @@ import org.immutables.value.Value;
 public interface ArrayOperation extends BinaryOperation<ArrayLiteral>, CqlNode {
 
   @JsonValue
-  ArrayOperator getOperator();
+  ArrayFunction getOperator();
 
   abstract class Builder extends BinaryOperation.Builder<ArrayLiteral, ArrayOperation> {}
 }

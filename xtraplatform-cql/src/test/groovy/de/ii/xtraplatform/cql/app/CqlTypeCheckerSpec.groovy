@@ -7,22 +7,16 @@
  */
 package de.ii.xtraplatform.cql.app
 
-import com.fasterxml.jackson.databind.annotation.JsonAppend
+
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
-import de.ii.xtraplatform.cql.domain.AContainedBy
 import de.ii.xtraplatform.cql.domain.Accenti
-import de.ii.xtraplatform.cql.domain.And
-import de.ii.xtraplatform.cql.domain.ArrayLiteral
-import de.ii.xtraplatform.cql.domain.ArrayOperator
+import de.ii.xtraplatform.cql.domain.ArrayFunction
 import de.ii.xtraplatform.cql.domain.Between
 import de.ii.xtraplatform.cql.domain.BinaryArrayOperation
 import de.ii.xtraplatform.cql.domain.BinarySpatialOperation
 import de.ii.xtraplatform.cql.domain.Casei
 import de.ii.xtraplatform.cql.domain.Cql
-import de.ii.xtraplatform.cql.domain.Cql2Expression
-import de.ii.xtraplatform.cql.domain.CqlFilter
-import de.ii.xtraplatform.cql.domain.CqlNode
 import de.ii.xtraplatform.cql.domain.CqlPredicate
 import de.ii.xtraplatform.cql.domain.Eq
 import de.ii.xtraplatform.cql.domain.Function
@@ -34,21 +28,15 @@ import de.ii.xtraplatform.cql.domain.IsNull
 import de.ii.xtraplatform.cql.domain.Like
 import de.ii.xtraplatform.cql.domain.Lte
 import de.ii.xtraplatform.cql.domain.Neq
-import de.ii.xtraplatform.cql.domain.NonBinaryScalarOperation
 import de.ii.xtraplatform.cql.domain.Not
-import de.ii.xtraplatform.cql.domain.Operand
-import de.ii.xtraplatform.cql.domain.Operation
 import de.ii.xtraplatform.cql.domain.Or
 import de.ii.xtraplatform.cql.domain.Lt
 import de.ii.xtraplatform.cql.domain.Gt
 import de.ii.xtraplatform.cql.domain.Property
-import de.ii.xtraplatform.cql.domain.SIntersects
-import de.ii.xtraplatform.cql.domain.Scalar
-import de.ii.xtraplatform.cql.domain.ScalarExpression
 import de.ii.xtraplatform.cql.domain.ScalarLiteral
 import de.ii.xtraplatform.cql.domain.Spatial
 import de.ii.xtraplatform.cql.domain.SpatialLiteral
-import de.ii.xtraplatform.cql.domain.SpatialOperator
+import de.ii.xtraplatform.cql.domain.SpatialFunction
 import de.ii.xtraplatform.cql.domain.Temporal
 import de.ii.xtraplatform.cql.domain.TemporalLiteral
 import de.ii.xtraplatform.cql.domain.Vector
@@ -56,14 +44,8 @@ import de.ii.xtraplatform.cql.infra.CqlIncompatibleTypes
 import de.ii.xtraplatform.crs.domain.BoundingBox
 import de.ii.xtraplatform.crs.domain.EpsgCrs
 import de.ii.xtraplatform.crs.domain.OgcCrs
-import org.eclipse.jetty.util.ssl.AliasedX509ExtendedKeyManager
-import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
-
-import java.lang.reflect.Array
-import java.time.Instant
-import java.util.stream.IntStream
 
 class CqlTypeCheckerSpec extends Specification {
 
@@ -335,13 +317,13 @@ class CqlTypeCheckerSpec extends Specification {
 
         when:
 
-             BinarySpatialOperation.of(SpatialOperator.S_WITHIN, Property.of("event"),  Property.of("location_geometry")).accept(visitor3)
-             BinarySpatialOperation.of(SpatialOperator.S_CONTAINS, Property.of("event"),  Property.of("location_geometry")).accept(visitor3)
-             BinarySpatialOperation.of(SpatialOperator.S_DISJOINT, Property.of("event"),  Property.of("location_geometry")).accept(visitor3)
-             BinarySpatialOperation.of(SpatialOperator.S_EQUALS, Property.of("event"),  Property.of("location_geometry")).accept(visitor3)
-             BinarySpatialOperation.of(SpatialOperator.S_INTERSECTS, Property.of("event"),  Property.of("location_geometry")).accept(visitor3)
-             BinarySpatialOperation.of(SpatialOperator.S_OVERLAPS, Property.of("event"),  Property.of("location_geometry")).accept(visitor3)
-             BinarySpatialOperation.of(SpatialOperator.S_TOUCHES, Property.of("event"),  Property.of("location_geometry")).accept(visitor3)
+             BinarySpatialOperation.of(SpatialFunction.S_WITHIN, Property.of("event"),  Property.of("location_geometry")).accept(visitor3)
+             BinarySpatialOperation.of(SpatialFunction.S_CONTAINS, Property.of("event"),  Property.of("location_geometry")).accept(visitor3)
+             BinarySpatialOperation.of(SpatialFunction.S_DISJOINT, Property.of("event"),  Property.of("location_geometry")).accept(visitor3)
+             BinarySpatialOperation.of(SpatialFunction.S_EQUALS, Property.of("event"),  Property.of("location_geometry")).accept(visitor3)
+             BinarySpatialOperation.of(SpatialFunction.S_INTERSECTS, Property.of("event"),  Property.of("location_geometry")).accept(visitor3)
+             BinarySpatialOperation.of(SpatialFunction.S_OVERLAPS, Property.of("event"),  Property.of("location_geometry")).accept(visitor3)
+             BinarySpatialOperation.of(SpatialFunction.S_TOUCHES, Property.of("event"),  Property.of("location_geometry")).accept(visitor3)
 
         then:
 
@@ -351,13 +333,13 @@ class CqlTypeCheckerSpec extends Specification {
 
         when:
 
-            BinarySpatialOperation.of(SpatialOperator.S_WITHIN, property1, property2).accept(visitor3)
-            BinarySpatialOperation.of(SpatialOperator.S_CONTAINS, property1, property2).accept(visitor3)
-            BinarySpatialOperation.of(SpatialOperator.S_DISJOINT, property1, property2).accept(visitor3)
-            BinarySpatialOperation.of(SpatialOperator.S_EQUALS, property1, property2).accept(visitor3)
-            BinarySpatialOperation.of(SpatialOperator.S_INTERSECTS, property1, property2).accept(visitor3)
-            BinarySpatialOperation.of(SpatialOperator.S_OVERLAPS, property1, property2).accept(visitor3)
-            BinarySpatialOperation.of(SpatialOperator.S_TOUCHES, property1, property2).accept(visitor3)
+            BinarySpatialOperation.of(SpatialFunction.S_WITHIN, property1, property2).accept(visitor3)
+            BinarySpatialOperation.of(SpatialFunction.S_CONTAINS, property1, property2).accept(visitor3)
+            BinarySpatialOperation.of(SpatialFunction.S_DISJOINT, property1, property2).accept(visitor3)
+            BinarySpatialOperation.of(SpatialFunction.S_EQUALS, property1, property2).accept(visitor3)
+            BinarySpatialOperation.of(SpatialFunction.S_INTERSECTS, property1, property2).accept(visitor3)
+            BinarySpatialOperation.of(SpatialFunction.S_OVERLAPS, property1, property2).accept(visitor3)
+            BinarySpatialOperation.of(SpatialFunction.S_TOUCHES, property1, property2).accept(visitor3)
 
         then:
 
@@ -377,10 +359,10 @@ class CqlTypeCheckerSpec extends Specification {
         when:
 
 
-            BinaryArrayOperation.of(ArrayOperator.A_OVERLAPS, Property.of("seats_per_class"), Property.of("special_seats")).accept(visitor3)
-            BinaryArrayOperation.of(ArrayOperator.A_CONTAINS, Property.of("seats_per_class"), Property.of("viewer_class")).accept(visitor3)
-            BinaryArrayOperation.of(ArrayOperator.A_EQUALS, Property.of("seats_per_class"), Property.of("special_seats")).accept(visitor3)
-            BinaryArrayOperation.of(ArrayOperator.A_OVERLAPS, Property.of("viewer_class"), Property.of("special_seats")).accept(visitor3)
+            BinaryArrayOperation.of(ArrayFunction.A_OVERLAPS, Property.of("seats_per_class"), Property.of("special_seats")).accept(visitor3)
+            BinaryArrayOperation.of(ArrayFunction.A_CONTAINS, Property.of("seats_per_class"), Property.of("viewer_class")).accept(visitor3)
+            BinaryArrayOperation.of(ArrayFunction.A_EQUALS, Property.of("seats_per_class"), Property.of("special_seats")).accept(visitor3)
+            BinaryArrayOperation.of(ArrayFunction.A_OVERLAPS, Property.of("viewer_class"), Property.of("special_seats")).accept(visitor3)
 
         then:
 
@@ -388,10 +370,10 @@ class CqlTypeCheckerSpec extends Specification {
 
         when:
 
-            BinaryArrayOperation.of(ArrayOperator.A_OVERLAPS, property1, property2).accept(visitor3)
-            BinaryArrayOperation.of(ArrayOperator.A_CONTAINS, property1, property2).accept(visitor3)
-            BinaryArrayOperation.of(ArrayOperator.A_EQUALS, property1, property2).accept(visitor3)
-            BinaryArrayOperation.of(ArrayOperator.A_OVERLAPS, property1, property2).accept(visitor3)
+            BinaryArrayOperation.of(ArrayFunction.A_OVERLAPS, property1, property2).accept(visitor3)
+            BinaryArrayOperation.of(ArrayFunction.A_CONTAINS, property1, property2).accept(visitor3)
+            BinaryArrayOperation.of(ArrayFunction.A_EQUALS, property1, property2).accept(visitor3)
+            BinaryArrayOperation.of(ArrayFunction.A_OVERLAPS, property1, property2).accept(visitor3)
 
         then:
 
@@ -542,10 +524,10 @@ class CqlTypeCheckerSpec extends Specification {
 
     }
 
-    def 'Test Envelope with Bbox'(){
+    def 'Test Bbox with bounding box'(){
         when:
 
-        SpatialLiteral.of(Geometry.Envelope.of(BoundingBox.of(2,2,4,4, OgcCrs.CRS84))).accept(visitor)
+        SpatialLiteral.of(Geometry.Bbox.of(BoundingBox.of(2,2,4,4, OgcCrs.CRS84))).accept(visitor)
 
         then:
 
@@ -553,14 +535,14 @@ class CqlTypeCheckerSpec extends Specification {
 
     }
 
-    def 'Test Envelope getType'(){
+    def 'Test Bbox getType'(){
         when:
 
-        def type = Geometry.Envelope.of(BoundingBox.of(2,2,4,4, OgcCrs.CRS84)).getType()
+        def type = Geometry.Bbox.of(BoundingBox.of(2,2,4,4, OgcCrs.CRS84)).getType()
 
         then:
 
-        type == Geometry.Type.Envelope
+        type == Geometry.Type.BBox
 
     }
 

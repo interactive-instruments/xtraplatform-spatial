@@ -7,63 +7,28 @@
  */
 package de.ii.xtraplatform.cql.app
 
-import com.fasterxml.jackson.core.JsonParseException
-import com.fasterxml.jackson.databind.InjectableValues
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.annotation.JsonAppend
-import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
 import de.ii.xtraplatform.blobs.domain.ResourceStore
-import de.ii.xtraplatform.cql.domain.And
-import de.ii.xtraplatform.cql.domain.Between
-import de.ii.xtraplatform.cql.domain.BinaryScalarOperation
 import de.ii.xtraplatform.cql.domain.Cql
 import de.ii.xtraplatform.cql.domain.Cql2Expression
 import de.ii.xtraplatform.cql.domain.CqlParseException
-import de.ii.xtraplatform.cql.domain.CqlVisitor
-import de.ii.xtraplatform.cql.domain.Eq
-import de.ii.xtraplatform.cql.domain.Function
 import de.ii.xtraplatform.cql.domain.Geometry
-import de.ii.xtraplatform.cql.domain.Gt
 import de.ii.xtraplatform.cql.domain.In
 import de.ii.xtraplatform.cql.domain.Interval
-import de.ii.xtraplatform.cql.domain.Operation
-import de.ii.xtraplatform.cql.domain.Or
 import de.ii.xtraplatform.cql.domain.Property
-import de.ii.xtraplatform.cql.domain.SContains
 import de.ii.xtraplatform.cql.domain.SCrosses
 import de.ii.xtraplatform.cql.domain.SIntersects
-import de.ii.xtraplatform.cql.domain.STouches
-import de.ii.xtraplatform.cql.domain.ScalarLiteral
-import de.ii.xtraplatform.cql.domain.Spatial
 import de.ii.xtraplatform.cql.domain.SpatialLiteral
-import de.ii.xtraplatform.cql.domain.TBefore
-import de.ii.xtraplatform.cql.domain.TDuring
-import de.ii.xtraplatform.cql.domain.TFinishedBy
-import de.ii.xtraplatform.cql.domain.TFinishes
-import de.ii.xtraplatform.cql.domain.TIntersects
-import de.ii.xtraplatform.cql.domain.Temporal
-import de.ii.xtraplatform.cql.domain.TemporalLiteral
-import de.ii.xtraplatform.cql.domain.TemporalOperator
-import de.ii.xtraplatform.cql.infra.CqlParser
+import de.ii.xtraplatform.cql.domain.TemporalFunction
 import de.ii.xtraplatform.crs.domain.CrsInfo
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory
-import de.ii.xtraplatform.crs.domain.EpsgCrs
 import de.ii.xtraplatform.crs.domain.OgcCrs
 import de.ii.xtraplatform.crs.infra.CrsTransformerFactoryProj
 import de.ii.xtraplatform.proj.domain.ProjLoaderImpl
-import io.swagger.v3.oas.models.security.SecurityScheme
-import org.checkerframework.checker.units.qual.C
-import org.eclipse.jetty.server.RequestLog
-import org.spockframework.runtime.model.INameable
 import spock.lang.Shared
 import spock.lang.Specification
 
-import javax.xml.transform.TransformerFactory
-import java.awt.Polygon
 import java.nio.file.Path
-import java.text.Format
-import java.time.LocalDate
 
 class CqlTextSpec extends Specification {
 
@@ -366,7 +331,7 @@ class CqlTextSpec extends Specification {
     def 'Location in the box between -118,33.8 and -117.9,34 in long/lat (geometry 1)'() {
 
         given:
-        String cqlText = "S_WITHIN(location, ENVELOPE(-118.0,33.8,-117.9,34.0))"
+        String cqlText = "S_WITHIN(location, BBOX(-118.0,33.8,-117.9,34.0))"
 
         when: 'reading text'
         Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -408,7 +373,7 @@ class CqlTextSpec extends Specification {
 
         given:
 
-        String cqlText = "S_INTERSECTS(bbox, MULTIPOINT(12.0 55.09,11.0 54.09))"
+        String cqlText = "S_INTERSECTS(\"bbox\", MULTIPOINT(12.0 55.09,11.0 54.09))"
 
         when: 'reading text'
 
@@ -433,7 +398,7 @@ class CqlTextSpec extends Specification {
 
         given:
 
-        String cqlText = "S_INTERSECTS(bbox, MULTILINESTRING((6.0 47.27),(11.0 50.27)))"
+        String cqlText = "S_INTERSECTS(\"bbox\", MULTILINESTRING((6.0 47.27),(11.0 50.27)))"
 
         Geometry.LineString lineString1 =  Geometry.LineString.of(Geometry.Coordinate.of((double)6.00, (double)47.27))
         Geometry.LineString lineString2 =  Geometry.LineString.of(Geometry.Coordinate.of((double)11.00, (double)50.27))
@@ -462,7 +427,7 @@ class CqlTextSpec extends Specification {
 
         given:
 
-        String cqlText = "S_INTERSECTS(bbox, MULTIPOLYGON(((6.0 47.27,11.0 50.27)),((6.0 47.27,11.0 50.27))))"
+        String cqlText = "S_INTERSECTS(\"bbox\", MULTIPOLYGON(((6.0 47.27,11.0 50.27)),((6.0 47.27,11.0 50.27))))"
 
         List<Geometry.Coordinate> coordinateList = new ArrayList<>()
         coordinateList.add(Geometry.Coordinate.of((double)6.00, (double)47.27))
@@ -489,17 +454,43 @@ class CqlTextSpec extends Specification {
 
         actual2 == cqlText
 
-
-
-
     }
 
+    def 'VisitGeometryCollection'() {
+
+        given:
+
+        String cqlText = "S_INTERSECTS(\"bbox\", GEOMETRYCOLLECTION(LINESTRING(6.0 47.27 0.0,11.0 50.27 3.0),POINT(0.0 0.0 0.0)))"
+
+        Geometry.LineString lineString =  Geometry.LineString.of(Geometry.Coordinate.of((double)6.00, (double)47.27, (double)0), Geometry.Coordinate.of((double)11.00, (double)50.27, (double)3))
+        Geometry.Point point =  Geometry.Point.of(Geometry.Coordinate.of((double)0, (double)0, (double)0))
+        Geometry.GeometryCollection geometryCollection = Geometry.GeometryCollection.of(lineString, point)
+
+        when: 'reading text'
+
+        Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
+
+        then:
+
+        noExceptionThrown()
+
+        and:
+
+        when:
+
+        String actual2 = cql.write( SIntersects.of(Property.of("bbox"), SpatialLiteral.of(geometryCollection)), Cql.Format.TEXT)
+
+        then:
+
+        actual2 == cqlText
+
+    }
 
     def 'VisitPoint'() {
 
         given:
 
-        String cqlText = "S_INTERSECTS(bbox, POINT(5.0 42.27))"
+        String cqlText = "S_INTERSECTS(\"bbox\", POINT(5.0 42.27))"
 
         when:
 
@@ -542,7 +533,7 @@ class CqlTextSpec extends Specification {
     def 'More than 5 floors and is within geometry 1 (below)'() {
 
         given:
-        String cqlText = "floors > 5 AND S_WITHIN(geometry, ENVELOPE(-118.0,33.8,-117.9,34.0))"
+        String cqlText = "floors > 5 AND S_WITHIN(geometry, BBOX(-118.0,33.8,-117.9,34.0))"
 
         when: 'reading text'
         Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -867,7 +858,7 @@ class CqlTextSpec extends Specification {
     def 'Evaluate if the value of an array property contains the specified subset of values'() {
 
         given:
-        String cqlText = "A_CONTAINS(layer:ids, ['layers-ca','layers-us'])"
+        String cqlText = "A_CONTAINS(layer:ids, ('layers-ca','layers-us'))"
 
         when: 'reading text'
         Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
@@ -963,7 +954,7 @@ class CqlTextSpec extends Specification {
 
     def 'Array predicate with nested filter'() {
         given:
-        String cqlText = "A_CONTAINS(theme[scheme = 'profile'].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[scheme = 'profile'].concept, ('DLKM','Basis-DLM','DLM50'))"
         when: 'reading text'
         Cql2Expression actual = cql.read(cqlText, Cql.Format.TEXT)
         then:
@@ -1025,7 +1016,7 @@ class CqlTextSpec extends Specification {
 
         given:
 
-        String cqlText = "A_CONTAINS(theme[T_INTERSECTS(event, INTERVAL(start_date,end_date))].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[T_INTERSECTS(event, INTERVAL(start_date,end_date))].concept, ('DLKM','Basis-DLM','DLM50'))"
 
         when: 'reading text'
 
@@ -1049,8 +1040,8 @@ class CqlTextSpec extends Specification {
     def 'Array predicate with nested LIKE filter'() {
         given:
 
-        String cqlText = "A_CONTAINS(theme[scheme LIKE 'profile'].concept, ['DLKM','Basis-DLM','DLM50'])"
-        //A_CONTAINS(theme[INTERVAL(start_date,end_date)].concept, ['DLKM','Basis-DLM','DLM50'])
+        String cqlText = "A_CONTAINS(theme[scheme LIKE 'profile'].concept, ('DLKM','Basis-DLM','DLM50'))"
+        //A_CONTAINS(theme[INTERVAL(start_date,end_date)].concept, ('DLKM','Basis-DLM','DLM50'))
 
         when: 'reading text'
 
@@ -1074,7 +1065,7 @@ class CqlTextSpec extends Specification {
     def 'Array predicate with nested IS NULL filter'() {
         given:
 
-        String cqlText = "A_CONTAINS(theme[scheme IS NULL].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[scheme IS NULL].concept, ('DLKM','Basis-DLM','DLM50'))"
 
         when: 'reading text'
 
@@ -1098,7 +1089,7 @@ class CqlTextSpec extends Specification {
     def 'Array predicate with nested CASEI filter'() {
         given:
 
-        String cqlText = "A_CONTAINS(theme[CASEI(schema) IN (CASEI('region'),CASEI('straße'))].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[CASEI(schema) IN (CASEI('region'),CASEI('straße'))].concept, ('DLKM','Basis-DLM','DLM50'))"
 
         when: 'reading text'
 
@@ -1122,7 +1113,7 @@ class CqlTextSpec extends Specification {
     def 'Array predicate with nested ACCENTI filter'() {
         given:
 
-        String cqlText = "A_CONTAINS(theme[ACCENTI(schema) IN (ACCENTI('region'),ACCENTI('straße'))].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[ACCENTI(schema) IN (ACCENTI('region'),ACCENTI('straße'))].concept, ('DLKM','Basis-DLM','DLM50'))"
 
         when: 'reading text'
 
@@ -1146,7 +1137,7 @@ class CqlTextSpec extends Specification {
     def 'Array predicate with nested OR filter'() {
         given:
 
-        String cqlText = "A_CONTAINS(theme[(schema = 'schema_1' OR schema = 'schema_2')].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[(schema = 'schema_1' OR schema = 'schema_2')].concept, ('DLKM','Basis-DLM','DLM50'))"
 
         when: 'reading text'
 
@@ -1170,7 +1161,7 @@ class CqlTextSpec extends Specification {
     def 'Array predicate with nested and filter'() {
         given:
 
-        String cqlText = "A_CONTAINS(theme[(length > 5 AND count > 10)].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[(length > 5 AND count > 10)].concept, ('DLKM','Basis-DLM','DLM50'))"
 
         when: 'reading text'
 
@@ -1194,7 +1185,7 @@ class CqlTextSpec extends Specification {
     def 'Array predicate with nested lt filter'() {
         given:
 
-        String cqlText = "A_CONTAINS(theme[length < 5].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[length < 5].concept, ('DLKM','Basis-DLM','DLM50'))"
 
         when: 'reading text'
 
@@ -1218,7 +1209,7 @@ class CqlTextSpec extends Specification {
     def 'Array predicate with nested lte filter'() {
         given:
 
-        String cqlText = "A_CONTAINS(theme[length <= 5].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[length <= 5].concept, ('DLKM','Basis-DLM','DLM50'))"
 
         when: 'reading text'
 
@@ -1242,7 +1233,7 @@ class CqlTextSpec extends Specification {
     def 'Array predicate with nested gte filter'() {
         given:
 
-        String cqlText = "A_CONTAINS(theme[length >= 5].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[length >= 5].concept, ('DLKM','Basis-DLM','DLM50'))"
 
         when: 'reading text'
 
@@ -1266,7 +1257,7 @@ class CqlTextSpec extends Specification {
     def 'Array predicate with nested neq filter'() {
         given:
 
-        String cqlText = "A_CONTAINS(theme[length <> 5].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[length <> 5].concept, ('DLKM','Basis-DLM','DLM50'))"
 
         when: 'reading text'
 
@@ -1290,7 +1281,7 @@ class CqlTextSpec extends Specification {
     def 'Array predicate with nested not filter'() {
         given:
 
-        String cqlText = "A_CONTAINS(theme[NOT (length = 5)].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[NOT (length = 5)].concept, ('DLKM','Basis-DLM','DLM50'))"
 
         when: 'reading text'
 
@@ -1314,7 +1305,7 @@ class CqlTextSpec extends Specification {
     def 'Array predicate with nested S_TOUCHES filter'() {
         given:
 
-        String cqlText = "A_CONTAINS(theme[S_TOUCHES(event, location_geometry)].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[S_TOUCHES(event, location_geometry)].concept, ('DLKM','Basis-DLM','DLM50'))"
 
         when: 'reading text'
 
@@ -1338,7 +1329,7 @@ class CqlTextSpec extends Specification {
     def 'Array predicate with nested array operation filter and TemporalLiteral'() {
         given:
 
-        String cqlText = "A_CONTAINS(theme[A_OVERLAPS(event, location_geometry)].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[A_OVERLAPS(event, location_geometry)].concept, ('DLKM','Basis-DLM','DLM50'))"
 
         when: 'reading text'
 
@@ -1663,7 +1654,7 @@ class CqlTextSpec extends Specification {
     def 'Array predicate with nested array operation T_BEFORE and TIMESTAMP'() {
         given:
 
-        String cqlText = "A_CONTAINS(theme[T_BEFORE(built, TIMESTAMP('2012-06-05T00:00:00Z'))].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[T_BEFORE(built, TIMESTAMP('2012-06-05T00:00:00Z'))].concept, ('DLKM','Basis-DLM','DLM50'))"
 
         when: 'reading text'
 
@@ -1687,7 +1678,7 @@ class CqlTextSpec extends Specification {
     def 'Array predicate with nested array operation S_WITHIN'() {
         given:
 
-        String cqlText = "A_CONTAINS(theme[S_WITHIN(location, ENVELOPE(-118.0,33.8,-117.9,34.0))].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[S_WITHIN(location, BBOX(-118.0,33.8,-117.9,34.0))].concept, ('DLKM','Basis-DLM','DLM50'))"
 
         when: 'reading text'
 
@@ -1713,7 +1704,7 @@ class CqlTextSpec extends Specification {
     def 'Array predicate with nested array operation Property comparison'() {
         given:
 
-        String cqlText = "A_CONTAINS(theme[road_class = name].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[road_class = name].concept, ('DLKM','Basis-DLM','DLM50'))"
 
         when: 'reading text'
 
@@ -1737,7 +1728,7 @@ class CqlTextSpec extends Specification {
     def 'Array predicate with nested array operation and Geometry.LineString Geometry.Polygon '() {
         given:
 
-        String cqlText = "A_CONTAINS(theme[S_WITHIN(LINESTRING(1.0 1.0), POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0)))].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[S_WITHIN(LINESTRING(1.0 1.0), POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0)))].concept, ('DLKM','Basis-DLM','DLM50'))"
 
         when: 'reading text'
 
@@ -1777,7 +1768,7 @@ class CqlTextSpec extends Specification {
 
         given:
 
-        String cqlText = "A_CONTAINS(theme[S_WITHIN(LINESTRING(1.0 1.0), POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0)))].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[S_WITHIN(LINESTRING(1.0 1.0), POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0)))].concept, ('DLKM','Basis-DLM','DLM50'))"
 
         when: 'reading text'
 
@@ -1828,7 +1819,7 @@ class CqlTextSpec extends Specification {
                 "name", "STRING",
                 "street", "STRING")
 
-        String cqlText = "A_CONTAINS(theme[T_INTERSECTS(event, INTERVAL(start_date,end_date))].concept, ['DLKM','Basis-DLM','DLM50'])"
+        String cqlText = "A_CONTAINS(theme[T_INTERSECTS(event, INTERVAL(start_date,end_date))].concept, ('DLKM','Basis-DLM','DLM50'))"
 
         List<String> stringList;
         when: 'reading text'
@@ -1891,9 +1882,9 @@ class CqlTextSpec extends Specification {
         where:
 
         cqlText                                                                | wrappedAxis
-        "floors > 5 AND S_WITHIN(geometry, ENVELOPE(-118.0,33.8,-117.9,34.0))" | 0
-        "floors > 5 AND S_WITHIN(geometry, ENVELOPE(-110,33.8,-117.9,34.0))"   | 0
-        "floors > 5 AND S_WITHIN(geometry, ENVELOPE(-118.0,38.8,-117.9,34.0))" | 1
+        "floors > 5 AND S_WITHIN(geometry, BBOX(-118.0,33.8,-117.9,34.0))" | 0
+        "floors > 5 AND S_WITHIN(geometry, BBOX(-110,33.8,-117.9,34.0))"   | 0
+        "floors > 5 AND S_WITHIN(geometry, BBOX(-118.0,38.8,-117.9,34.0))" | 1
 
     }
 
@@ -1917,7 +1908,7 @@ class CqlTextSpec extends Specification {
 
         when:
         String actual = cql.write(CqlFilterExamples.EXAMPLE_25x, Cql.Format.TEXT)
-        cql.mapTemporalOperators(cql.read(actual, Cql.Format.TEXT), Set.of(TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_STARTEDBY))
+        cql.mapTemporalOperators(cql.read(actual, Cql.Format.TEXT), Set.of(TemporalFunction.T_MEETS, TemporalFunction.T_METBY, TemporalFunction.T_OVERLAPPEDBY, TemporalFunction.T_STARTEDBY))
         then:
 
         noExceptionThrown()
@@ -1937,26 +1928,26 @@ class CqlTextSpec extends Specification {
 
         setTemporal                                                                                                                                                                           | cqlText
 
-        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_STARTEDBY)                              | "updated IN (TIMESTAMP('2017-06-10T07:30:00Z'),TIMESTAMP('2018-06-10T07:30:00Z'),TIMESTAMP('2019-06-10T07:30:00Z'),TIMESTAMP('2020-06-10T07:30:00Z'))"
-        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_STARTEDBY)                              | "T_BEFORE(INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'), updated)"
-        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_STARTEDBY)                              | "T_BEFORE(INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'), INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
-        Set.of(TemporalOperator.T_BEFORE)                                                                                                                                                     | "T_BEFORE(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
-        Set.of(TemporalOperator.T_BEFORE, TemporalOperator.T_AFTER, TemporalOperator.T_CONTAINS, TemporalOperator.T_DISJOINT, TemporalOperator.T_EQUALS, TemporalOperator.T_FINISHEDBY)       | "T_OVERLAPPEDBY(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
-        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_OVERLAPS, TemporalOperator.T_STARTEDBY) | "T_STARTS(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
-        Set.of(TemporalOperator.T_BEFORE)                                                                                                                                                     | "T_AFTER(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
-        Set.of(TemporalOperator.T_AFTER, TemporalOperator.T_DISJOINT, TemporalOperator.T_EQUALS, TemporalOperator.T_FINISHEDBY)                                                               | "T_BEFORE(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
-        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_OVERLAPS, TemporalOperator.T_STARTEDBY) | "T_CONTAINS(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
-        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_OVERLAPS, TemporalOperator.T_STARTEDBY) | "T_EQUALS(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
-        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_OVERLAPS)                               | "T_STARTEDBY(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
-        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_OVERLAPS, TemporalOperator.T_STARTEDBY) | "T_OVERLAPS(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
-        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_OVERLAPS, TemporalOperator.T_STARTEDBY) | "T_FINISHEDBY(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
-        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_OVERLAPS, TemporalOperator.T_STARTEDBY) | "T_FINISHES(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
-        Set.of(TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_OVERLAPS)                                                              | "T_INTERSECTS(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
-        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_OVERLAPS, TemporalOperator.T_STARTEDBY) | "T_DISJOINT(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
-        Set.of(TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_OVERLAPS, TemporalOperator.T_STARTEDBY)                                                          | "T_MEETS(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
-        Set.of(TemporalOperator.T_MEETS, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_OVERLAPS)                                                                                        | "T_METBY(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
-        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_STARTEDBY)                              | "T_OVERLAPS(INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'), event_Date)"
-        Set.of(TemporalOperator.T_INTERSECTS, TemporalOperator.T_MEETS, TemporalOperator.T_METBY, TemporalOperator.T_OVERLAPPEDBY, TemporalOperator.T_STARTEDBY)                              | "T_OVERLAPS(INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'), INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalFunction.T_INTERSECTS, TemporalFunction.T_MEETS, TemporalFunction.T_METBY, TemporalFunction.T_OVERLAPPEDBY, TemporalFunction.T_STARTEDBY)                              | "updated IN (TIMESTAMP('2017-06-10T07:30:00Z'),TIMESTAMP('2018-06-10T07:30:00Z'),TIMESTAMP('2019-06-10T07:30:00Z'),TIMESTAMP('2020-06-10T07:30:00Z'))"
+        Set.of(TemporalFunction.T_INTERSECTS, TemporalFunction.T_MEETS, TemporalFunction.T_METBY, TemporalFunction.T_OVERLAPPEDBY, TemporalFunction.T_STARTEDBY)                              | "T_BEFORE(INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'), updated)"
+        Set.of(TemporalFunction.T_INTERSECTS, TemporalFunction.T_MEETS, TemporalFunction.T_METBY, TemporalFunction.T_OVERLAPPEDBY, TemporalFunction.T_STARTEDBY)                              | "T_BEFORE(INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'), INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalFunction.T_BEFORE)                                                                                                                                                     | "T_BEFORE(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalFunction.T_BEFORE, TemporalFunction.T_AFTER, TemporalFunction.T_CONTAINS, TemporalFunction.T_DISJOINT, TemporalFunction.T_EQUALS, TemporalFunction.T_FINISHEDBY)       | "T_OVERLAPPEDBY(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalFunction.T_INTERSECTS, TemporalFunction.T_MEETS, TemporalFunction.T_METBY, TemporalFunction.T_OVERLAPPEDBY, TemporalFunction.T_OVERLAPS, TemporalFunction.T_STARTEDBY) | "T_STARTS(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalFunction.T_BEFORE)                                                                                                                                                     | "T_AFTER(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalFunction.T_AFTER, TemporalFunction.T_DISJOINT, TemporalFunction.T_EQUALS, TemporalFunction.T_FINISHEDBY)                                                               | "T_BEFORE(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalFunction.T_INTERSECTS, TemporalFunction.T_MEETS, TemporalFunction.T_METBY, TemporalFunction.T_OVERLAPPEDBY, TemporalFunction.T_OVERLAPS, TemporalFunction.T_STARTEDBY) | "T_CONTAINS(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalFunction.T_INTERSECTS, TemporalFunction.T_MEETS, TemporalFunction.T_METBY, TemporalFunction.T_OVERLAPPEDBY, TemporalFunction.T_OVERLAPS, TemporalFunction.T_STARTEDBY) | "T_EQUALS(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalFunction.T_INTERSECTS, TemporalFunction.T_MEETS, TemporalFunction.T_METBY, TemporalFunction.T_OVERLAPPEDBY, TemporalFunction.T_OVERLAPS)                               | "T_STARTEDBY(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalFunction.T_INTERSECTS, TemporalFunction.T_MEETS, TemporalFunction.T_METBY, TemporalFunction.T_OVERLAPPEDBY, TemporalFunction.T_OVERLAPS, TemporalFunction.T_STARTEDBY) | "T_OVERLAPS(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalFunction.T_INTERSECTS, TemporalFunction.T_MEETS, TemporalFunction.T_METBY, TemporalFunction.T_OVERLAPPEDBY, TemporalFunction.T_OVERLAPS, TemporalFunction.T_STARTEDBY) | "T_FINISHEDBY(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalFunction.T_INTERSECTS, TemporalFunction.T_MEETS, TemporalFunction.T_METBY, TemporalFunction.T_OVERLAPPEDBY, TemporalFunction.T_OVERLAPS, TemporalFunction.T_STARTEDBY) | "T_FINISHES(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalFunction.T_MEETS, TemporalFunction.T_METBY, TemporalFunction.T_OVERLAPPEDBY, TemporalFunction.T_OVERLAPS)                                                              | "T_INTERSECTS(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalFunction.T_INTERSECTS, TemporalFunction.T_MEETS, TemporalFunction.T_METBY, TemporalFunction.T_OVERLAPPEDBY, TemporalFunction.T_OVERLAPS, TemporalFunction.T_STARTEDBY) | "T_DISJOINT(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalFunction.T_METBY, TemporalFunction.T_OVERLAPPEDBY, TemporalFunction.T_OVERLAPS, TemporalFunction.T_STARTEDBY)                                                          | "T_MEETS(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalFunction.T_MEETS, TemporalFunction.T_OVERLAPPEDBY, TemporalFunction.T_OVERLAPS)                                                                                        | "T_METBY(updated, INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
+        Set.of(TemporalFunction.T_INTERSECTS, TemporalFunction.T_MEETS, TemporalFunction.T_METBY, TemporalFunction.T_OVERLAPPEDBY, TemporalFunction.T_STARTEDBY)                              | "T_OVERLAPS(INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'), event_Date)"
+        Set.of(TemporalFunction.T_INTERSECTS, TemporalFunction.T_MEETS, TemporalFunction.T_METBY, TemporalFunction.T_OVERLAPPEDBY, TemporalFunction.T_STARTEDBY)                              | "T_OVERLAPS(INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'), INTERVAL('2017-06-10T07:30:00Z','2017-06-11T10:30:00Z'))"
 
     }
 

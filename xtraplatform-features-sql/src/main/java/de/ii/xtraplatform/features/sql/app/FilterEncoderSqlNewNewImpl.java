@@ -7,10 +7,10 @@
  */
 package de.ii.xtraplatform.features.sql.app;
 
-import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_CONTAINEDBY;
-import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_CONTAINS;
-import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_EQUALS;
-import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_OVERLAPS;
+import static de.ii.xtraplatform.cql.domain.ArrayFunction.A_CONTAINEDBY;
+import static de.ii.xtraplatform.cql.domain.ArrayFunction.A_CONTAINS;
+import static de.ii.xtraplatform.cql.domain.ArrayFunction.A_EQUALS;
+import static de.ii.xtraplatform.cql.domain.ArrayFunction.A_OVERLAPS;
 import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
 
 import com.google.common.base.Splitter;
@@ -38,8 +38,8 @@ import de.ii.xtraplatform.cql.domain.Operand;
 import de.ii.xtraplatform.cql.domain.Property;
 import de.ii.xtraplatform.cql.domain.Scalar;
 import de.ii.xtraplatform.cql.domain.ScalarLiteral;
+import de.ii.xtraplatform.cql.domain.SpatialFunction;
 import de.ii.xtraplatform.cql.domain.SpatialOperation;
-import de.ii.xtraplatform.cql.domain.SpatialOperator;
 import de.ii.xtraplatform.cql.domain.TemporalLiteral;
 import de.ii.xtraplatform.cql.domain.TemporalOperation;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
@@ -77,16 +77,16 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
 
   static final Splitter ARRAY_SPLITTER = Splitter.on(",").trimResults().omitEmptyStrings();
 
-  private static final Map<SpatialOperator, String> SPATIAL_OPERATORS =
-      new ImmutableMap.Builder<SpatialOperator, String>()
-          .put(SpatialOperator.S_EQUALS, "ST_Equals")
-          .put(SpatialOperator.S_DISJOINT, "ST_Disjoint")
-          .put(SpatialOperator.S_TOUCHES, "ST_Touches")
-          .put(SpatialOperator.S_WITHIN, "ST_Within")
-          .put(SpatialOperator.S_OVERLAPS, "ST_Overlaps")
-          .put(SpatialOperator.S_CROSSES, "ST_Crosses")
-          .put(SpatialOperator.S_INTERSECTS, "ST_Intersects")
-          .put(SpatialOperator.S_CONTAINS, "ST_Contains")
+  private static final Map<SpatialFunction, String> SPATIAL_OPERATORS =
+      new ImmutableMap.Builder<SpatialFunction, String>()
+          .put(SpatialFunction.S_EQUALS, "ST_Equals")
+          .put(SpatialFunction.S_DISJOINT, "ST_Disjoint")
+          .put(SpatialFunction.S_TOUCHES, "ST_Touches")
+          .put(SpatialFunction.S_WITHIN, "ST_Within")
+          .put(SpatialFunction.S_OVERLAPS, "ST_Overlaps")
+          .put(SpatialFunction.S_CROSSES, "ST_Crosses")
+          .put(SpatialFunction.S_INTERSECTS, "ST_Intersects")
+          .put(SpatialFunction.S_CONTAINS, "ST_Contains")
           .build();
 
   private final Function<FeatureStoreAttributesContainer, List<String>> aliasesGenerator;
@@ -635,10 +635,10 @@ public class FilterEncoderSqlNewNewImpl implements FilterEncoderSqlNewNew {
     }
 
     @Override
-    public String visit(Geometry.Envelope envelope, List<String> children) {
-      List<Double> c = envelope.getCoordinates();
+    public String visit(Geometry.Bbox bbox, List<String> children) {
+      List<Double> c = bbox.getCoordinates();
 
-      EpsgCrs crs = envelope.getCrs().orElse(OgcCrs.CRS84);
+      EpsgCrs crs = bbox.getCrs().orElse(OgcCrs.CRS84);
       int epsgCode = crs.getCode();
       boolean hasDiscontinuityAt180DegreeLongitude =
           ImmutableList.of(4326, 4979, 4259, 4269).contains(epsgCode);

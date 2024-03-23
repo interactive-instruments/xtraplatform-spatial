@@ -7,17 +7,17 @@
  */
 package de.ii.xtraplatform.features.sql.domain;
 
-import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_CONTAINEDBY;
-import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_CONTAINS;
-import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_EQUALS;
-import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_OVERLAPS;
+import static de.ii.xtraplatform.cql.domain.ArrayFunction.A_CONTAINEDBY;
+import static de.ii.xtraplatform.cql.domain.ArrayFunction.A_CONTAINS;
+import static de.ii.xtraplatform.cql.domain.ArrayFunction.A_EQUALS;
+import static de.ii.xtraplatform.cql.domain.ArrayFunction.A_OVERLAPS;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.cql.domain.ArrayOperator;
-import de.ii.xtraplatform.cql.domain.SpatialOperator;
-import de.ii.xtraplatform.cql.domain.TemporalOperator;
+import de.ii.xtraplatform.cql.domain.ArrayFunction;
+import de.ii.xtraplatform.cql.domain.SpatialFunction;
+import de.ii.xtraplatform.cql.domain.TemporalFunction;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
@@ -42,14 +42,14 @@ public class SqlDialectPostGis implements SqlDialect {
 
   private static final Splitter BBOX_SPLITTER =
       Splitter.onPattern("[(), ]").omitEmptyStrings().trimResults();
-  private static final Map<SpatialOperator, String> SPATIAL_OPERATORS_3D =
-      new ImmutableMap.Builder<SpatialOperator, String>()
-          .put(SpatialOperator.S_INTERSECTS, "ST_3DIntersects")
+  private static final Map<SpatialFunction, String> SPATIAL_OPERATORS_3D =
+      new ImmutableMap.Builder<SpatialFunction, String>()
+          .put(SpatialFunction.S_INTERSECTS, "ST_3DIntersects")
           .build();
-  public static final Map<TemporalOperator, String> TEMPORAL_OPERATORS =
-      new ImmutableMap.Builder<TemporalOperator, String>()
+  public static final Map<TemporalFunction, String> TEMPORAL_OPERATORS =
+      new ImmutableMap.Builder<TemporalFunction, String>()
           .put(
-              TemporalOperator.T_INTERSECTS,
+              TemporalFunction.T_INTERSECTS,
               "OVERLAPS") // "({start1},{end1}) OVERLAPS ({start2},{end2})"
           .build();
 
@@ -130,19 +130,19 @@ public class SqlDialectPostGis implements SqlDialect {
   }
 
   @Override
-  public String getSpatialOperator(SpatialOperator spatialOperator, boolean is3d) {
-    return is3d && SPATIAL_OPERATORS_3D.containsKey(spatialOperator)
-        ? SPATIAL_OPERATORS_3D.get(spatialOperator)
-        : SqlDialect.super.getSpatialOperator(spatialOperator, is3d);
+  public String getSpatialOperator(SpatialFunction spatialFunction, boolean is3d) {
+    return is3d && SPATIAL_OPERATORS_3D.containsKey(spatialFunction)
+        ? SPATIAL_OPERATORS_3D.get(spatialFunction)
+        : SqlDialect.super.getSpatialOperator(spatialFunction, is3d);
   }
 
   @Override
-  public String getTemporalOperator(TemporalOperator temporalOperator) {
-    return TEMPORAL_OPERATORS.get(temporalOperator);
+  public String getTemporalOperator(TemporalFunction temporalFunction) {
+    return TEMPORAL_OPERATORS.get(temporalFunction);
   }
 
   @Override
-  public Set<TemporalOperator> getTemporalOperators() {
+  public Set<TemporalFunction> getTemporalOperators() {
     return TEMPORAL_OPERATORS.keySet();
   }
 
@@ -265,7 +265,7 @@ public class SqlDialectPostGis implements SqlDialect {
 
   @Override
   public String applyToJsonArrayOp(
-      ArrayOperator op, boolean notInverse, String mainExpression, String jsonValueArray) {
+      ArrayFunction op, boolean notInverse, String mainExpression, String jsonValueArray) {
     if (notInverse ? op == A_CONTAINS : op == A_CONTAINEDBY) {
       String arrayQuery = String.format(" @> '%s'", jsonValueArray);
       return String.format(mainExpression, "", arrayQuery);

@@ -9,9 +9,9 @@ package de.ii.xtraplatform.features.sql.domain;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import de.ii.xtraplatform.cql.domain.ArrayOperator;
-import de.ii.xtraplatform.cql.domain.SpatialOperator;
-import de.ii.xtraplatform.cql.domain.TemporalOperator;
+import de.ii.xtraplatform.cql.domain.ArrayFunction;
+import de.ii.xtraplatform.cql.domain.SpatialFunction;
+import de.ii.xtraplatform.cql.domain.TemporalFunction;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
@@ -51,7 +51,7 @@ public interface SqlDialect {
   String applyToJsonValue(String alias, String column, String path, PropertyTypeInfo typeInfo);
 
   default String applyToJsonArrayOp(
-      ArrayOperator op, boolean notInverse, String mainExpression, String jsonValueArray) {
+      ArrayFunction op, boolean notInverse, String mainExpression, String jsonValueArray) {
     throw new IllegalArgumentException(
         "Arrays as queryables are not supported for this feature provider.");
   }
@@ -78,18 +78,18 @@ public interface SqlDialect {
 
   List<String> getSystemTables();
 
-  default String getSpatialOperator(SpatialOperator spatialOperator, boolean is3d) {
-    return is3d && SPATIAL_OPERATORS_3D.containsKey(spatialOperator)
-        ? SPATIAL_OPERATORS_3D.get(spatialOperator)
-        : SPATIAL_OPERATORS.get(spatialOperator);
+  default String getSpatialOperator(SpatialFunction spatialFunction, boolean is3d) {
+    return is3d && SPATIAL_OPERATORS_3D.containsKey(spatialFunction)
+        ? SPATIAL_OPERATORS_3D.get(spatialFunction)
+        : SPATIAL_OPERATORS.get(spatialFunction);
   }
 
-  default String getTemporalOperator(TemporalOperator temporalOperator) {
+  default String getTemporalOperator(TemporalFunction temporalFunction) {
     // this is implementation specific
     return null;
   }
 
-  default Set<TemporalOperator> getTemporalOperators() {
+  default Set<TemporalFunction> getTemporalOperators() {
     return ImmutableSet.of();
   }
 
@@ -128,18 +128,18 @@ public interface SqlDialect {
     String getType();
   }
 
-  Map<SpatialOperator, String> SPATIAL_OPERATORS =
-      new ImmutableMap.Builder<SpatialOperator, String>()
-          .put(SpatialOperator.S_EQUALS, "ST_Equals")
-          .put(SpatialOperator.S_DISJOINT, "ST_Disjoint")
-          .put(SpatialOperator.S_TOUCHES, "ST_Touches")
-          .put(SpatialOperator.S_WITHIN, "ST_Within")
-          .put(SpatialOperator.S_OVERLAPS, "ST_Overlaps")
-          .put(SpatialOperator.S_CROSSES, "ST_Crosses")
-          .put(SpatialOperator.S_INTERSECTS, "ST_Intersects")
-          .put(SpatialOperator.S_CONTAINS, "ST_Contains")
+  Map<SpatialFunction, String> SPATIAL_OPERATORS =
+      new ImmutableMap.Builder<SpatialFunction, String>()
+          .put(SpatialFunction.S_EQUALS, "ST_Equals")
+          .put(SpatialFunction.S_DISJOINT, "ST_Disjoint")
+          .put(SpatialFunction.S_TOUCHES, "ST_Touches")
+          .put(SpatialFunction.S_WITHIN, "ST_Within")
+          .put(SpatialFunction.S_OVERLAPS, "ST_Overlaps")
+          .put(SpatialFunction.S_CROSSES, "ST_Crosses")
+          .put(SpatialFunction.S_INTERSECTS, "ST_Intersects")
+          .put(SpatialFunction.S_CONTAINS, "ST_Contains")
           .build();
 
-  Map<SpatialOperator, String> SPATIAL_OPERATORS_3D =
-      new ImmutableMap.Builder<SpatialOperator, String>().build();
+  Map<SpatialFunction, String> SPATIAL_OPERATORS_3D =
+      new ImmutableMap.Builder<SpatialFunction, String>().build();
 }

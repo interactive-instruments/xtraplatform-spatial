@@ -731,12 +731,53 @@ class CqlJsonSpec extends Specification {
         Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
 
         then:
-        actual == CqlFilterExamples.EXAMPLE_16_Envelope
+        actual == CqlFilterExamples.EXAMPLE_16_BBox
 
         and:
 
         when: 'writing json'
         String actual2 = cql.write(actual, Cql.Format.JSON)
+
+        then:
+        JSONAssert.assertEquals(cqlJson, actual2, true)
+
+    }
+
+    def 'Location that intersects with a geometry collection geometry'() {
+
+        given:
+        String cqlJson = """
+            {
+                "op": "s_intersects",
+                "args": [
+                    {"property": "location"},
+                    {
+                        "type": "GeometryCollection",
+                        "geometries": [
+                            {
+                                "type": "Point",
+                                "coordinates": [10.0, -10.0]
+                            },
+                            {
+                                "type": "Point",
+                                "coordinates": [10.0, 10.0]
+                            }
+                        ]
+                    }
+                ]
+            }
+        """
+
+        when: 'reading json'
+        Cql2Expression actual = cql.read(cqlJson, Cql.Format.JSON)
+
+        then:
+        actual == CqlFilterExamples.EXAMPLE_16_GeometryCollection
+
+        and:
+
+        when: 'writing json'
+        String actual2 = cql.write(CqlFilterExamples.EXAMPLE_16_GeometryCollection, Cql.Format.JSON)
 
         then:
         JSONAssert.assertEquals(cqlJson, actual2, true)
