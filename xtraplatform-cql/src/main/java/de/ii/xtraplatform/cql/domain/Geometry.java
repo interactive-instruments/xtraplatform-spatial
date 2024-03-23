@@ -308,6 +308,8 @@ public interface Geometry<T> extends CqlNode {
 
   @Value.Immutable
   @JsonDeserialize(using = Geometry.GeometryCollection.Deserializer.class)
+  // Note that Immutables does not support Geometry<Geometry<?>>, so Object is used instead
+  // and casts are added as needed
   interface GeometryCollection extends Geometry<Object> {
 
     static GeometryCollection of(Geometry<?>... geometries) {
