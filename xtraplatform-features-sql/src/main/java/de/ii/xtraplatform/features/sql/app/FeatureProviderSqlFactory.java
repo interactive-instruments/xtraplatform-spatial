@@ -14,6 +14,7 @@ import dagger.Lazy;
 import dagger.assisted.AssistedFactory;
 import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
+import de.ii.xtraplatform.cache.domain.Cache;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
@@ -88,6 +89,7 @@ public class FeatureProviderSqlFactory
       ProviderExtensionRegistry extensionRegistry,
       DecoderFactories decoderFactories,
       VolatileRegistry volatileRegistry,
+      Cache cache,
       ProviderSqlFactoryAssisted providerSqlFactoryAssisted) {
     super(providerSqlFactoryAssisted);
     this.schemaResolvers = schemaResolvers;

@@ -79,6 +79,7 @@ public abstract class AbstractFeatureProvider<
   private Reactive.Runner streamRunner;
   private final DelayedVolatile<FeatureProviderConnector<T, U, V>> connector;
   private boolean datasetChanged;
+  private boolean datasetChangedForced;
   private String previousDataset;
 
   protected AbstractFeatureProvider(
@@ -161,6 +162,7 @@ public abstract class AbstractFeatureProvider<
 
     this.datasetChanged =
         connector.isPresent() && !connector.get().isSameDataset(getConnectionInfo());
+    this.datasetChangedForced = getConnectionInfo().getAssumeExternalChanges();
     this.previousDataset =
         Optional.ofNullable(connector.get())
             .map(FeatureProviderConnector::getDatasetIdentifier)
@@ -265,11 +267,15 @@ public abstract class AbstractFeatureProvider<
 
     LOGGER.info("Feature provider with id '{}' reloaded successfully.{}", getId(), startupInfo);
 
-    if (datasetChanged) {
-      LOGGER.info(
-          "Dataset has changed ({} -> {}).",
-          previousDataset,
-          getConnectionInfo().getDatasetIdentifier());
+    if (datasetChanged || datasetChangedForced) {
+      if (datasetChangedForced) {
+        LOGGER.info("Dataset has changed (forced).");
+      } else {
+        LOGGER.info(
+            "Dataset has changed ({} -> {}).",
+            previousDataset,
+            getConnectionInfo().getDatasetIdentifier());
+      }
       changeHandler.handle(
           ImmutableDatasetChange.builder().featureTypes(getData().getTypes().keySet()).build());
     }
