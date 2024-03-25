@@ -83,8 +83,6 @@ scalarExpression : characterClause
                  /*
                  | arithmeticExpression
                  */
-                 // booleanLiteral is booleanExpression in CQL2, but ANTLR
-                 // rejects it due to left-recursion
                  | booleanLiteral
                  | propertyName
                  | function;
