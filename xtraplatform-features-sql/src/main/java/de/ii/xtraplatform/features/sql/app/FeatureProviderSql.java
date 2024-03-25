@@ -592,7 +592,7 @@ public class FeatureProviderSql
     }
 
     String[] cacheKey = {typeName, "stats", "count"};
-    String cacheValidator = getData().getStableHash().get();
+    String cacheValidator = getData().getStableHash();
 
     if (cache.hasValid(cacheValidator, cacheKey)) {
       if (LOGGER.isDebugEnabled()) {
@@ -638,7 +638,7 @@ public class FeatureProviderSql
     }
 
     String[] cacheKey = {typeName, "stats", "spatial"};
-    String cacheValidator = getData().getStableHash().get();
+    String cacheValidator = getData().getStableHash();
 
     if (cache.hasValid(cacheValidator, cacheKey)) {
       if (LOGGER.isDebugEnabled()) {
@@ -713,7 +713,7 @@ public class FeatureProviderSql
     }
 
     String[] cacheKey = {typeName, "stats", "temporal"};
-    String cacheValidator = getData().getStableHash().get();
+    String cacheValidator = getData().getStableHash();
 
     if (cache.hasValid(cacheValidator, cacheKey)) {
       if (LOGGER.isDebugEnabled()) {
