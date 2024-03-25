@@ -142,6 +142,7 @@ public interface ConnectionInfoSql extends ConnectionInfo {
    * @langDe Annehmen, dass der verbundene Datensatz durch externe Applikationen geändert werden
    *     kann. Wenn diese Option auf `true` gesetzt wrid, werden z.B. Extents und Counts bei jedem
    *     Start oder Reload des Providers neu berechnet.
+   * @since v4.0
    * @default false
    */
   @Override
