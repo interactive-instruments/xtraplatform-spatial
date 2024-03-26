@@ -1,5 +1,5 @@
 [versions]
-xtraplatform-build = "5.1.4"
+xtraplatform-build = "5.2.0"
 spotless = "6.23.3"
 
 [plugins]
