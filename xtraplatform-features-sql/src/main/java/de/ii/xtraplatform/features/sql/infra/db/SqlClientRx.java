@@ -20,8 +20,7 @@ import de.ii.xtraplatform.features.sql.domain.SqlDialectPostGis;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.SqlRow;
 import de.ii.xtraplatform.streams.domain.Reactive;
-import hu.akarnokd.rxjava3.bridge.RxJavaBridge;
-import io.reactivex.Flowable;
+import io.reactivex.rxjava3.core.Flowable;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -39,9 +38,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.davidmoten.rx.jdbc.Database;
-import org.davidmoten.rx.jdbc.Tx;
-import org.davidmoten.rx.jdbc.internal.DelegatedConnection;
+import org.davidmoten.rxjava3.jdbc.Database;
+import org.davidmoten.rxjava3.jdbc.Tx;
+import org.davidmoten.rxjava3.jdbc.internal.DelegatedConnection;
 import org.postgresql.PGConnection;
 import org.postgresql.PGNotification;
 import org.slf4j.Logger;
@@ -142,7 +141,7 @@ public class SqlClientRx implements SqlClient {
               });
     }
 
-    return Reactive.Source.publisher(RxJavaBridge.toV3Flowable(flowable));
+    return Reactive.Source.publisher(flowable);
   }
 
   @Override
@@ -219,7 +218,7 @@ public class SqlClientRx implements SqlClient {
 
     Flowable<String> flowable = txFlowable.map(tx -> (String) tx.value());
 
-    return Reactive.Source.publisher(RxJavaBridge.toV3Flowable(flowable));
+    return Reactive.Source.publisher(flowable);
   }
 
   @Override

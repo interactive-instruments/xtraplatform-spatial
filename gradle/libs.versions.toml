@@ -3,16 +3,15 @@ antlr = '4.7.2'
 xsom = '20140925'
 aalto = '1.3.1'
 staxmate = '2.4.0'
-rxjava-jdbc = '0.2.14'
-rxjava-bridge = '3.0.2'
-hikaricp = '5.0.1'
-postgresql = '42.5.1'
-sqlite = '3.43.2.2'
+rxjava-jdbc = '0.1.4'
+hikaricp = '5.1.0'
+postgresql = '42.7.3'
+sqlite = '3.45.2.0'
 schemacrawler = '16.11.6'
 jsqlparser = '3.2'
 jts = '1.19.0'
-commonmark = '0.11.0'
-vectortile = '1.3.21'
+commonmark = '0.22.0'
+vectortile = '1.3.23'
 
 [libraries]
 # cql
@@ -25,14 +24,13 @@ aalto = { module = "com.fasterxml:aalto-xml", version.ref = "aalto" }
 staxmate = { module = "com.fasterxml.staxmate:staxmate", version.ref = "staxmate" }
 
 # sql
-#TODO: move to https://github.com/davidmoten/rxjava3-jdbc
-rxjava-jdbc = { module = "com.github.davidmoten:rxjava2-jdbc", version.ref = "rxjava-jdbc" }
-rxjava-bridge = { module = "com.github.akarnokd:rxjava3-bridge", version.ref = "rxjava-bridge" }
+rxjava-jdbc = { module = "com.github.davidmoten:rxjava3-jdbc", version.ref = "rxjava-jdbc" }
 hikaricp = { module = "com.zaxxer:HikariCP", version.ref = "hikaricp" }
 postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
 sqlite = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite" }
 schemacrawler-api = { module = "us.fatehi:schemacrawler-api", version.ref = "schemacrawler" }
 schemacrawler-tools = { module = "us.fatehi:schemacrawler-tools", version.ref = "schemacrawler" }
+schemacrawler-utility = { module = "us.fatehi:schemacrawler-utility", version.ref = "schemacrawler" }
 schemacrawler-postgresql = { module = "us.fatehi:schemacrawler-postgresql", version.ref = "schemacrawler" }
 schemacrawler-sqlite = { module = "us.fatehi:schemacrawler-sqlite", version.ref = "schemacrawler" }
 jsqlparser = { module = "com.github.jsqlparser:jsqlparser", version.ref = "jsqlparser" }
@@ -42,14 +40,13 @@ jts-core = { module = "org.locationtech.jts:jts-core", version.ref = "jts" }
 jts-io = { module = "org.locationtech.jts.io:jts-io-common", version.ref = "jts" }
 
 # strings
-commonmark = { module = "com.atlassian.commonmark:commonmark", version.ref = "commonmark" }
-commonmark-tables = { module = "com.atlassian.commonmark:commonmark-ext-gfm-tables", version.ref = "commonmark" }
+commonmark = { module = "org.commonmark:commonmark", version.ref = "commonmark" }
+commonmark-tables = { module = "org.commonmark:commonmark-ext-gfm-tables", version.ref = "commonmark" }
 
 # tiles
 vectortile = { module = "no.ecc.vectortile:java-vector-tile", version.ref = "vectortile" }
 
 [bundles]
-sqlFlat = ["rxjava-bridge", "hikaricp", "postgresql", "schemacrawler-postgresql", "schemacrawler-sqlite", "jsqlparser"]
-sql = ["schemacrawler-api", "schemacrawler-tools"]
+sql = ["hikaricp", "postgresql", "schemacrawler-postgresql", "schemacrawler-sqlite", "jsqlparser", "schemacrawler-api", "schemacrawler-tools", "schemacrawler-utility"]
 geometries = ["jts-core", "jts-io"]
 strings = ["commonmark", "commonmark-tables"]
