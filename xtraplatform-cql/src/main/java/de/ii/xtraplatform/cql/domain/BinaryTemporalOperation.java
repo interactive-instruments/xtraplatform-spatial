@@ -18,12 +18,12 @@ public interface BinaryTemporalOperation extends BinaryOperation2<Temporal>, Cql
 
   @JsonIgnore
   @Value.Derived
-  default TemporalOperator getTemporalOperator() {
-    return TemporalOperator.valueOf(getOp().toUpperCase());
+  default TemporalFunction getTemporalOperator() {
+    return TemporalFunction.valueOf(getOp().toUpperCase());
   }
 
   static BinaryTemporalOperation of(
-      TemporalOperator operator, Temporal temporal1, Temporal temporal2) {
+      TemporalFunction operator, Temporal temporal1, Temporal temporal2) {
     switch (operator) {
       case T_AFTER:
         return TAfter.of(temporal1, temporal2);
@@ -60,18 +60,18 @@ public interface BinaryTemporalOperation extends BinaryOperation2<Temporal>, Cql
     throw new IllegalStateException();
   }
 
-  List<TemporalOperator> INTERVAL_ONLY =
+  List<TemporalFunction> INTERVAL_ONLY =
       ImmutableList.of(
-          TemporalOperator.T_CONTAINS,
-          TemporalOperator.T_DURING,
-          TemporalOperator.T_FINISHEDBY,
-          TemporalOperator.T_FINISHES,
-          TemporalOperator.T_MEETS,
-          TemporalOperator.T_METBY,
-          TemporalOperator.T_OVERLAPPEDBY,
-          TemporalOperator.T_OVERLAPS,
-          TemporalOperator.T_STARTEDBY,
-          TemporalOperator.T_STARTS);
+          TemporalFunction.T_CONTAINS,
+          TemporalFunction.T_DURING,
+          TemporalFunction.T_FINISHEDBY,
+          TemporalFunction.T_FINISHES,
+          TemporalFunction.T_MEETS,
+          TemporalFunction.T_METBY,
+          TemporalFunction.T_OVERLAPPEDBY,
+          TemporalFunction.T_OVERLAPS,
+          TemporalFunction.T_STARTEDBY,
+          TemporalFunction.T_STARTS);
 
   @Value.Check
   @Override

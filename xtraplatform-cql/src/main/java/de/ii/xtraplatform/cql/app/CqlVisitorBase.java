@@ -159,7 +159,12 @@ public class CqlVisitorBase<T> implements CqlVisitor<T> {
   }
 
   @Override
-  public T visit(Geometry.Envelope envelope, List<T> children) {
+  public T visit(Geometry.GeometryCollection geometryCollection, List<T> children) {
+    return null;
+  }
+
+  @Override
+  public T visit(Geometry.Bbox bbox, List<T> children) {
     return null;
   }
 

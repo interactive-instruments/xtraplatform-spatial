@@ -23,8 +23,8 @@ import de.ii.xtraplatform.cql.domain.Operand;
 import de.ii.xtraplatform.cql.domain.Or;
 import de.ii.xtraplatform.cql.domain.Property;
 import de.ii.xtraplatform.cql.domain.Temporal;
+import de.ii.xtraplatform.cql.domain.TemporalFunction;
 import de.ii.xtraplatform.cql.domain.TemporalLiteral;
-import de.ii.xtraplatform.cql.domain.TemporalOperator;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -36,9 +36,9 @@ import org.threeten.extra.Interval;
 
 public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
 
-  private final Set<TemporalOperator> supportedOperators;
+  private final Set<TemporalFunction> supportedOperators;
 
-  public CqlVisitorMapTemporalOperators(Set<TemporalOperator> supportedOperators) {
+  public CqlVisitorMapTemporalOperators(Set<TemporalFunction> supportedOperators) {
     this.supportedOperators = supportedOperators;
   }
 
@@ -48,18 +48,18 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
     Temporal temporal1 = (Temporal) children.get(0);
     Temporal temporal2 = (Temporal) children.get(1);
 
-    TemporalOperator temporalOperator =
-        TemporalOperator.valueOf(temporalOperation.getOp().toUpperCase());
+    TemporalFunction temporalFunction =
+        TemporalFunction.valueOf(temporalOperation.getOp().toUpperCase());
 
     // if the next visitor supports a temporal operator, we keep it
-    if (supportedOperators.contains(temporalOperator)) {
-      return BinaryTemporalOperation.of(temporalOperator, temporal1, temporal2);
+    if (supportedOperators.contains(temporalFunction)) {
+      return BinaryTemporalOperation.of(temporalFunction, temporal1, temporal2);
     }
 
     Optional<Class<?>> granularity = getGranularity(temporal1, temporal2);
 
     // otherwise we simplify the predicate to scalar comparisons
-    switch (temporalOperator) {
+    switch (temporalFunction) {
       case T_AFTER:
         // this operator accepts not only intervals, but also instants
         if (instantsOfSameGranularity(temporal1, temporal2)) {
@@ -199,7 +199,7 @@ public class CqlVisitorMapTemporalOperators extends CqlVisitorCopy {
                 ImmutableList.of(getEnd(temporal1, granularity), getEnd(temporal2, granularity))));
     }
 
-    throw new IllegalStateException("unknown temporal operator: " + temporalOperator);
+    throw new IllegalStateException("unknown temporal operator: " + temporalFunction);
   }
 
   private boolean instantsOfSameGranularity(Temporal temporal1, Temporal temporal2) {

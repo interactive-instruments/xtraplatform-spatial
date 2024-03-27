@@ -46,15 +46,15 @@ public interface Operand extends CqlNode {
   class OperandDeserializer extends StdDeserializer<Operand> {
 
     private static final List<String> ARRAY =
-        Arrays.stream(ArrayOperator.values())
+        Arrays.stream(ArrayFunction.values())
             .map(op -> op.toString().toLowerCase())
             .collect(Collectors.toUnmodifiableList());
     private static final List<String> SPATIAL =
-        Arrays.stream(SpatialOperator.values())
+        Arrays.stream(SpatialFunction.values())
             .map(op -> op.toString().toLowerCase())
             .collect(Collectors.toUnmodifiableList());
     private static final List<String> TEMPORAL =
-        Arrays.stream(TemporalOperator.values())
+        Arrays.stream(TemporalFunction.values())
             .map(op -> op.toString().toLowerCase())
             .collect(Collectors.toUnmodifiableList());
     private static final List<String> SCALAR =
@@ -98,7 +98,7 @@ public interface Operand extends CqlNode {
           }
           throw new JsonParseException(parser, "Interval has to be an array.");
         } else if (Objects.nonNull(node.get("bbox"))) {
-          return SpatialLiteral.of(oc.treeToValue(node, Geometry.Envelope.class));
+          return SpatialLiteral.of(oc.treeToValue(node, Geometry.Bbox.class));
         } else if (Objects.nonNull(node.get("type"))) {
           final Optional<EpsgCrs> filterCrs = getFilterCrs(oc);
           switch (node.get("type").asText()) {

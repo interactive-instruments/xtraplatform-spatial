@@ -282,8 +282,13 @@ public class CqlVisitorCopy implements CqlVisitor<CqlNode> {
   }
 
   @Override
-  public CqlNode visit(Geometry.Envelope envelope, List<CqlNode> children) {
-    return envelope;
+  public CqlNode visit(Geometry.GeometryCollection geometryCollection, List<CqlNode> children) {
+    return geometryCollection;
+  }
+
+  @Override
+  public CqlNode visit(Geometry.Bbox bbox, List<CqlNode> children) {
+    return bbox;
   }
 
   @Override

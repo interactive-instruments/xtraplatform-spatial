@@ -18,6 +18,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -36,14 +37,15 @@ import org.immutables.value.Value;
     use = JsonTypeInfo.Id.NAME,
     include = JsonTypeInfo.As.EXISTING_PROPERTY,
     property = "type",
-    defaultImpl = Geometry.Envelope.class)
+    defaultImpl = Geometry.Bbox.class)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = Geometry.Point.class, name = "Point"),
   @JsonSubTypes.Type(value = Geometry.LineString.class, name = "LineString"),
   @JsonSubTypes.Type(value = Geometry.Polygon.class, name = "Polygon"),
   @JsonSubTypes.Type(value = Geometry.MultiPoint.class, name = "MultiPoint"),
   @JsonSubTypes.Type(value = Geometry.MultiLineString.class, name = "MultiLineString"),
-  @JsonSubTypes.Type(value = Geometry.MultiPolygon.class, name = "MultiPolygon")
+  @JsonSubTypes.Type(value = Geometry.MultiPolygon.class, name = "MultiPolygon"),
+  @JsonSubTypes.Type(value = Geometry.GeometryCollection.class, name = "GeometryCollection")
 })
 @JsonSerialize(using = Geometry.Serializer.class)
 public interface Geometry<T> extends CqlNode {
@@ -55,7 +57,8 @@ public interface Geometry<T> extends CqlNode {
     MultiPoint,
     MultiLineString,
     MultiPolygon,
-    Envelope
+    GeometryCollection,
+    BBox
   }
 
   Type getType();
@@ -80,11 +83,11 @@ public interface Geometry<T> extends CqlNode {
     public void serialize(
         Geometry<?> geom, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
         throws IOException {
-      if (geom instanceof Envelope) {
+      if (geom instanceof Bbox) {
         jsonGenerator.writeStartObject();
         jsonGenerator.writeFieldName("bbox");
         jsonGenerator.writeStartArray();
-        for (Double ord : ((Envelope) geom).getCoordinates()) {
+        for (Double ord : ((Bbox) geom).getCoordinates()) {
           jsonGenerator.writeNumber(ord);
         }
         jsonGenerator.writeEndArray();
@@ -144,6 +147,13 @@ public interface Geometry<T> extends CqlNode {
             jsonGenerator.writeEndArray();
           }
           jsonGenerator.writeEndArray();
+        } else if (geom instanceof GeometryCollection) {
+          jsonGenerator.writeFieldName("geometries");
+          jsonGenerator.writeStartArray();
+          for (Object p : ((GeometryCollection) geom).getCoordinates()) {
+            this.serialize((Geometry<?>) p, jsonGenerator, serializerProvider);
+          }
+          jsonGenerator.writeEndArray();
         } else {
           serializerProvider.defaultSerializeField(
               "coordinates", geom.getCoordinates(), jsonGenerator);
@@ -154,7 +164,7 @@ public interface Geometry<T> extends CqlNode {
   }
 
   @Value.Immutable
-  @JsonDeserialize(builder = ImmutablePoint.Builder.class)
+  @JsonDeserialize(using = Point.PointDeserializer.class)
   interface Point extends Geometry<Coordinate> {
 
     static Point of(double x, double y) {
@@ -174,6 +184,10 @@ public interface Geometry<T> extends CqlNode {
     }
 
     class PointDeserializer extends StdDeserializer<Point> {
+
+      protected PointDeserializer() {
+        this(null);
+      }
 
       protected PointDeserializer(Class<?> vc) {
         super(vc);
@@ -293,11 +307,58 @@ public interface Geometry<T> extends CqlNode {
   }
 
   @Value.Immutable
-  @JsonDeserialize(builder = ImmutableEnvelope.Builder.class)
-  interface Envelope extends Geometry<Double> {
+  @JsonDeserialize(using = Geometry.GeometryCollection.Deserializer.class)
+  // Note that Immutables does not support Geometry<Geometry<?>>, so Object is used instead
+  // and casts are added as needed
+  interface GeometryCollection extends Geometry<Object> {
 
-    static Envelope of(BoundingBox boundingBox) {
-      return new ImmutableEnvelope.Builder()
+    static GeometryCollection of(Geometry<?>... geometries) {
+      return new ImmutableGeometryCollection.Builder().addCoordinates(geometries).build();
+    }
+
+    @JsonProperty("geometries")
+    @Override
+    List<Object> getCoordinates();
+
+    @Override
+    default Type getType() {
+      return Type.GeometryCollection;
+    }
+
+    class Deserializer extends StdDeserializer<GeometryCollection> {
+
+      protected Deserializer() {
+        this(null);
+      }
+
+      protected Deserializer(Class<GeometryCollection> t) {
+        super(t);
+      }
+
+      @Override
+      public GeometryCollection deserialize(
+          JsonParser jsonParser, DeserializationContext deserializationContext)
+          throws IOException, JacksonException {
+        ImmutableGeometryCollection.Builder builder = new ImmutableGeometryCollection.Builder();
+        ObjectMapper mapper = (ObjectMapper) jsonParser.getCodec();
+        JsonNode node = jsonParser.getCodec().readTree(jsonParser);
+        JsonNode geometries = node.get("geometries");
+        if (geometries.isArray()) {
+          for (JsonNode geomNode : geometries) {
+            builder.addCoordinates(mapper.treeToValue(geomNode, Geometry.class));
+          }
+        }
+        return builder.build();
+      }
+    }
+  }
+
+  @Value.Immutable
+  @JsonDeserialize(builder = ImmutableBbox.Builder.class)
+  interface Bbox extends Geometry<Double> {
+
+    static Bbox of(BoundingBox boundingBox) {
+      return new ImmutableBbox.Builder()
           .addCoordinates(
               boundingBox.getXmin(),
               boundingBox.getYmin(),
@@ -307,21 +368,18 @@ public interface Geometry<T> extends CqlNode {
           .build();
     }
 
-    static Envelope of(double xmin, double ymin, double xmax, double ymax) {
-      return new ImmutableEnvelope.Builder().addCoordinates(xmin, ymin, xmax, ymax).build();
+    static Bbox of(double xmin, double ymin, double xmax, double ymax) {
+      return new ImmutableBbox.Builder().addCoordinates(xmin, ymin, xmax, ymax).build();
     }
 
-    static Envelope of(double xmin, double ymin, double xmax, double ymax, EpsgCrs crs) {
-      return new ImmutableEnvelope.Builder()
-          .addCoordinates(xmin, ymin, xmax, ymax)
-          .crs(crs)
-          .build();
+    static Bbox of(double xmin, double ymin, double xmax, double ymax, EpsgCrs crs) {
+      return new ImmutableBbox.Builder().addCoordinates(xmin, ymin, xmax, ymax).crs(crs).build();
     }
 
     @JsonIgnore
     @Override
     default Type getType() {
-      return Type.Envelope;
+      return Type.BBox;
     }
 
     @JsonProperty("bbox")

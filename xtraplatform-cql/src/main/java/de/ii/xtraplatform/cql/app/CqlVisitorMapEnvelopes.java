@@ -33,17 +33,17 @@ public class CqlVisitorMapEnvelopes extends CqlVisitorCopy {
   @Override
   public CqlNode visit(SpatialLiteral spatialLiteral, List<CqlNode> children) {
     if (spatialLiteral.getType() == Geometry.class
-        && spatialLiteral.getValue() instanceof Geometry.Envelope)
+        && spatialLiteral.getValue() instanceof Geometry.Bbox)
       return SpatialLiteral.of(
-          (Geometry<?>) visit((Geometry.Envelope) spatialLiteral.getValue(), children));
+          (Geometry<?>) visit((Geometry.Bbox) spatialLiteral.getValue(), children));
 
     return super.visit(spatialLiteral, children);
   }
 
   @Override
-  public CqlNode visit(Geometry.Envelope envelope, List<CqlNode> children) {
-    List<Double> c = envelope.getCoordinates();
-    EpsgCrs crs = envelope.getCrs().orElse(OgcCrs.CRS84);
+  public CqlNode visit(Geometry.Bbox bbox, List<CqlNode> children) {
+    List<Double> c = bbox.getCoordinates();
+    EpsgCrs crs = bbox.getCrs().orElse(OgcCrs.CRS84);
 
     // if the bbox is degenerate (vertical or horizontal line, point), reduce
     // the geometry
@@ -101,7 +101,7 @@ public class CqlVisitorMapEnvelopes extends CqlVisitorCopy {
     }
 
     // standard case, nothing to do
-    return super.visit(envelope, children);
+    return super.visit(bbox, children);
   }
 
   private Geometry.MultiPolygon createMultiPolygon(

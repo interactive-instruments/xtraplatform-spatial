@@ -49,25 +49,23 @@ public interface Function extends CqlNode, Scalar, Temporal, Operand {
     return Object.class;
   }
 
-  /*
   @JsonIgnore
   @Value.Lazy
   default boolean isCasei() {
-      return "casei".equalsIgnoreCase(getName());
+    return "casei".equalsIgnoreCase(getName());
   }
 
   @JsonIgnore
   @Value.Lazy
   default boolean isAccenti() {
-      return "accenti".equalsIgnoreCase(getName());
+    return "accenti".equalsIgnoreCase(getName());
   }
 
   @JsonIgnore
   @Value.Lazy
   default boolean isInterval() {
-      return "interval".equalsIgnoreCase(getName());
+    return "interval".equalsIgnoreCase(getName());
   }
-   */
 
   @JsonIgnore
   @Value.Lazy

@@ -7,10 +7,10 @@
  */
 package de.ii.xtraplatform.features.sql.app;
 
-import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_CONTAINEDBY;
-import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_CONTAINS;
-import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_EQUALS;
-import static de.ii.xtraplatform.cql.domain.ArrayOperator.A_OVERLAPS;
+import static de.ii.xtraplatform.cql.domain.ArrayFunction.A_CONTAINEDBY;
+import static de.ii.xtraplatform.cql.domain.ArrayFunction.A_CONTAINS;
+import static de.ii.xtraplatform.cql.domain.ArrayFunction.A_EQUALS;
+import static de.ii.xtraplatform.cql.domain.ArrayFunction.A_OVERLAPS;
 import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
 import static de.ii.xtraplatform.features.domain.SchemaBase.Type.DATE;
 
@@ -890,8 +890,35 @@ public class FilterEncoderSql {
     }
 
     @Override
-    public String visit(Geometry.Envelope envelope, List<String> children) {
-      List<Double> c = envelope.getCoordinates();
+    public String visit(Geometry.GeometryCollection geometryCollection, List<String> children) {
+      return String.format(
+          "ST_GeomFromText('GEOMETRYCOLLECTION%s',%s)",
+          geometryCollection.getCoordinates().stream()
+              .map(
+                  geom -> {
+                    if (geom instanceof Geometry.Point) {
+                      return super.visit((Geometry.Point) geom, children);
+                    } else if (geom instanceof Geometry.MultiPoint) {
+                      return super.visit((Geometry.MultiPoint) geom, children);
+                    } else if (geom instanceof Geometry.LineString) {
+                      return super.visit((Geometry.LineString) geom, children);
+                    } else if (geom instanceof Geometry.MultiLineString) {
+                      return super.visit((Geometry.MultiLineString) geom, children);
+                    } else if (geom instanceof Geometry.Polygon) {
+                      return super.visit((Geometry.Polygon) geom, children);
+                    } else if (geom instanceof Geometry.MultiPolygon) {
+                      return super.visit((Geometry.MultiPolygon) geom, children);
+                    }
+                    throw new IllegalStateException(
+                        "unsupported spatial type: " + geom.getClass().getSimpleName());
+                  })
+              .collect(Collectors.joining(",", "(", ")")),
+          nativeCrs.getCode());
+    }
+
+    @Override
+    public String visit(Geometry.Bbox bbox, List<String> children) {
+      List<Double> c = bbox.getCoordinates();
 
       List<Coordinate> coordinates =
           ImmutableList.of(
@@ -901,7 +928,7 @@ public class FilterEncoderSql {
               Coordinate.of(c.get(0), c.get(3)),
               Coordinate.of(c.get(0), c.get(1)));
       Geometry.Polygon polygon =
-          new ImmutablePolygon.Builder().addCoordinates(coordinates).crs(envelope.getCrs()).build();
+          new ImmutablePolygon.Builder().addCoordinates(coordinates).crs(bbox.getCrs()).build();
       return visit(polygon, ImmutableList.of());
     }
 

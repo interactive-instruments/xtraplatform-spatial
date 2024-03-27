@@ -14,11 +14,11 @@ public interface BinarySpatialOperation extends BinaryOperation2<Spatial>, CqlNo
 
   @JsonIgnore
   @Value.Derived
-  default SpatialOperator getSpatialOperator() {
-    return SpatialOperator.valueOf(getOp().toUpperCase());
+  default SpatialFunction getSpatialOperator() {
+    return SpatialFunction.valueOf(getOp().toUpperCase());
   }
 
-  static BinarySpatialOperation of(SpatialOperator operator, Spatial spatial1, Spatial spatial2) {
+  static BinarySpatialOperation of(SpatialFunction operator, Spatial spatial1, Spatial spatial2) {
     switch (operator) {
       case S_INTERSECTS:
         return SIntersects.of(spatial1, spatial2);

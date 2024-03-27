@@ -11,8 +11,8 @@ import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.app.CqlVisitorPropertyPrefix;
 import de.ii.xtraplatform.cql.domain.Accenti;
 import de.ii.xtraplatform.cql.domain.And;
+import de.ii.xtraplatform.cql.domain.ArrayFunction;
 import de.ii.xtraplatform.cql.domain.ArrayLiteral;
-import de.ii.xtraplatform.cql.domain.ArrayOperator;
 import de.ii.xtraplatform.cql.domain.Between;
 import de.ii.xtraplatform.cql.domain.BinaryArrayOperation;
 import de.ii.xtraplatform.cql.domain.BinaryScalarOperation;
@@ -26,9 +26,10 @@ import de.ii.xtraplatform.cql.domain.CqlNode;
 import de.ii.xtraplatform.cql.domain.CqlParseException;
 import de.ii.xtraplatform.cql.domain.Function;
 import de.ii.xtraplatform.cql.domain.Geometry;
+import de.ii.xtraplatform.cql.domain.ImmutableBbox;
 import de.ii.xtraplatform.cql.domain.ImmutableBetween;
-import de.ii.xtraplatform.cql.domain.ImmutableEnvelope;
 import de.ii.xtraplatform.cql.domain.ImmutableEq;
+import de.ii.xtraplatform.cql.domain.ImmutableGeometryCollection;
 import de.ii.xtraplatform.cql.domain.ImmutableGt;
 import de.ii.xtraplatform.cql.domain.ImmutableGte;
 import de.ii.xtraplatform.cql.domain.ImmutableIn;
@@ -53,12 +54,14 @@ import de.ii.xtraplatform.cql.domain.Property;
 import de.ii.xtraplatform.cql.domain.Scalar;
 import de.ii.xtraplatform.cql.domain.ScalarLiteral;
 import de.ii.xtraplatform.cql.domain.Spatial;
+import de.ii.xtraplatform.cql.domain.SpatialFunction;
 import de.ii.xtraplatform.cql.domain.SpatialLiteral;
-import de.ii.xtraplatform.cql.domain.SpatialOperator;
 import de.ii.xtraplatform.cql.domain.Temporal;
+import de.ii.xtraplatform.cql.domain.TemporalFunction;
 import de.ii.xtraplatform.cql.domain.TemporalLiteral;
-import de.ii.xtraplatform.cql.domain.TemporalOperator;
 import de.ii.xtraplatform.cql.domain.Vector;
+import de.ii.xtraplatform.cql.infra.CqlParser.GeometryCollectionContext;
+import de.ii.xtraplatform.cql.infra.CqlParser.PatternExpressionContext;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -68,6 +71,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 
 public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode>
@@ -91,45 +95,30 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode>
 
   @Override
   public CqlNode visitBooleanExpression(CqlParser.BooleanExpressionContext ctx) {
-    CqlNode booleanTerm = ctx.booleanTerm().accept(this);
+    int terms = ctx.booleanTerm().size();
 
-    if (Objects.nonNull(ctx.OR())) {
-      Cql2Expression predicate1 = (Cql2Expression) ctx.booleanExpression().accept(this);
-      Cql2Expression predicate2 = (Cql2Expression) booleanTerm;
-
-      if (predicate1 instanceof Or) {
-        List<Cql2Expression> predicates = ((Or) predicate1).getArgs();
-
-        return Or.of(
-            new ImmutableList.Builder<Cql2Expression>().addAll(predicates).add(predicate2).build());
-      }
-
-      return Or.of(ImmutableList.of(predicate1, predicate2));
+    if (terms == 1) {
+      return ctx.booleanTerm(0).accept(this);
     }
 
-    return booleanTerm;
+    return Or.of(
+        IntStream.range(0, terms)
+            .mapToObj(i -> (Cql2Expression) ctx.booleanTerm(i).accept(this))
+            .collect(Collectors.toList()));
   }
 
   @Override
   public CqlNode visitBooleanTerm(CqlParser.BooleanTermContext ctx) {
-    CqlNode booleanFactor = ctx.booleanFactor().accept(this);
+    int factors = ctx.booleanFactor().size();
 
-    // create And
-    if (Objects.nonNull(ctx.AND())) {
-      Cql2Expression predicate1 = (Cql2Expression) ctx.booleanTerm().accept(this);
-      Cql2Expression predicate2 = (Cql2Expression) booleanFactor;
-
-      if (predicate1 instanceof And) {
-        List<Cql2Expression> predicates = ((And) predicate1).getArgs();
-
-        return And.of(
-            new ImmutableList.Builder<Cql2Expression>().addAll(predicates).add(predicate2).build());
-      }
-
-      return And.of(ImmutableList.of(predicate1, predicate2));
+    if (factors == 1) {
+      return ctx.booleanFactor(0).accept(this);
     }
 
-    return booleanFactor;
+    return And.of(
+        IntStream.range(0, factors)
+            .mapToObj(i -> (Cql2Expression) ctx.booleanFactor(i).accept(this))
+            .collect(Collectors.toList()));
   }
 
   @Override
@@ -261,46 +250,46 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode>
   @Override
   public CqlNode visitTemporalPredicate(CqlParser.TemporalPredicateContext ctx) {
 
-    if (Objects.isNull(ctx.TemporalOperator()))
+    if (Objects.isNull(ctx.TemporalFunction()))
       throw new IllegalStateException("unknown temporal predicate: " + ctx.getText());
 
-    TemporalOperator temporalOperator =
-        TemporalOperator.valueOf(ctx.TemporalOperator().getText().toUpperCase());
+    TemporalFunction temporalFunction =
+        TemporalFunction.valueOf(ctx.TemporalFunction().getText().toUpperCase());
 
     Temporal temporal1 = (Temporal) ctx.temporalExpression(0).accept(this);
     Temporal temporal2 = (Temporal) ctx.temporalExpression(1).accept(this);
 
-    return BinaryTemporalOperation.of(temporalOperator, temporal1, temporal2);
+    return BinaryTemporalOperation.of(temporalFunction, temporal1, temporal2);
   }
 
   @Override
   public CqlNode visitSpatialPredicate(CqlParser.SpatialPredicateContext ctx) {
 
-    if (Objects.isNull(ctx.SpatialOperator()))
+    if (Objects.isNull(ctx.SpatialFunction()))
       throw new IllegalStateException("unknown spatial operator: " + ctx.getText());
 
-    SpatialOperator spatialOperator =
-        SpatialOperator.valueOf(ctx.SpatialOperator().getText().toUpperCase());
+    SpatialFunction spatialFunction =
+        SpatialFunction.valueOf(ctx.SpatialFunction().getText().toUpperCase());
 
     Spatial spatial1 = (Spatial) ctx.geomExpression().get(0).accept(this);
     Spatial spatial2 = (Spatial) ctx.geomExpression().get(1).accept(this);
 
-    return BinarySpatialOperation.of(spatialOperator, spatial1, spatial2);
+    return BinarySpatialOperation.of(spatialFunction, spatial1, spatial2);
   }
 
   @Override
   public CqlNode visitArrayPredicate(CqlParser.ArrayPredicateContext ctx) {
 
-    if (Objects.isNull(ctx.ArrayOperator()))
+    if (Objects.isNull(ctx.ArrayFunction()))
       throw new IllegalStateException("unknown array operator: " + ctx.getText());
 
-    ArrayOperator arrayOperator =
-        ArrayOperator.valueOf(ctx.ArrayOperator().getText().toUpperCase());
+    ArrayFunction arrayFunction =
+        ArrayFunction.valueOf(ctx.ArrayFunction().getText().toUpperCase());
 
     Vector vector1 = (Vector) ctx.arrayExpression().get(0).accept(this);
     Vector vector2 = (Vector) ctx.arrayExpression().get(1).accept(this);
 
-    return BinaryArrayOperation.of(arrayOperator, vector1, vector2);
+    return BinaryArrayOperation.of(arrayFunction, vector1, vector2);
   }
 
   @Override
@@ -371,7 +360,7 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode>
     } catch (CqlParseException e) {
       throw new IllegalArgumentException(e.getMessage());
     }
-    return ctx.instantLiteral().accept(this);
+    return ctx.instantInstance().accept(this);
   }
 
   @Override
@@ -390,22 +379,22 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode>
   public CqlNode visitIntervalParameter(CqlParser.IntervalParameterContext ctx) {
     if (Objects.nonNull(ctx.NOW())) {
       return TemporalLiteral.of(Instant.now().truncatedTo(ChronoUnit.SECONDS));
-    } else if (Objects.nonNull(ctx.DotDotString())) {
-      return TemporalLiteral.of("..");
-    } else if (Objects.nonNull(ctx.propertyName())) {
-      return ctx.propertyName().accept(this);
     } else if (Objects.nonNull(ctx.DateString())) {
       String s = ctx.DateString().getText();
       return TemporalLiteral.of(s.substring(1, s.length() - 1));
     } else if (Objects.nonNull(ctx.TimestampString())) {
       String s = ctx.TimestampString().getText();
       return TemporalLiteral.of(s.substring(1, s.length() - 1));
+    } else if (Objects.nonNull(ctx.DotDotString())) {
+      return TemporalLiteral.of("..");
+    } else if (Objects.nonNull(ctx.propertyName())) {
+      return ctx.propertyName().accept(this);
     }
     throw new IllegalStateException("unsupported interval parameter: " + ctx.getText());
   }
 
   @Override
-  public CqlNode visitInstantLiteral(CqlParser.InstantLiteralContext ctx) {
+  public CqlNode visitInstantInstance(CqlParser.InstantInstanceContext ctx) {
     if (Objects.nonNull(ctx.NOW())) {
       return TemporalLiteral.of(Instant.now().truncatedTo(ChronoUnit.SECONDS));
     }
@@ -439,12 +428,35 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode>
   }
 
   @Override
+  public CqlNode visitPatternExpression(PatternExpressionContext ctx) {
+    if (Objects.nonNull(ctx.CASEI())) {
+      Scalar scalar = (Scalar) ctx.patternExpression().accept(this);
+
+      return Casei.of(scalar);
+    } else if (Objects.nonNull(ctx.ACCENTI())) {
+      Scalar scalar = (Scalar) ctx.patternExpression().accept(this);
+
+      return Accenti.of(scalar);
+    } else if (Objects.nonNull(ctx.LOWER())) {
+      Scalar scalar = (Scalar) ctx.patternExpression().accept(this);
+
+      return Function.of("LOWER", ImmutableList.of(scalar));
+    } else if (Objects.nonNull(ctx.UPPER())) {
+      Scalar scalar = (Scalar) ctx.patternExpression().accept(this);
+
+      return Function.of("UPPER", ImmutableList.of(scalar));
+    }
+
+    return ctx.characterLiteral().accept(this);
+  }
+
+  @Override
   public CqlNode visitCharacterLiteral(CqlParser.CharacterLiteralContext ctx) {
     return getScalarLiteralFromText(ctx.getText());
   }
 
   @Override
-  public CqlNode visitGeomLiteral(CqlParser.GeomLiteralContext ctx) {
+  public CqlNode visitGeometryLiteral(CqlParser.GeometryLiteralContext ctx) {
     CqlNode geomLiteral = ctx.getChild(0).accept(this);
     return SpatialLiteral.of((Geometry<?>) geomLiteral);
   }
@@ -501,7 +513,17 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode>
   }
 
   @Override
-  public CqlNode visitEnvelope(CqlParser.EnvelopeContext ctx) {
+  public CqlNode visitLinestringDef(CqlParser.LinestringDefContext ctx) {
+    List<Geometry.Coordinate> coordinates =
+        ctx.coordinate().stream()
+            .map(pointContext -> (Geometry.Coordinate) pointContext.accept(this))
+            .collect(Collectors.toList());
+
+    return new ImmutableLineString.Builder().coordinates(coordinates).crs(defaultCrs).build();
+  }
+
+  @Override
+  public CqlNode visitBbox(CqlParser.BboxContext ctx) {
     List<Double> coordinates;
     Double eastBoundLon = Double.valueOf(ctx.eastBoundLon().NumericLiteral().getText());
     Double westBoundLon = Double.valueOf(ctx.westBoundLon().NumericLiteral().getText());
@@ -518,17 +540,22 @@ public class CqlTextVisitor extends CqlParserBaseVisitor<CqlNode>
       coordinates = ImmutableList.of(westBoundLon, southBoundLat, eastBoundLon, northBoundLat);
     }
 
-    return new ImmutableEnvelope.Builder().coordinates(coordinates).crs(defaultCrs).build();
+    return SpatialLiteral.of(
+        new ImmutableBbox.Builder().coordinates(coordinates).crs(defaultCrs).build());
   }
 
   @Override
-  public CqlNode visitLinestringDef(CqlParser.LinestringDefContext ctx) {
-    List<Geometry.Coordinate> coordinates =
-        ctx.coordinate().stream()
-            .map(pointContext -> (Geometry.Coordinate) pointContext.accept(this))
-            .collect(Collectors.toList());
-
-    return new ImmutableLineString.Builder().coordinates(coordinates).crs(defaultCrs).build();
+  public CqlNode visitGeometryCollection(GeometryCollectionContext ctx) {
+    return SpatialLiteral.of(
+        new ImmutableGeometryCollection.Builder()
+            .addAllCoordinates(
+                IntStream.range(0, ctx.geometryLiteral().size())
+                    .mapToObj(
+                        i ->
+                            (Geometry<?>)
+                                ((SpatialLiteral) ctx.geometryLiteral(i).accept(this)).getValue())
+                    .collect(Collectors.toList()))
+            .build());
   }
 
   @Override
