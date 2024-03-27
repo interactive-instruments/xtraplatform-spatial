@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.annotation.JsonAppend
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry
 import de.ii.xtraplatform.blobs.domain.ResourceStore
 import de.ii.xtraplatform.cql.domain.And
 import de.ii.xtraplatform.cql.domain.Between
@@ -64,6 +65,7 @@ import java.awt.Polygon
 import java.nio.file.Path
 import java.text.Format
 import java.time.LocalDate
+import java.util.concurrent.CompletableFuture
 
 class CqlTextSpec extends Specification {
 
@@ -73,9 +75,14 @@ class CqlTextSpec extends Specification {
     @Shared
     ResourceStore resourceStore
 
+    @Shared
+    VolatileRegistry volatileRegistry
+
     def setupSpec() {
         cql = new CqlImpl()
         resourceStore = Stub()
+        volatileRegistry = Stub()
+        volatileRegistry.onAvailable(*_) >> CompletableFuture.completedFuture(null)
     }
 
     def 'Floors greater than 5'() {
@@ -1846,7 +1853,7 @@ class CqlTextSpec extends Specification {
 
         String cqlText = "S_INTERSECTS(location, POLYGON((-10.0 -10.0,10.0 -10.0,10.0 10.0,-10.0 -10.0)))"
 
-        CrsTransformerFactoryProj transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")), resourceStore)
+        CrsTransformerFactoryProj transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")), resourceStore, volatileRegistry)
 
         when: 'reading text'
 
@@ -1903,7 +1910,7 @@ class CqlTextSpec extends Specification {
 
         Cql2Expression expression = SCrosses.of(SpatialLiteral.of("visitor_count"), SpatialLiteral.of("limit"))
 
-        CrsTransformerFactoryProj transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")), resourceStore)
+        CrsTransformerFactoryProj transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")), resourceStore, volatileRegistry)
 
         when: 'reading text'
 

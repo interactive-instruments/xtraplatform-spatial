@@ -9,6 +9,7 @@ package de.ii.xtraplatform.tiles.app;
 
 import com.github.azahnen.dagger.annotations.AutoBind;
 import dagger.assisted.AssistedFactory;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.entities.domain.AbstractEntityFactory;
 import de.ii.xtraplatform.entities.domain.EntityData;
@@ -41,6 +42,7 @@ public class TileProviderMbTilesFactory
       // TODO: needed because dagger-auto does not parse TileProviderMbTiles
       ResourceStore blobStore,
       TileMatrixSetRepository tileMatrixSetRepository,
+      VolatileRegistry volatileRegistry,
       TileProviderMbTilesFactoryAssisted factoryAssisted) {
     super(factoryAssisted);
     this.skipHydration = false;

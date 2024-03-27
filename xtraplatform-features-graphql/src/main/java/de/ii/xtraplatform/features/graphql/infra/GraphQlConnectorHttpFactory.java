@@ -10,6 +10,7 @@ package de.ii.xtraplatform.features.graphql.infra;
 import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableSet;
 import dagger.assisted.AssistedFactory;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.ConnectorFactory2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
@@ -35,6 +36,8 @@ public class GraphQlConnectorHttpFactory
   @Inject
   public GraphQlConnectorHttpFactory(
       Http http, // TODO: needed because dagger-auto does not parse SqlConnectorSlick
+      VolatileRegistry
+          volatileRegistry, // TODO: needed because dagger-auto does not parse SqlConnectorSlick
       FactoryAssisted factoryAssisted) {
     this.factoryAssisted = factoryAssisted;
     this.instances = new LinkedHashMap<>();

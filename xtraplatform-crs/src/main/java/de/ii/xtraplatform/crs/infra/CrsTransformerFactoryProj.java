@@ -10,8 +10,11 @@ package de.ii.xtraplatform.crs.infra;
 import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.base.domain.AppContext;
 import de.ii.xtraplatform.base.domain.AppLifeCycle;
 import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.base.domain.resiliency.AbstractVolatile;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
@@ -28,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -64,7 +68,8 @@ import org.slf4j.LoggerFactory;
  */
 @Singleton
 @AutoBind
-public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo, AppLifeCycle {
+public class CrsTransformerFactoryProj extends AbstractVolatile
+    implements CrsTransformerFactory, CrsInfo, AppLifeCycle {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CrsTransformerFactoryProj.class);
 
@@ -73,45 +78,90 @@ public class CrsTransformerFactoryProj implements CrsTransformerFactory, CrsInfo
   private final Map<EpsgCrs, CoordinateReferenceSystem> crsCache;
   private final Map<EpsgCrs, Map<EpsgCrs, CrsTransformer>> transformerCache;
   private final Map<EpsgCrs, Map<EpsgCrs, CrsTransformer>> transformerCacheForce2d;
-  private final boolean useCaches = true;
+  private final boolean useCaches;
+  private final boolean asyncStartup;
 
   @Inject
-  public CrsTransformerFactoryProj(ProjLoader projLoader, ResourceStore resourceStore) {
+  public CrsTransformerFactoryProj(
+      ProjLoader projLoader,
+      ResourceStore resourceStore,
+      VolatileRegistry volatileRegistry,
+      AppContext appContext) {
+    super(volatileRegistry, "app/crs");
     this.projLoader = projLoader;
     this.projStore = resourceStore.with("proj");
     this.crsCache = new ConcurrentHashMap<>();
     this.transformerCache = new ConcurrentHashMap<>();
     this.transformerCacheForce2d = new ConcurrentHashMap<>();
+    this.useCaches = true;
+    this.asyncStartup = appContext.getConfiguration().getModules().isStartupAsync();
+  }
+
+  // for unit tests
+  CrsTransformerFactoryProj(
+      ProjLoader projLoader, ResourceStore resourceStore, VolatileRegistry volatileRegistry) {
+    super(volatileRegistry);
+    this.projLoader = projLoader;
+    this.projStore = resourceStore.with("proj");
+    this.crsCache = new ConcurrentHashMap<>();
+    this.transformerCache = new ConcurrentHashMap<>();
+    this.transformerCacheForce2d = new ConcurrentHashMap<>();
+    this.useCaches = true;
+    this.asyncStartup = false;
   }
 
   @Override
-  public void onStart() {
-    try {
-      projLoader.load();
+  public int getPriority() {
+    return 100;
+  }
 
-      Optional<Path> customPath = Optional.empty();
-      try {
-        customPath = projStore.asLocalPath(Path.of(""), false);
-      } catch (IOException e) {
-        LogContext.error(LOGGER, e, "Could not initialize PROJ custom data directory");
-      }
+  @Override
+  public CompletionStage<Void> onStart(boolean isStartupAsync) {
+    onVolatileStart();
 
-      String[] locations =
-          customPath.isPresent()
-              ? new String[] {
-                projLoader.getDataDirectory().toString(), customPath.get().normalize().toString()
+    return getVolatileRegistry()
+        .onAvailable(projStore)
+        .thenRun(
+            () -> {
+              State state = State.AVAILABLE;
+
+              try {
+                projLoader.load();
+
+                Optional<Path> customPath = Optional.empty();
+                try {
+                  customPath = projStore.asLocalPath(Path.of(""), false);
+                } catch (IOException e) {
+                  LogContext.error(LOGGER, e, "Could not initialize PROJ custom data directory");
+                  state = State.LIMITED;
+                  setMessage("Could not initialize PROJ custom data directory: " + e.getMessage());
+                }
+
+                String[] locations =
+                    customPath.isPresent()
+                        ? new String[] {
+                          projLoader.getDataDirectory().toString(),
+                          customPath.get().normalize().toString()
+                        }
+                        : new String[] {projLoader.getDataDirectory().toString()};
+
+                Proj.setSearchPath(locations);
+                Proj.version()
+                    .ifPresent(
+                        version ->
+                            LOGGER.debug("PROJ version: {}, locations: {}", version, locations));
+                System.setProperty("org.kortforsyningen.proj.maxThreadsPerInstance", "16");
+
+                setState(state);
+              } catch (Throwable e) {
+                LogContext.error(LOGGER, e, "Could not initialize PROJ");
+                setMessage("Could not initialize PROJ: " + e.getMessage());
+
+                if (!asyncStartup) {
+                  throw e;
+                }
               }
-              : new String[] {projLoader.getDataDirectory().toString()};
-
-      Proj.setSearchPath(locations);
-      Proj.version()
-          .ifPresent(
-              version -> LOGGER.debug("PROJ version: {}, locations: {}", version, locations));
-      System.setProperty("org.kortforsyningen.proj.maxThreadsPerInstance", "16");
-    } catch (Throwable e) {
-      LogContext.error(LOGGER, e, "PROJ");
-      throw e;
-    }
+            });
   }
 
   @Override

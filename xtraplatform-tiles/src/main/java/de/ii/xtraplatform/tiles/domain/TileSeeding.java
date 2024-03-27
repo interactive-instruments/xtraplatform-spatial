@@ -15,6 +15,8 @@ import javax.ws.rs.core.MediaType;
 
 public interface TileSeeding {
 
+  String CAPABILITY = "seeding";
+
   SeedingOptions getOptions();
 
   void seed(
@@ -23,4 +25,7 @@ public interface TileSeeding {
       boolean reseed,
       TaskContext taskContext)
       throws IOException;
+
+  default void deleteFromCache(
+      String tileset, TileMatrixSetBase tileMatrixSet, TileMatrixSetLimits limits) {}
 }

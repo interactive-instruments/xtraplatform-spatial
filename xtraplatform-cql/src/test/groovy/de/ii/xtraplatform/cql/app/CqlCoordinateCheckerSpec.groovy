@@ -7,26 +7,21 @@
  */
 package de.ii.xtraplatform.cql.app
 
-import com.google.common.collect.ImmutableList
-import com.google.common.collect.ImmutableMap
+
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry
 import de.ii.xtraplatform.blobs.domain.ResourceStore
 import de.ii.xtraplatform.cql.domain.*
-import de.ii.xtraplatform.cql.infra.CqlIncompatibleTypes
-import de.ii.xtraplatform.crs.domain.BoundingBox
-import de.ii.xtraplatform.crs.domain.CoordinateTuple
 import de.ii.xtraplatform.crs.domain.CrsInfo
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory
 import de.ii.xtraplatform.crs.domain.EpsgCrs
 import de.ii.xtraplatform.crs.domain.OgcCrs
 import de.ii.xtraplatform.crs.infra.CrsTransformerFactoryProj
 import de.ii.xtraplatform.proj.domain.ProjLoaderImpl
-import org.spockframework.util.Immutable
 import spock.lang.Shared
 import spock.lang.Specification
 
-import javax.xml.transform.TransformerFactory
 import java.nio.file.Path
-import java.util.stream.IntStream
+import java.util.concurrent.CompletableFuture
 
 class CqlCoordinateCheckerSpec extends Specification {
 
@@ -35,6 +30,9 @@ class CqlCoordinateCheckerSpec extends Specification {
 
     @Shared
     ResourceStore resourceStore
+
+    @Shared
+    VolatileRegistry volatileRegistry
 
     @Shared
     CrsTransformerFactoryProj transformerFactory
@@ -52,8 +50,10 @@ class CqlCoordinateCheckerSpec extends Specification {
     def setupSpec() {
         cql = new CqlImpl()
         resourceStore = Stub()
-        transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")), resourceStore)
-        transformerFactory.onStart()
+        volatileRegistry = Stub()
+        volatileRegistry.onAvailable(*_) >> CompletableFuture.completedFuture(null)
+        transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")), resourceStore, volatileRegistry)
+        transformerFactory.onStart(false).toCompletableFuture().join()
         visitor1 = new CqlCoordinateChecker((CrsTransformerFactory) transformerFactory, (CrsInfo) transformerFactory, OgcCrs.CRS84, EpsgCrs.of(5555))
         visitor2 = new CqlCoordinateChecker((CrsTransformerFactory) transformerFactory, (CrsInfo) transformerFactory, OgcCrs.CRS84, OgcCrs.CRS84)
         visitor3 = new CqlCoordinateChecker((CrsTransformerFactory) transformerFactory, (CrsInfo) transformerFactory, EpsgCrs.of(25830), EpsgCrs.of(5555))
@@ -81,7 +81,7 @@ class CqlCoordinateCheckerSpec extends Specification {
 
     def "Native not present"() {
         when:
-        CrsTransformerFactoryProj transformerFactoryOptionalEmpty = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")), resourceStore)
+        CrsTransformerFactoryProj transformerFactoryOptionalEmpty = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")), resourceStore, volatileRegistry)
         CqlCoordinateChecker visitor1OptionalEmpty = new CqlCoordinateChecker((CrsTransformerFactory) transformerFactoryOptionalEmpty, (CrsInfo) transformerFactoryOptionalEmpty, OgcCrs.CRS84, null)
         CqlCoordinateChecker visitor2OptionalEmpty = new CqlCoordinateChecker((CrsTransformerFactory) transformerFactoryOptionalEmpty, (CrsInfo) transformerFactoryOptionalEmpty, OgcCrs.CRS84, null)
         then:

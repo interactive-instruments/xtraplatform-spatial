@@ -184,10 +184,6 @@ public class FeatureProviderWfsAuto implements AutoEntityFactory {
   }
 
   private FeatureProviderWfsData cleanupAuto(FeatureProviderWfsData data) {
-    return new ImmutableFeatureProviderWfsData.Builder()
-        .from(data)
-        .auto(Optional.empty())
-        .autoPersist(Optional.empty())
-        .build();
+    return new ImmutableFeatureProviderWfsData.Builder().from(data).auto(Optional.empty()).build();
   }
 }

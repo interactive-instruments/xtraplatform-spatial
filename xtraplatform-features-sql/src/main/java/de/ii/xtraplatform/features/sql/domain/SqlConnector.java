@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.sql.domain;
 
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.base.domain.resiliency.Volatile2;
 import de.ii.xtraplatform.base.domain.util.Tuple;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
@@ -30,7 +31,7 @@ import org.postgresql.util.PSQLException;
 import org.postgresql.util.PSQLState;
 
 public interface SqlConnector
-    extends FeatureProviderConnector<SqlRow, SqlQueryBatch, SqlQueryOptions> {
+    extends FeatureProviderConnector<SqlRow, SqlQueryBatch, SqlQueryOptions>, Volatile2 {
 
   int getMaxConnections();
 

@@ -7,7 +7,9 @@
  */
 package de.ii.xtraplatform.features.domain;
 
-public interface FeatureChangeHandler {
+public interface FeatureChanges {
+
+  String CAPABILITY = "changes";
 
   void addListener(DatasetChangeListener listener);
 

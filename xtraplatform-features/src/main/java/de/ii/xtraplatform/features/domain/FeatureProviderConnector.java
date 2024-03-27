@@ -10,6 +10,7 @@ package de.ii.xtraplatform.features.domain;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
 import de.ii.xtraplatform.base.domain.JacksonProvider;
+import de.ii.xtraplatform.base.domain.resiliency.Volatile2;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,9 +27,12 @@ import java.util.concurrent.atomic.AtomicInteger;
     property = FeatureProviderConnector.CONNECTOR_TYPE_KEY,
     visible = true)
 @JsonTypeIdResolver(JacksonProvider.DynamicTypeIdResolver.class)
-public interface FeatureProviderConnector<T, U, V extends FeatureProviderConnector.QueryOptions> {
+public interface FeatureProviderConnector<T, U, V extends FeatureProviderConnector.QueryOptions>
+    extends Volatile2 {
 
   String CONNECTOR_TYPE_KEY = "connectorType";
+
+  String VOLATILE_KEY = "connector";
 
   interface QueryOptions {}
 

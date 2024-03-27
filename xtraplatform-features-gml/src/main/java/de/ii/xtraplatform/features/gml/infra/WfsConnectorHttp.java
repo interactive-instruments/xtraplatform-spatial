@@ -7,11 +7,14 @@
  */
 package de.ii.xtraplatform.features.gml.infra;
 
+import com.codahale.metrics.health.HealthCheck;
 import com.fasterxml.aalto.stax.InputFactoryImpl;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
+import de.ii.xtraplatform.base.domain.resiliency.AbstractVolatile;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.Metadata;
 import de.ii.xtraplatform.features.gml.app.FeatureProviderWfs;
@@ -39,7 +42,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author zahnen
  */
-public class WfsConnectorHttp implements WfsConnector {
+public class WfsConnectorHttp extends AbstractVolatile implements WfsConnector {
 
   public static final String CONNECTOR_TYPE = "HTTP";
 
@@ -56,7 +59,12 @@ public class WfsConnectorHttp implements WfsConnector {
 
   @AssistedInject
   WfsConnectorHttp(
-      Http http, @Assisted String providerId, @Assisted ConnectionInfoWfsHttp connectionInfo) {
+      Http http,
+      VolatileRegistry volatileRegistry,
+      @Assisted String providerId,
+      @Assisted ConnectionInfoWfsHttp connectionInfo) {
+    // TODO
+    super(volatileRegistry);
     this.useHttpPost = connectionInfo.getMethod() == ConnectionInfoWfsHttp.METHOD.POST;
 
     Map<String, Map<WFS.METHOD, URI>> urls =
@@ -99,6 +107,7 @@ public class WfsConnectorHttp implements WfsConnector {
   }
 
   WfsConnectorHttp() {
+    super(null);
     httpClient = null;
     wfsRequestEncoder = null;
     useHttpPost = false;
@@ -132,7 +141,10 @@ public class WfsConnectorHttp implements WfsConnector {
   }
 
   @Override
-  public void start() {}
+  public void start() {
+    // TODO: implement polling
+    setState(State.AVAILABLE);
+  }
 
   @Override
   public void stop() {}
@@ -199,5 +211,15 @@ public class WfsConnectorHttp implements WfsConnector {
   @Override
   public InputStream runWfsOperation(final WfsOperation operation) {
     return httpClient.getAsInputStream(wfsRequestEncoder.getAsUrl(operation));
+  }
+
+  @Override
+  public Optional<String> getInstanceId() {
+    return Optional.of(providerId);
+  }
+
+  @Override
+  public Optional<HealthCheck> asHealthCheck() {
+    return Optional.empty();
   }
 }

@@ -10,6 +10,10 @@ package de.ii.xtraplatform.tiles.app;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Range;
+import de.ii.xtraplatform.base.domain.resiliency.AbstractVolatileComposed;
+import de.ii.xtraplatform.base.domain.resiliency.DelayedVolatile;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileUnavailableException;
 import de.ii.xtraplatform.cql.domain.BooleanValue2;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.Cql.Format;
@@ -24,7 +28,8 @@ import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.entities.domain.EntityRegistry;
-import de.ii.xtraplatform.features.domain.FeatureProvider2;
+import de.ii.xtraplatform.features.domain.FeatureProvider;
+import de.ii.xtraplatform.features.domain.FeatureProviderEntity;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureStream;
@@ -52,10 +57,12 @@ import de.ii.xtraplatform.tiles.domain.TileQuery;
 import de.ii.xtraplatform.tiles.domain.TileResult;
 import de.ii.xtraplatform.tiles.domain.TilesetFeatures;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
 import javax.measure.Unit;
@@ -65,7 +72,8 @@ import org.kortforsyningen.proj.Units;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider {
+public class TileGeneratorFeatures extends AbstractVolatileComposed
+    implements TileGenerator, ChainedTileProvider {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileGeneratorFeatures.class);
   private static final Map<
@@ -87,18 +95,88 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
   private final EntityRegistry entityRegistry;
   private final TileProviderFeaturesData data;
   private final Cql cql;
+  private final Map<String, DelayedVolatile<FeatureProvider>> featureProviders;
+  private final boolean async;
 
   public TileGeneratorFeatures(
       TileProviderFeaturesData data,
       CrsInfo crsInfo,
       CrsTransformerFactory crsTransformerFactory,
       EntityRegistry entityRegistry,
-      Cql cql) {
+      Cql cql,
+      VolatileRegistry volatileRegistry,
+      boolean asyncStartup) {
+    super("generator", volatileRegistry, true);
     this.data = data;
     this.crsInfo = crsInfo;
     this.crsTransformerFactory = crsTransformerFactory;
     this.entityRegistry = entityRegistry;
     this.cql = cql;
+    this.featureProviders = new LinkedHashMap<>();
+    this.async = asyncStartup;
+
+    if (async) {
+      init(volatileRegistry);
+    } else {
+      setState(State.AVAILABLE);
+    }
+  }
+
+  private void init(VolatileRegistry volatileRegistry) {
+    onVolatileStart();
+
+    for (TilesetFeatures tileset : data.getTilesets().values()) {
+      String featureProviderId =
+          tileset
+              .mergeDefaults(data.getTilesetDefaults())
+              .getFeatureProvider()
+              .orElse(TileProviderFeatures.clean(data.getId()));
+
+      if (featureProviders.containsKey(featureProviderId)) {
+        continue;
+      }
+
+      DelayedVolatile<FeatureProvider> delayedVolatile =
+          new DelayedVolatile<>(
+              volatileRegistry,
+              String.format("generator.%s", featureProviderId),
+              false,
+              "generation");
+
+      featureProviders.putIfAbsent(featureProviderId, delayedVolatile);
+
+      entityRegistry
+          .getEntity(FeatureProviderEntity.class, featureProviderId)
+          .ifPresent(delayedVolatile::set);
+
+      addSubcomponent(delayedVolatile);
+    }
+
+    onVolatileStarted();
+  }
+
+  private FeatureProvider getFeatureProvider(TilesetFeatures tileset) {
+    String featureProviderId =
+        tileset.getFeatureProvider().orElse(TileProviderFeatures.clean(data.getId()));
+
+    if (async) {
+      DelayedVolatile<FeatureProvider> provider = featureProviders.get(featureProviderId);
+
+      // TODO: only crs, extents, queries needed
+      if (!provider.isAvailable()) {
+        throw new VolatileUnavailableException(
+            String.format("Feature provider with id '%s' is not available.", featureProviderId));
+      }
+
+      return provider.get();
+    }
+
+    return entityRegistry
+        .getEntity(FeatureProviderEntity.class, featureProviderId)
+        .orElseThrow(
+            () ->
+                new IllegalStateException(
+                    String.format("Feature provider with id '%s' not found.", featureProviderId)));
   }
 
   @Override
@@ -162,27 +240,17 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
   public FeatureStream getTileSource(TileQuery tileQuery) {
     TilesetFeatures tileset =
         data.getTilesets().get(tileQuery.getTileset()).mergeDefaults(data.getTilesetDefaults());
+    FeatureProvider featureProvider = getFeatureProvider(tileset);
 
-    String featureProviderId =
-        tileset.getFeatureProvider().orElse(TileProviderFeatures.clean(data.getId()));
-    FeatureProvider2 featureProvider =
-        entityRegistry
-            .getEntity(FeatureProvider2.class, featureProviderId)
-            .orElseThrow(
-                () ->
-                    new IllegalStateException(
-                        String.format(
-                            "Feature provider with id '%s' not found.", featureProviderId)));
-
-    if (!featureProvider.supportsQueries()) {
+    if (!featureProvider.queries().isSupported()) {
       throw new IllegalStateException("Feature provider has no Queries support.");
     }
-    if (!featureProvider.supportsCrs()) {
+    if (!featureProvider.crs().isSupported()) {
       throw new IllegalStateException("Feature provider has no CRS support.");
     }
 
-    EpsgCrs nativeCrs = featureProvider.crs().getNativeCrs();
-    Map<String, FeatureSchema> types = featureProvider.getData().getTypes();
+    EpsgCrs nativeCrs = featureProvider.crs().get().getNativeCrs();
+    Set<FeatureSchema> types = featureProvider.info().getSchemas();
     FeatureQuery featureQuery =
         getFeatureQuery(
             tileQuery,
@@ -192,7 +260,7 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
             getBounds(tileQuery),
             tileQuery.getGenerationParametersTransient());
 
-    return featureProvider.queries().getFeatureStream(featureQuery);
+    return featureProvider.queries().get().getFeatureStream(featureQuery);
   }
 
   private Optional<BoundingBox> getBounds(TileQuery tileQuery) {
@@ -245,22 +313,13 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
 
   // TODO: create on startup for all tilesets
   @Override
-  public TileGenerationSchema getGenerationSchema(String tileset) {
-    String featureProviderId =
-        data.getTilesetDefaults()
-            .getFeatureProvider()
-            .orElse(TileProviderFeatures.clean(data.getId()));
-    FeatureProvider2 featureProvider =
-        entityRegistry
-            .getEntity(FeatureProvider2.class, featureProviderId)
-            .orElseThrow(
-                () ->
-                    new IllegalStateException(
-                        String.format(
-                            "Feature provider with id '%s' not found.", featureProviderId)));
-    Map<String, FeatureSchema> featureTypes = featureProvider.getData().getTypes();
-    String featureType = data.getTilesets().get(tileset).getFeatureType().orElse(tileset);
-    FeatureSchema featureSchema = featureTypes.get(featureType);
+  public TileGenerationSchema getGenerationSchema(String tilesetId) {
+    TilesetFeatures tileset =
+        data.getTilesets().get(tilesetId).mergeDefaults(data.getTilesetDefaults());
+    FeatureProvider featureProvider = getFeatureProvider(tileset);
+    String featureType = tileset.getFeatureType().orElse(tilesetId);
+    FeatureSchema featureSchema = featureProvider.info().getSchema(featureType).orElse(null);
+
     return new TileGenerationSchema() {
       @Override
       public Optional<SimpleFeatureGeometry> getGeometryType() {
@@ -295,22 +354,10 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
       throw new IllegalArgumentException(String.format("Unknown tileset '%s'", tilesetId));
     }
 
-    String featureProviderId =
-        tileset
-            .getFeatureProvider()
-            .or(data.getTilesetDefaults()::getFeatureProvider)
-            .orElse(TileProviderFeatures.clean(data.getId()));
-    FeatureProvider2 featureProvider =
-        entityRegistry
-            .getEntity(FeatureProvider2.class, featureProviderId)
-            .orElseThrow(
-                () ->
-                    new IllegalStateException(
-                        String.format(
-                            "Feature provider with id '%s' not found.", featureProviderId)));
-
+    FeatureProvider featureProvider =
+        getFeatureProvider(tileset.mergeDefaults(data.getTilesetDefaults()));
     String featureType = tileset.getFeatureType().orElse(tileset.getId());
-    FeatureSchema featureSchema = featureProvider.getData().getTypes().get(featureType);
+    FeatureSchema featureSchema = featureProvider.info().getSchema(featureType).orElse(null);
 
     if (Objects.isNull(featureSchema)) {
       throw new IllegalArgumentException(
@@ -334,38 +381,31 @@ public class TileGeneratorFeatures implements TileGenerator, ChainedTileProvider
       throw new IllegalArgumentException(String.format("Unknown tileset '%s'", tilesetId));
     }
 
-    String featureProviderId =
-        tileset
-            .getFeatureProvider()
-            .or(data.getTilesetDefaults()::getFeatureProvider)
-            .orElse(TileProviderFeatures.clean(data.getId()));
-    FeatureProvider2 featureProvider =
-        entityRegistry
-            .getEntity(FeatureProvider2.class, featureProviderId)
-            .orElseThrow(
-                () ->
-                    new IllegalStateException(
-                        String.format(
-                            "Feature provider with id '%s' not found.", featureProviderId)));
+    FeatureProvider featureProvider =
+        getFeatureProvider(tileset.mergeDefaults(data.getTilesetDefaults()));
 
-    if (!featureProvider.supportsExtents()) {
+    if (!featureProvider.extents().isAvailable()) {
       return Optional.empty();
     }
 
     String featureType = tileset.getFeatureType().orElse(tileset.getId());
 
-    return featureProvider.extents().getSpatialExtent(featureType, OgcCrs.CRS84);
+    return featureProvider.extents().get().getSpatialExtent(featureType, OgcCrs.CRS84);
   }
 
   private FeatureQuery getFeatureQuery(
       TileQuery tile,
       TilesetFeatures tileset,
-      Map<String, FeatureSchema> featureTypes,
+      Set<FeatureSchema> featureTypes,
       EpsgCrs nativeCrs,
       Optional<BoundingBox> bounds,
       Optional<TileGenerationParametersTransient> userParameters) {
     String featureType = tileset.getFeatureType().orElse(tileset.getId());
-    FeatureSchema featureSchema = featureTypes.get(featureType);
+    FeatureSchema featureSchema =
+        featureTypes.stream()
+            .filter(type -> Objects.equals(type.getName(), featureType))
+            .findFirst()
+            .orElse(null);
     // TODO: validate tileset during provider startup
     if (featureSchema == null) {
       throw new IllegalStateException(

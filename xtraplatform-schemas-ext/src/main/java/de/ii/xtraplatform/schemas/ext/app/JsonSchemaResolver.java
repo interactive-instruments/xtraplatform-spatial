@@ -13,9 +13,9 @@ import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.entities.domain.ValidationResult.MODE;
 import de.ii.xtraplatform.features.domain.ExtensionConfiguration;
-import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
+import de.ii.xtraplatform.features.domain.FeatureProviderEntity;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
@@ -551,7 +551,7 @@ public class JsonSchemaResolver implements SchemaFragmentResolver, FeatureQuerie
   @Override
   public void on(
       LIFECYCLE_HOOK hook,
-      FeatureProvider2 provider,
+      FeatureProviderEntity provider,
       FeatureProviderConnector<?, ?, ?> connector) {}
 
   @Override

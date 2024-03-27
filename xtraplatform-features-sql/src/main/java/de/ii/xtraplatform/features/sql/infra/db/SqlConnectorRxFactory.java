@@ -14,6 +14,7 @@ import com.google.common.collect.ImmutableSet;
 import dagger.assisted.AssistedFactory;
 import de.ii.xtraplatform.base.domain.AppConfiguration;
 import de.ii.xtraplatform.base.domain.AppContext;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.ConnectorFactory2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
@@ -47,6 +48,8 @@ public class SqlConnectorRxFactory
       SqlDataSourceFactory
           sqlDataSourceFactory, // TODO: needed because dagger-auto does not parse SqlConnectorRx
       AppContext appContext, // TODO: needed because dagger-auto does not parse SqlConnectorRx
+      VolatileRegistry
+          volatileRegistry, // TODO: needed because dagger-auto does not parse SqlConnectorRx
       FactoryAssisted factoryAssisted) {
     this.factoryAssisted = factoryAssisted;
     this.instances = new LinkedHashMap<>();

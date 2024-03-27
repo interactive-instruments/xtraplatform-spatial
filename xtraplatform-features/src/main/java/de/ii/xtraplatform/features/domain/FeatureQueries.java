@@ -10,6 +10,9 @@ package de.ii.xtraplatform.features.domain;
 import java.util.List;
 
 public interface FeatureQueries {
+
+  String CAPABILITY = "queries";
+
   FeatureProviderCapabilities getCapabilities();
 
   long getFeatureCount(String typeName);
@@ -33,9 +36,11 @@ public interface FeatureQueries {
     throw new UnsupportedOperationException();
   }
 
+  // TODO: move to FeatureProvider2 or FeatureMetadata
   FeatureSchema getQueryablesSchema(
       FeatureSchema schema, List<String> included, List<String> excluded, String pathSeparator);
 
+  // TODO: move to FeatureProvider2 or FeatureMetadata
   FeatureSchema getSortablesSchema(
       FeatureSchema schema, List<String> included, List<String> excluded, String pathSeparator);
 }

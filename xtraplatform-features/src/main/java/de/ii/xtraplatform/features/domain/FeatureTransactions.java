@@ -16,6 +16,7 @@ import org.immutables.value.Value;
 
 public interface FeatureTransactions {
   String PATCH_NULL_VALUE = "###NULL###";
+  String CAPABILITY = "mutations";
 
   @Value.Immutable
   interface MutationResult extends FeatureStream.ResultBase {

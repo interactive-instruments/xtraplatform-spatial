@@ -10,12 +10,12 @@ package de.ii.xtraplatform.features.app;
 import de.ii.xtraplatform.features.domain.DatasetChange;
 import de.ii.xtraplatform.features.domain.DatasetChangeListener;
 import de.ii.xtraplatform.features.domain.FeatureChange;
-import de.ii.xtraplatform.features.domain.FeatureChangeHandler;
 import de.ii.xtraplatform.features.domain.FeatureChangeListener;
+import de.ii.xtraplatform.features.domain.FeatureChanges;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class FeatureChangeHandlerImpl implements FeatureChangeHandler {
+public class FeatureChangeHandlerImpl implements FeatureChanges {
 
   private final List<DatasetChangeListener> datasetListeners;
   private final List<FeatureChangeListener> featureListeners;

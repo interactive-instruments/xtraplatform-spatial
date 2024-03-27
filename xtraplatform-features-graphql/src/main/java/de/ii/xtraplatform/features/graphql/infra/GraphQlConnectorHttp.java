@@ -7,10 +7,13 @@
  */
 package de.ii.xtraplatform.features.graphql.infra;
 
+import com.codahale.metrics.health.HealthCheck;
 import com.google.common.base.Strings;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.base.domain.resiliency.AbstractVolatile;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.graphql.app.FeatureProviderGraphQl;
 import de.ii.xtraplatform.features.graphql.domain.ConnectionInfoGraphQlHttp;
@@ -34,7 +37,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author zahnen
  */
-public class GraphQlConnectorHttp implements GraphQlConnector {
+public class GraphQlConnectorHttp extends AbstractVolatile implements GraphQlConnector {
 
   public static final String CONNECTOR_TYPE = "HTTP";
 
@@ -47,7 +50,11 @@ public class GraphQlConnectorHttp implements GraphQlConnector {
 
   @AssistedInject
   GraphQlConnectorHttp(
-      Http http, @Assisted String providerId, @Assisted ConnectionInfoGraphQlHttp connectionInfo) {
+      Http http,
+      VolatileRegistry volatileRegistry,
+      @Assisted String providerId,
+      @Assisted ConnectionInfoGraphQlHttp connectionInfo) {
+    super(volatileRegistry);
     /*
      workaround for https://github.com/interactive-instruments/ldproxy/issues/225
      TODO: remove when fixed
@@ -71,6 +78,8 @@ public class GraphQlConnectorHttp implements GraphQlConnector {
   }
 
   GraphQlConnectorHttp() {
+    // TODO
+    super(null);
     httpClient = null;
     providerId = null;
     connectionInfo = null;
@@ -82,7 +91,10 @@ public class GraphQlConnectorHttp implements GraphQlConnector {
   }
 
   @Override
-  public void start() {}
+  public void start() {
+    // TODO: implement polling
+    setState(State.AVAILABLE);
+  }
 
   @Override
   public void stop() {}
@@ -139,5 +151,15 @@ public class GraphQlConnectorHttp implements GraphQlConnector {
   @Override
   public String getDatasetIdentifier() {
     return this.connectionInfo.getDatasetIdentifier();
+  }
+
+  @Override
+  public Optional<String> getInstanceId() {
+    return Optional.of(providerId);
+  }
+
+  @Override
+  public Optional<HealthCheck> asHealthCheck() {
+    return Optional.empty();
   }
 }

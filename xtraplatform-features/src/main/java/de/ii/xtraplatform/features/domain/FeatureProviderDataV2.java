@@ -249,9 +249,6 @@ public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, Extenda
   @Override
   Optional<Boolean> getAuto();
 
-  @Override
-  Optional<Boolean> getAutoPersist();
-
   // custom builder to automatically use keys of types as name of FeatureTypeV2
   abstract class Builder<T extends Builder<T>> implements EntityDataBuilder<FeatureProviderDataV2> {
 

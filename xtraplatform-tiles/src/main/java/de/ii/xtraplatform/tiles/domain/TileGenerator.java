@@ -14,6 +14,8 @@ import javax.ws.rs.core.MediaType;
 
 public interface TileGenerator {
 
+  String CAPABILITY = "generation";
+
   boolean supports(MediaType mediaType);
 
   byte[] generateTile(TileQuery tileQuery);

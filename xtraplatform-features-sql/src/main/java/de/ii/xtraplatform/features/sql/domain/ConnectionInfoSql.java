@@ -63,9 +63,9 @@ public interface ConnectionInfoSql extends ConnectionInfo {
 
   /**
    * @langEn The name of the database. For `GPKG` a relative path to a resource with type `features`
-   *     in the [Store (new)](../../application/20-configuration/10-store-new.md).
+   *     in the [Store](../../application/20-configuration/10-store-new.md).
    * @langDe Der Name der Datenbank. Für `GPKG` ein relativer Pfad zu einer Ressource mit Typ
-   *     `features` * im [Store (neu)](../../application/20-configuration/10-store-new.md).
+   *     `features` im [Store](../../application/20-configuration/10-store-new.md).
    */
   String getDatabase();
 
@@ -136,6 +136,21 @@ public interface ConnectionInfoSql extends ConnectionInfo {
     return String.format("%s/%s", getHost().orElse(""), getDatabase());
   }
 
+  /**
+   * @langEn Assume that the connected dataset may be changed by external applications. Setting this
+   *     to `true` for example will recompute extents and counts on every provider start or reload.
+   * @langDe Annehmen, dass der verbundene Datensatz durch externe Applikationen geändert werden
+   *     kann. Wenn diese Option auf `true` gesetzt wrid, werden z.B. Extents und Counts bei jedem
+   *     Start oder Reload des Providers neu berechnet.
+   * @since v4.0
+   * @default false
+   */
+  @Override
+  @Value.Default
+  default boolean getAssumeExternalChanges() {
+    return false;
+  }
+
   @Value.Immutable
   @JsonDeserialize(builder = ImmutablePoolSettings.Builder.class)
   interface PoolSettings {
@@ -164,20 +179,6 @@ public interface ConnectionInfoSql extends ConnectionInfo {
      */
     @Nullable
     Integer getMinConnections();
-
-    /**
-     * @langEn If disabled the provider will wait longer for the first database connection to be
-     *     established. Has no effect if `minConnections` is `0`. Should normally be disabled only
-     *     on development systems.
-     * @langDe Steuert, ob das Starten des Feature-Providers abgebrochen werden soll, wenn der
-     *     Aufbau der ersten Connection länger dauert. Hat keinen Effekt bei `minConnections: 0`.
-     *     Diese Option sollte in der Regel nur auf Entwicklungssystemen deaktiviert werden.
-     * @default true
-     */
-    // TODO what should be done here in v4.0?
-    @Deprecated
-    @Nullable
-    Boolean getInitFailFast();
 
     @DocIgnore
     @Nullable

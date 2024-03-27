@@ -22,7 +22,7 @@ public class WfsClientBasicFactorySimple implements WfsClientBasicFactory {
   @Override
   public WfsClientBasic create(
       String providerType, String providerId, ConnectionInfoWfsHttp connectionInfo) {
-    return new WfsConnectorHttp(http, providerId, connectionInfo);
+    return new WfsConnectorHttp(http, null, providerId, connectionInfo);
   }
 
   @Override

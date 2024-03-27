@@ -219,7 +219,7 @@ public class FeatureProviderSqlAuto implements AutoEntityFactory {
   }
 
   private FeatureProviderSqlData cleanupAuto(FeatureProviderSqlData data) {
-    return new Builder().from(data).auto(Optional.empty()).autoPersist(Optional.empty()).build();
+    return new Builder().from(data).auto(Optional.empty()).build();
   }
 
   private FeatureProviderSqlData cleanupAdditionalInfo(FeatureProviderSqlData data) {

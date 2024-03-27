@@ -9,6 +9,8 @@ package de.ii.xtraplatform.features.domain;
 
 public interface MultiFeatureQueries {
 
+  String CAPABILITY = "multiQueries";
+
   default boolean supportsCql2() {
     return false;
   }

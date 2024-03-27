@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableMap;
 import dagger.assisted.AssistedFactory;
 import de.ii.xtraplatform.base.domain.AppContext;
 import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
@@ -21,7 +22,8 @@ import de.ii.xtraplatform.entities.domain.EntityDataBuilder;
 import de.ii.xtraplatform.entities.domain.EntityFactory;
 import de.ii.xtraplatform.entities.domain.EntityRegistry;
 import de.ii.xtraplatform.entities.domain.PersistentEntity;
-import de.ii.xtraplatform.features.domain.FeatureProvider2;
+import de.ii.xtraplatform.features.domain.FeatureProvider;
+import de.ii.xtraplatform.features.domain.FeatureProviderEntity;
 import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
 import de.ii.xtraplatform.tiles.domain.ImmutableMinMax;
 import de.ii.xtraplatform.tiles.domain.ImmutableTileProviderFeaturesData;
@@ -59,6 +61,7 @@ public class TileProviderFeaturesFactory
       Cql cql,
       ResourceStore blobStore,
       TileWalker tileWalker,
+      VolatileRegistry volatileRegistry,
       TileProviderFeaturesFactoryAssisted factoryAssisted) {
     super(factoryAssisted);
     this.entityRegistry = entityRegistry;
@@ -137,7 +140,6 @@ public class TileProviderFeaturesFactory
             new ImmutableTileProviderFeaturesData.Builder()
                 .from(data)
                 .auto(Optional.empty())
-                .autoPersist(Optional.empty())
                 .build();
       } catch (Throwable e) {
         if (LOGGER.isErrorEnabled()) {
@@ -176,19 +178,19 @@ public class TileProviderFeaturesFactory
         data.getTilesetDefaults()
             .getFeatureProvider()
             .orElse(TileProviderFeatures.clean(data.getId()));
-    FeatureProvider2 featureProvider =
+    FeatureProvider featureProvider =
         entityRegistry
-            .getEntity(FeatureProvider2.class, featureProviderId)
+            .getEntity(FeatureProviderEntity.class, featureProviderId)
             .orElseThrow(
                 () ->
                     new IllegalStateException(
                         String.format(
                             "Feature provider with id '%s' not found.", featureProviderId)));
 
-    if (!featureProvider.supportsQueries()) {
+    if (!featureProvider.queries().isSupported()) {
       throw new IllegalStateException("Feature provider has no Queries support.");
     }
-    if (!featureProvider.supportsCrs()) {
+    if (!featureProvider.crs().isSupported()) {
       throw new IllegalStateException("Feature provider has no CRS support.");
     }
 
@@ -196,7 +198,7 @@ public class TileProviderFeaturesFactory
         new Builder().id("__all__").addCombine(TilesetFeatures.COMBINE_ALL).build();
 
     Map<String, TilesetFeatures> tilesets =
-        featureProvider.getData().getTypes().values().stream()
+        featureProvider.info().getSchemas().stream()
             .filter(featureSchema -> featureSchema.getPrimaryGeometry().isPresent())
             .map(
                 featureSchema -> {
