@@ -21,6 +21,7 @@ dependencies {
     provided project(':xtraplatform-strings')
 
     embedded (libs.rxjava.jdbc) {
+        exclude module: 'rxjava'
         exclude module: 'reactive-streams'
         exclude module: 'commons-io'
         exclude module: 'slf4j-api'
@@ -29,9 +30,7 @@ dependencies {
     //use reactive-streams + rxjava exported from this
     embeddedImport 'de.interactive_instruments:xtraplatform-streams'
 
-    embedded libs.bundles.sql
-    embeddedFlat libs.bundles.sqlFlat
-
+    embeddedFlat libs.bundles.sql
     embeddedFlatExport libs.sqlite
 
     testImplementation 'de.interactive_instruments:xtraplatform-proj'
