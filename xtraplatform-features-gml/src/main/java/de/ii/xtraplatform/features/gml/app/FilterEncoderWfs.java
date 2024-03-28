@@ -27,8 +27,9 @@ import de.ii.xtraplatform.cql.domain.CqlNode;
 import de.ii.xtraplatform.cql.domain.CqlVisitor;
 import de.ii.xtraplatform.cql.domain.Eq;
 import de.ii.xtraplatform.cql.domain.Function;
+import de.ii.xtraplatform.cql.domain.Geometry.Bbox;
 import de.ii.xtraplatform.cql.domain.Geometry.Coordinate;
-import de.ii.xtraplatform.cql.domain.Geometry.Envelope;
+import de.ii.xtraplatform.cql.domain.Geometry.GeometryCollection;
 import de.ii.xtraplatform.cql.domain.Geometry.LineString;
 import de.ii.xtraplatform.cql.domain.Geometry.MultiLineString;
 import de.ii.xtraplatform.cql.domain.Geometry.MultiPoint;
@@ -47,8 +48,8 @@ import de.ii.xtraplatform.cql.domain.Not;
 import de.ii.xtraplatform.cql.domain.Or;
 import de.ii.xtraplatform.cql.domain.Property;
 import de.ii.xtraplatform.cql.domain.ScalarLiteral;
+import de.ii.xtraplatform.cql.domain.SpatialFunction;
 import de.ii.xtraplatform.cql.domain.SpatialLiteral;
-import de.ii.xtraplatform.cql.domain.SpatialOperator;
 import de.ii.xtraplatform.cql.domain.TemporalLiteral;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformer;
@@ -305,7 +306,7 @@ public class FilterEncoderWfs {
     @Override
     public FesExpression visit(
         BinarySpatialOperation spatialOperation, List<FesExpression> children) {
-      if (spatialOperation.getSpatialOperator() == SpatialOperator.S_INTERSECTS
+      if (spatialOperation.getSpatialOperator() == SpatialFunction.S_INTERSECTS
           && children.size() == 2
           && children.get(0) instanceof FesValueReference
           && children.get(1) instanceof FesEnvelope) {
@@ -421,9 +422,16 @@ public class FilterEncoderWfs {
     }
 
     @Override
-    public FesExpression visit(Envelope envelope, List<FesExpression> children) {
+    public FesExpression visit(
+        GeometryCollection geometryCollection, List<FesExpression> children) {
+      throw new IllegalArgumentException(
+          "GeometryCollection geometries are not supported in filter expressions for WFS feature providers.");
+    }
+
+    @Override
+    public FesExpression visit(Bbox bbox, List<FesExpression> children) {
       List<Double> coordinates =
-          transformCoordinatesIfNecessary(envelope.getCoordinates(), envelope.getCrs());
+          transformCoordinatesIfNecessary(bbox.getCoordinates(), bbox.getCrs());
       BoundingBox boundingBox =
           BoundingBox.of(
               coordinates.get(0),

@@ -41,7 +41,7 @@ public interface Cql {
       EpsgCrs nativeCrs);
 
   Cql2Expression mapTemporalOperators(
-      Cql2Expression cqlFilter, Set<TemporalOperator> supportedOperators);
+      Cql2Expression cqlFilter, Set<TemporalFunction> supportedOperators);
 
   Cql2Expression mapEnvelopes(Cql2Expression cqlFilter, CrsInfo crsInfo);
 

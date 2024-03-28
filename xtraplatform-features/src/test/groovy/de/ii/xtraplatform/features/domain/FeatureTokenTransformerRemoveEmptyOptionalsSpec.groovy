@@ -19,7 +19,7 @@ class FeatureTokenTransformerRemoveEmptyOptionalsSpec extends Specification {
     List<Object> tokens
 
     def setup() {
-        FeatureTokenTransformerRemoveEmptyOptionals mapper = new FeatureTokenTransformerRemoveEmptyOptionals()
+        FeatureTokenTransformerRemoveEmptyOptionals mapper = new FeatureTokenTransformerRemoveEmptyOptionals([:])
         FeatureQuery query = ImmutableFeatureQuery.builder().type("test").build()
         FeatureEventHandler.ModifiableContext context = mapper.createContext()
                 .setQuery(query)

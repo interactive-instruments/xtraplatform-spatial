@@ -26,6 +26,7 @@ import de.ii.xtraplatform.cql.domain.Eq;
 import de.ii.xtraplatform.cql.domain.Function;
 import de.ii.xtraplatform.cql.domain.Geometry;
 import de.ii.xtraplatform.cql.domain.Geometry.Coordinate;
+import de.ii.xtraplatform.cql.domain.Geometry.GeometryCollection;
 import de.ii.xtraplatform.cql.domain.Geometry.LineString;
 import de.ii.xtraplatform.cql.domain.Geometry.MultiPoint;
 import de.ii.xtraplatform.cql.domain.Geometry.Point;
@@ -46,16 +47,16 @@ import de.ii.xtraplatform.cql.domain.SIntersects;
 import de.ii.xtraplatform.cql.domain.STouches;
 import de.ii.xtraplatform.cql.domain.SWithin;
 import de.ii.xtraplatform.cql.domain.ScalarLiteral;
+import de.ii.xtraplatform.cql.domain.SpatialFunction;
 import de.ii.xtraplatform.cql.domain.SpatialLiteral;
 import de.ii.xtraplatform.cql.domain.SpatialOperation;
-import de.ii.xtraplatform.cql.domain.SpatialOperator;
 import de.ii.xtraplatform.cql.domain.TAfter;
 import de.ii.xtraplatform.cql.domain.TBefore;
 import de.ii.xtraplatform.cql.domain.TDuring;
 import de.ii.xtraplatform.cql.domain.TIntersects;
+import de.ii.xtraplatform.cql.domain.TemporalFunction;
 import de.ii.xtraplatform.cql.domain.TemporalLiteral;
 import de.ii.xtraplatform.cql.domain.TemporalOperation;
-import de.ii.xtraplatform.cql.domain.TemporalOperator;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
 import java.util.Objects;
@@ -132,7 +133,7 @@ public class CqlFilterExamples {
   public static final CqlFilter EXAMPLE_12_OLD =
       CqlFilter.of(
           TemporalOperation.of(
-              TemporalOperator.T_BEFORE, "built", TemporalLiteral.of("2012-06-05T00:00:00Z")));
+              TemporalFunction.T_BEFORE, "built", TemporalLiteral.of("2012-06-05T00:00:00Z")));
   public static final Cql2Expression EXAMPLE_12_date =
       TBefore.of(Property.of("built"), TemporalLiteral.of("2012-06-05"));
 
@@ -146,7 +147,7 @@ public class CqlFilterExamples {
   public static final CqlFilter EXAMPLE_13_OLD =
       CqlFilter.of(
           TemporalOperation.of(
-              TemporalOperator.T_AFTER, "built", TemporalLiteral.of("2012-06-05T00:00:00Z")));
+              TemporalFunction.T_AFTER, "built", TemporalLiteral.of("2012-06-05T00:00:00Z")));
 
   public static final Cql2Expression EXAMPLE_13_alt =
       Gt.of(ImmutableList.of(Property.of("built"), TemporalLiteral.of("2012-06-05T00:00:00Z")));
@@ -177,7 +178,7 @@ public class CqlFilterExamples {
   public static final CqlFilter EXAMPLE_14_OLD =
       CqlFilter.of(
           TemporalOperation.of(
-              TemporalOperator.T_DURING,
+              TemporalFunction.T_DURING,
               "updated",
               TemporalLiteral.of(
                   ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z"))));
@@ -185,19 +186,19 @@ public class CqlFilterExamples {
   public static final Cql2Expression EXAMPLE_15 =
       SWithin.of(
           Property.of("location"),
-          SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0, OgcCrs.CRS84)));
+          SpatialLiteral.of(Geometry.Bbox.of(-118.0, 33.8, -117.9, 34.0, OgcCrs.CRS84)));
 
   public static final Cql2Expression EXAMPLE_15_RandomCrs =
       SWithin.of(
           Property.of("location"),
-          SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0, EpsgCrs.of(8888))));
+          SpatialLiteral.of(Geometry.Bbox.of(-118.0, 33.8, -117.9, 34.0, EpsgCrs.of(8888))));
 
   public static final CqlFilter EXAMPLE_15_OLD =
       CqlFilter.of(
           SpatialOperation.of(
-              SpatialOperator.S_WITHIN,
+              SpatialFunction.S_WITHIN,
               "location",
-              SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0, OgcCrs.CRS84))));
+              SpatialLiteral.of(Geometry.Bbox.of(-118.0, 33.8, -117.9, 34.0, OgcCrs.CRS84))));
 
   public static final Cql2Expression EXAMPLE_16 =
       SIntersects.of(
@@ -265,10 +266,15 @@ public class CqlFilterExamples {
           Property.of("location"),
           SpatialLiteral.of(MultiPoint.of(OgcCrs.CRS84, Point.of(10, -10), Point.of(10, 10))));
 
-  public static final Cql2Expression EXAMPLE_16_Envelope =
+  public static final Cql2Expression EXAMPLE_16_BBox =
       SIntersects.of(
           Property.of("location"),
-          SpatialLiteral.of(Geometry.Envelope.of(-10.0, -10.0, 10.0, 10.0, OgcCrs.CRS84)));
+          SpatialLiteral.of(Geometry.Bbox.of(-10.0, -10.0, 10.0, 10.0, OgcCrs.CRS84)));
+
+  public static final Cql2Expression EXAMPLE_16_GeometryCollection =
+      SIntersects.of(
+          Property.of("location"),
+          SpatialLiteral.of(GeometryCollection.of(Point.of(10, -10), Point.of(10, 10))));
 
   public static final Cql2Expression EXAMPLE_16_OLD =
       SIntersects.of(
@@ -287,13 +293,13 @@ public class CqlFilterExamples {
           EXAMPLE_1,
           SWithin.of(
               Property.of("geometry"),
-              SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0, OgcCrs.CRS84))));
+              SpatialLiteral.of(Geometry.Bbox.of(-118.0, 33.8, -117.9, 34.0, OgcCrs.CRS84))));
   public static final Cql2Expression EXAMPLE_17_OLD =
       And.of(
           EXAMPLE_1_OLD,
           SWithin.of(
               Property.of("geometry"),
-              SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0, OgcCrs.CRS84))));
+              SpatialLiteral.of(Geometry.Bbox.of(-118.0, 33.8, -117.9, 34.0, OgcCrs.CRS84))));
 
   public static final Cql2Expression EXAMPLE_18 =
       Between.of(Property.of("floors"), ScalarLiteral.of(4), ScalarLiteral.of(8));
@@ -320,7 +326,7 @@ public class CqlFilterExamples {
   public static final CqlFilter EXAMPLE_24_OLD =
       CqlFilter.of(
           TemporalOperation.of(
-              TemporalOperator.T_BEFORE, "built", TemporalLiteral.of("2015-01-01")));
+              TemporalFunction.T_BEFORE, "built", TemporalLiteral.of("2015-01-01")));
 
   public static final Cql2Expression EXAMPLE_25 =
       TDuring.of(
@@ -363,7 +369,7 @@ public class CqlFilterExamples {
   public static final CqlFilter EXAMPLE_25_OLD =
       CqlFilter.of(
           TemporalOperation.of(
-              TemporalOperator.T_DURING,
+              TemporalFunction.T_DURING,
               "updated",
               Objects.requireNonNull(TemporalLiteral.of("2017-06-10", "2017-06-11"))));
 
@@ -374,7 +380,7 @@ public class CqlFilterExamples {
   public static final CqlFilter EXAMPLE_26_OLD =
       CqlFilter.of(
           TemporalOperation.of(
-              TemporalOperator.T_DURING,
+              TemporalFunction.T_DURING,
               "updated",
               Objects.requireNonNull(TemporalLiteral.of("2017-06-10T07:30:00Z", ".."))));
 
@@ -385,7 +391,7 @@ public class CqlFilterExamples {
   public static final CqlFilter EXAMPLE_27_OLD =
       CqlFilter.of(
           TemporalOperation.of(
-              TemporalOperator.T_DURING,
+              TemporalFunction.T_DURING,
               "updated",
               Objects.requireNonNull(TemporalLiteral.of("..", "2017-06-11T10:30:00Z"))));
 
@@ -394,7 +400,7 @@ public class CqlFilterExamples {
   public static final CqlFilter EXAMPLE_28_OLD =
       CqlFilter.of(
           TemporalOperation.of(
-              TemporalOperator.T_DURING,
+              TemporalFunction.T_DURING,
               "updated",
               Objects.requireNonNull(TemporalLiteral.of("..", ".."))));
 
@@ -487,7 +493,7 @@ public class CqlFilterExamples {
   public static final CqlFilter EXAMPLE_36 =
       CqlFilter.of(
           TemporalOperation.of(
-              TemporalOperator.T_INTERSECTS,
+              TemporalFunction.T_INTERSECTS,
               "event_date",
               TemporalLiteral.of("1969-07-16T05:32:00Z", "1969-07-24T16:50:35Z")));
 
@@ -701,7 +707,7 @@ public class CqlFilterExamples {
               ImmutableMap.of(
                   "theme",
                   BinarySpatialOperation.of(
-                      SpatialOperator.S_TOUCHES,
+                      SpatialFunction.S_TOUCHES,
                       Property.of("theme.event"),
                       Property.of("theme.location_geometry")))),
           ArrayLiteral.of(
@@ -745,7 +751,7 @@ public class CqlFilterExamples {
                   SWithin.of(
                       Property.of("theme.location"),
                       SpatialLiteral.of(
-                          Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0, OgcCrs.CRS84))))),
+                          Geometry.Bbox.of(-118.0, 33.8, -117.9, 34.0, OgcCrs.CRS84))))),
           ArrayLiteral.of(
               ImmutableList.of(
                   ScalarLiteral.of("DLKM"),
@@ -797,7 +803,7 @@ public class CqlFilterExamples {
   public static final CqlFilter EXAMPLE_TDISJOINT =
       CqlFilter.of(
           TemporalOperation.of(
-              TemporalOperator.T_DISJOINT,
+              TemporalFunction.T_DISJOINT,
               "event_date",
               TemporalLiteral.of("1969-07-16T05:32:00Z", "1969-07-24T16:50:35Z")));
 
@@ -809,44 +815,44 @@ public class CqlFilterExamples {
   public static final CqlFilter EXAMPLE_SDISJOINT =
       CqlFilter.of(
           SpatialOperation.of(
-              SpatialOperator.S_DISJOINT,
+              SpatialFunction.S_DISJOINT,
               "geometry",
-              SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+              SpatialLiteral.of(Geometry.Bbox.of(-118.0, 33.8, -117.9, 34.0))));
 
   public static final CqlFilter EXAMPLE_SEQUALS =
       CqlFilter.of(
           SpatialOperation.of(
-              SpatialOperator.S_EQUALS,
+              SpatialFunction.S_EQUALS,
               "geometry",
-              SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+              SpatialLiteral.of(Geometry.Bbox.of(-118.0, 33.8, -117.9, 34.0))));
 
   public static final CqlFilter EXAMPLE_STOUCHES =
       CqlFilter.of(
           SpatialOperation.of(
-              SpatialOperator.S_TOUCHES,
+              SpatialFunction.S_TOUCHES,
               "geometry",
-              SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+              SpatialLiteral.of(Geometry.Bbox.of(-118.0, 33.8, -117.9, 34.0))));
 
   public static final CqlFilter EXAMPLE_SOVERLAPS =
       CqlFilter.of(
           SpatialOperation.of(
-              SpatialOperator.S_OVERLAPS,
+              SpatialFunction.S_OVERLAPS,
               "geometry",
-              SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+              SpatialLiteral.of(Geometry.Bbox.of(-118.0, 33.8, -117.9, 34.0))));
 
   public static final CqlFilter EXAMPLE_SCROSSES =
       CqlFilter.of(
           SpatialOperation.of(
-              SpatialOperator.S_CROSSES,
+              SpatialFunction.S_CROSSES,
               "geometry",
-              SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+              SpatialLiteral.of(Geometry.Bbox.of(-118.0, 33.8, -117.9, 34.0))));
 
   public static final CqlFilter EXAMPLE_SCONTAINS =
       CqlFilter.of(
           SpatialOperation.of(
-              SpatialOperator.S_CONTAINS,
+              SpatialFunction.S_CONTAINS,
               "geometry",
-              SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))));
+              SpatialLiteral.of(Geometry.Bbox.of(-118.0, 33.8, -117.9, 34.0))));
 
   public static final CqlFilter EXAMPLE_NESTED_TEMPORAL =
       CqlFilter.of(
@@ -870,7 +876,7 @@ public class CqlFilterExamples {
                       "filterValues",
                       STouches.of(
                           Property.of("filterValues.location"),
-                          SpatialLiteral.of(Geometry.Envelope.of(-118.0, 33.8, -117.9, 34.0))))),
+                          SpatialLiteral.of(Geometry.Bbox.of(-118.0, 33.8, -117.9, 34.0))))),
               ScalarLiteral.of(0.1)));
 
   public static final Cql2Expression EXAMPLE_IN_WITH_FUNCTION =

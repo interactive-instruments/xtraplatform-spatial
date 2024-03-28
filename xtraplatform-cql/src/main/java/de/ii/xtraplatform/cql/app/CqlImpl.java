@@ -21,8 +21,8 @@ import de.ii.xtraplatform.cql.domain.Cql2Expression;
 import de.ii.xtraplatform.cql.domain.CqlParseException;
 import de.ii.xtraplatform.cql.domain.CqlToText;
 import de.ii.xtraplatform.cql.domain.Operation;
+import de.ii.xtraplatform.cql.domain.TemporalFunction;
 import de.ii.xtraplatform.cql.domain.TemporalLiteral;
-import de.ii.xtraplatform.cql.domain.TemporalOperator;
 import de.ii.xtraplatform.cql.infra.CqlTextParser;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
@@ -139,7 +139,7 @@ public class CqlImpl implements Cql {
 
   @Override
   public Cql2Expression mapTemporalOperators(
-      Cql2Expression cqlFilter, Set<TemporalOperator> supportedOperators) {
+      Cql2Expression cqlFilter, Set<TemporalFunction> supportedOperators) {
     CqlVisitorMapTemporalOperators visitor = new CqlVisitorMapTemporalOperators(supportedOperators);
 
     return (Cql2Expression) cqlFilter.accept(visitor, true);

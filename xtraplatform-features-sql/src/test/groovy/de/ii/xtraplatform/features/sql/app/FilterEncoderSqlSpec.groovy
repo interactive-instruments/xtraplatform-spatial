@@ -43,7 +43,7 @@ class FilterEncoderSqlSpec extends Specification {
 
     }
 
-    def 'spatial operation, envelope, no join'() {
+    def 'spatial operation, bbox, no join'() {
 
         given:
         def instanceContainer = QuerySchemaFixtures.SIMPLE_GEOMETRY
@@ -60,7 +60,7 @@ class FilterEncoderSqlSpec extends Specification {
 
     }
 
-    def 'negated spatial operation, envelope, no join'() {
+    def 'negated spatial operation, bbox, no join'() {
 
         given:
         def instanceContainer = QuerySchemaFixtures.SIMPLE_GEOMETRY
@@ -111,7 +111,7 @@ class FilterEncoderSqlSpec extends Specification {
 
     }
 
-    def 'spatial operation, envelope, no join with transformed coordinates'() {
+    def 'spatial operation, bbox, no join with transformed coordinates'() {
 
         given:
 

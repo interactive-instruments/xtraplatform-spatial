@@ -140,10 +140,23 @@ public interface PropertyTransformation
   Optional<String> getFlatten();
 
   /**
+   * @langEn Remove properties with value `null`, including properties transformed with `nullify`.
+   *     Can only be applied on the feature level in the provider or using the wildcard property
+   *     name `*` otherwise.
+   * @langDe Properties mit Wert `null` entfernen, inklusive Properties die mit `nullify`
+   *     transformiert wurden. Kann nur auf der Feature-Ebene im Provider oder an anderen Stellen
+   *     mittels des Wildcard Property-Names `*` angewendet werden.
+   * @default true
+   * @since v4.0
+   */
+  Optional<Boolean> getRemoveNullValues();
+
+  /**
    * @langEn Reduces an object to a string using the same syntax as `stringFormat` but with
    *     additional replacements for the object property names.
    * @langDe Reduziert ein Objekt zu einem String mithilfe der `stringFormat`-Syntax aber mit
    *     zusätzlichen Ersetzungen für die Property-Names des Objekts.
+   * @since v3.6
    */
   Optional<String> getObjectReduceFormat();
 
@@ -151,12 +164,14 @@ public interface PropertyTransformation
    * @langEn Reduces an object to one of its properties, the value is the desired property name.
    * @langDe Reduziert ein Objekt zu einem seiner Properties, der Wert ist der gewünschte
    *     Property-Name.
+   * @since v3.6
    */
   Optional<String> getObjectReduceSelect();
 
   /**
    * @langEn Removes an object, if the property with the name in the value is `null`.
    * @langDe Entfernt ein Objekt, wenn die Eigenschaft mit dem Namen im Wert `null` ist.
+   * @since v3.6
    */
   Optional<String> getObjectRemoveSelect();
 
@@ -167,6 +182,7 @@ public interface PropertyTransformation
    * @langDe Bildet ein Object auf ein anderes Object ab, der Wert ist eine Map bei der die Keys die
    *     neuen Property-Namen sind. Die Werte verwenden die `stringFormat`-Syntax aber mit
    *     zusätzlichen Ersetzungen für die Property-Names des Quell-Objekts.
+   * @since v3.6
    */
   Map<String, String> getObjectMapFormat();
 
@@ -181,6 +197,7 @@ public interface PropertyTransformation
    *     additional replacements for the array indexes.
    * @langDe Reduziert ein Werte-Array zu einem String mithilfe der `stringFormat`-Syntax aber mit
    *     zusätzlichen Ersetzungen für die Array-Indizes.
+   * @since v3.6
    */
   Optional<String> getArrayReduceFormat();
 
@@ -200,7 +217,7 @@ public interface PropertyTransformation
   /**
    * @langEn Format a value, where `{{value}}` is replaced with the actual value and
    *     `{{serviceUrl}}` is replaced with the API landing page URI. Additonal operations can be
-   *     applied to `{{value}}` by chaining them with `|`, see the examples below.
+   *     applied to `{{value}}` by chaining them with `\|`, see the examples below.
    * @langDe Der Wert wird in den angegebenen neuen Wert transformiert. `{{value}}` wird dabei durch
    *     den aktuellen Wert und `{{serviceUr}}` durch die Landing-Page-URI der API ersetzt. Bei
    *     `{{value}}` können noch weitere [Filter](#String-Template-Filter) ausgeführt werden, diese

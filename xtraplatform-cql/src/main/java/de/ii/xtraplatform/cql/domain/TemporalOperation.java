@@ -17,10 +17,10 @@ import org.immutables.value.Value;
 public interface TemporalOperation extends BinaryOperation<TemporalLiteral>, CqlNode {
 
   @JsonValue
-  TemporalOperator getOperator();
+  TemporalFunction getOperator();
 
   static TemporalOperation of(
-      TemporalOperator operator, String property, TemporalLiteral temporalLiteral) {
+      TemporalFunction operator, String property, TemporalLiteral temporalLiteral) {
     return new ImmutableTemporalOperation.Builder()
         .operator(operator)
         .operands(ImmutableList.of(Property.of(property), temporalLiteral))

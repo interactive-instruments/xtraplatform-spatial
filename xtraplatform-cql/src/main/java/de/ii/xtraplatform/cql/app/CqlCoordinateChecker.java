@@ -10,6 +10,7 @@ package de.ii.xtraplatform.cql.app;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.cql.domain.CqlNode;
 import de.ii.xtraplatform.cql.domain.Geometry;
+import de.ii.xtraplatform.cql.domain.Geometry.GeometryCollection;
 import de.ii.xtraplatform.cql.domain.SpatialLiteral;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CoordinateTuple;
@@ -108,8 +109,8 @@ public class CqlCoordinateChecker extends CqlVisitorBase<Object> {
   }
 
   @Override
-  public Object visit(Geometry.Envelope envelope, List<Object> children) {
-    List<Double> doubles = envelope.getCoordinates();
+  public Object visit(Geometry.Bbox bbox, List<Object> children) {
+    List<Double> doubles = bbox.getCoordinates();
     Geometry.Coordinate ll;
     Geometry.Coordinate ur;
     ll = Geometry.Coordinate.of(doubles.get(0), doubles.get(1));
@@ -131,6 +132,12 @@ public class CqlCoordinateChecker extends CqlVisitorBase<Object> {
                         AXES.get(axis)));
             });
 
+    return null;
+  }
+
+  @Override
+  public Object visit(GeometryCollection geometryCollection, List<Object> children) {
+    geometryCollection.getCoordinates().forEach(geom -> visit((Geometry<?>) geom, children));
     return null;
   }
 

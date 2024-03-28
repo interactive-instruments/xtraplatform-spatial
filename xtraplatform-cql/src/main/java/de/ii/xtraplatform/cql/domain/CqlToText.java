@@ -39,7 +39,7 @@ public class CqlToText implements CqlVisitor<String> {
               "BETWEEN",
               "CASEI",
               "DATE",
-              "ENVELOPE",
+              "BBOX",
               "FALSE",
               "GEOMETRYCOLLECTION",
               "IN",
@@ -345,10 +345,19 @@ public class CqlToText implements CqlVisitor<String> {
   }
 
   @Override
-  public String visit(Geometry.Envelope envelope, List<String> children) {
+  public String visit(Geometry.GeometryCollection geometryCollection, List<String> children) {
     return String.format(
-        "ENVELOPE%s",
-        transformIfNecessary2(envelope.getCrs()).apply(envelope.getCoordinates()).stream()
+        "GEOMETRYCOLLECTION%s",
+        geometryCollection.getCoordinates().stream()
+            .map(geom -> visit((Geometry<?>) geom, children))
+            .collect(Collectors.joining(",", "(", ")")));
+  }
+
+  @Override
+  public String visit(Geometry.Bbox bbox, List<String> children) {
+    return String.format(
+        "BBOX%s",
+        transformIfNecessary2(bbox.getCrs()).apply(bbox.getCoordinates()).stream()
             .map(String::valueOf)
             .collect(Collectors.joining(",", "(", ")")));
   }
@@ -410,7 +419,7 @@ public class CqlToText implements CqlVisitor<String> {
                   .map(e -> e.accept(this))
                   .map(e -> String.format("%s", e))
                   .collect(Collectors.toList());
-      return String.format("[%s]", String.join(",", elements));
+      return String.format("(%s)", String.join(",", elements));
     }
   }
 

@@ -17,7 +17,7 @@ import de.ii.xtraplatform.base.domain.resiliency.VolatileUnavailableException;
 import de.ii.xtraplatform.cql.domain.BooleanValue2;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.Cql.Format;
-import de.ii.xtraplatform.cql.domain.Geometry.Envelope;
+import de.ii.xtraplatform.cql.domain.Geometry.Bbox;
 import de.ii.xtraplatform.cql.domain.Property;
 import de.ii.xtraplatform.cql.domain.SIntersects;
 import de.ii.xtraplatform.cql.domain.SpatialLiteral;
@@ -441,8 +441,7 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
                       bbox ->
                           queryBuilder.addFilters(
                               SIntersects.of(
-                                  Property.of(spatialProperty),
-                                  SpatialLiteral.of(Envelope.of(bbox)))),
+                                  Property.of(spatialProperty), SpatialLiteral.of(Bbox.of(bbox)))),
                       () -> queryBuilder.addFilters(BooleanValue2.of(false)));
             },
             // TODO: validate feature schema during provider startup

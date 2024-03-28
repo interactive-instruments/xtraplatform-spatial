@@ -14,11 +14,11 @@ public interface BinaryArrayOperation extends BinaryOperation2<Vector>, CqlNode 
 
   @JsonIgnore
   @Value.Derived
-  default ArrayOperator getArrayOperator() {
-    return ArrayOperator.valueOf(getOp().toUpperCase());
+  default ArrayFunction getArrayOperator() {
+    return ArrayFunction.valueOf(getOp().toUpperCase());
   }
 
-  static BinaryArrayOperation of(ArrayOperator operator, Vector vector1, Vector vector2) {
+  static BinaryArrayOperation of(ArrayFunction operator, Vector vector1, Vector vector2) {
     switch (operator) {
       case A_EQUALS:
         return AEquals.of(vector1, vector2);
