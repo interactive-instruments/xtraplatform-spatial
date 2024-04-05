@@ -66,6 +66,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
     implements TileProvider, TileAccess {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileProviderMbTiles.class);
+
   private final ResourceStore tilesStore;
   private final TileMatrixSetRepository tileMatrixSetRepository;
   private final VolatileRegistry volatileRegistry;
@@ -79,7 +80,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
       TileMatrixSetRepository tileMatrixSetRepository,
       VolatileRegistry volatileRegistry,
       @Assisted TileProviderMbtilesData data) {
-    super(volatileRegistry, data);
+    super(volatileRegistry, data, "access");
 
     this.tilesStore = blobStore.with(TileProviderFeatures.TILES_DIR_NAME);
     this.tileMatrixSetRepository = tileMatrixSetRepository;
@@ -92,8 +93,8 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
   protected boolean onStartup() throws InterruptedException {
     onVolatileStart();
 
-    addSubcomponent(tilesStore);
-    addSubcomponent(tileMatrixSetRepository);
+    addSubcomponent(tilesStore, "access");
+    addSubcomponent(tileMatrixSetRepository, "access");
 
     volatileRegistry.onAvailable(tilesStore).toCompletableFuture().join();
 

@@ -53,7 +53,7 @@ public class TileProviderHttp extends AbstractTileProvider<TileProviderHttpData>
 
   @AssistedInject
   public TileProviderHttp(VolatileRegistry volatileRegistry, @Assisted TileProviderHttpData data) {
-    super(volatileRegistry, data);
+    super(volatileRegistry, data, "access");
     this.metadata = new LinkedHashMap<>();
 
     Map<String, String> tilesetSources =
