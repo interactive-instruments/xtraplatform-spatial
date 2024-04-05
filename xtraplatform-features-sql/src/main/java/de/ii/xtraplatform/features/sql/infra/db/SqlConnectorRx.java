@@ -337,7 +337,7 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
   }
 
   private Database createSession(HikariDataSource dataSource) {
-    int maxIdleTime = 5; // minConnections == maxConnections ? 0 : 600;
+    int maxIdleTime = 600; // minConnections == maxConnections ? 0 : 600;
     DatabaseType healthCheck =
         connectionInfo.getDialect() == Dialect.GPKG ? DatabaseType.SQLITE : DatabaseType.POSTGRES;
     int idleTimeBeforeHealthCheck = 60;
