@@ -24,7 +24,7 @@ import de.ii.xtraplatform.features.domain.FeatureCrs;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureExtents;
 import de.ii.xtraplatform.features.domain.FeatureMetadata;
-import de.ii.xtraplatform.features.domain.FeatureProvider2;
+import de.ii.xtraplatform.features.domain.FeatureProvider;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector.QueryOptions;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
@@ -58,7 +58,7 @@ import org.threeten.extra.Interval;
 public class FeatureProviderGraphQl
     extends AbstractFeatureProvider<
         byte[], String, FeatureProviderConnector.QueryOptions, FeatureSchema>
-    implements FeatureProvider2, FeatureQueries, FeatureCrs, FeatureExtents, FeatureMetadata {
+    implements FeatureProvider, FeatureQueries, FeatureCrs, FeatureExtents, FeatureMetadata {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderGraphQl.class);
 
@@ -87,7 +87,8 @@ public class FeatureProviderGraphQl
         crsTransformerFactory,
         extensionRegistry,
         valueStore.forType(Codelist.class),
-        data);
+        data, /*TODO*/
+        null);
 
     this.crsTransformerFactory = crsTransformerFactory;
     this.cql = cql;
@@ -170,11 +171,6 @@ public class FeatureProviderGraphQl
     // TODO: does mapping need SchemaDeriverGraphQl applied?
     return new FeatureTokenDecoderGraphQlJson2(
         featureSchema, featureQuery, mappings, name, wrapper);
-  }
-
-  @Override
-  public boolean supportsCrs() {
-    return super.supportsCrs() && getData().getNativeCrs().isPresent();
   }
 
   @Override

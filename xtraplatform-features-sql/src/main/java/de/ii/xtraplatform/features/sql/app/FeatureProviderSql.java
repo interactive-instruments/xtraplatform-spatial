@@ -15,6 +15,8 @@ import com.google.common.collect.ImmutableMap;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
+import de.ii.xtraplatform.cache.domain.Cache;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
@@ -28,12 +30,14 @@ import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
 import de.ii.xtraplatform.features.domain.AggregateStatsReader;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
+import de.ii.xtraplatform.features.domain.DatasetChangeListener;
 import de.ii.xtraplatform.features.domain.Decoder;
 import de.ii.xtraplatform.features.domain.DecoderFactories;
+import de.ii.xtraplatform.features.domain.FeatureChangeListener;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureExtents;
-import de.ii.xtraplatform.features.domain.FeatureProvider2;
+import de.ii.xtraplatform.features.domain.FeatureProvider;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureQueries;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
@@ -118,7 +122,7 @@ import org.threeten.extra.Interval;
 @Entity(
     type = ProviderData.ENTITY_TYPE,
     subTypes = {
-      @SubType(key = ProviderData.PROVIDER_TYPE_KEY, value = FeatureProvider2.PROVIDER_TYPE),
+      @SubType(key = ProviderData.PROVIDER_TYPE_KEY, value = FeatureProvider.PROVIDER_TYPE),
       @SubType(
           key = ProviderData.PROVIDER_SUB_TYPE_KEY,
           value = FeatureProviderSql.PROVIDER_SUB_TYPE)
@@ -126,7 +130,7 @@ import org.threeten.extra.Interval;
     data = FeatureProviderSqlData.class)
 public class FeatureProviderSql
     extends AbstractFeatureProvider<SqlRow, SqlQueryBatch, SqlQueryOptions, SchemaSql>
-    implements FeatureProvider2,
+    implements FeatureProvider,
         FeatureQueries,
         FeatureExtents,
         FeatureCrs,
@@ -142,6 +146,8 @@ public class FeatureProviderSql
   private final CrsInfo crsInfo;
   private final Cql cql;
   private final Map<String, Supplier<Decoder>> subdecoders;
+
+  private final de.ii.xtraplatform.cache.domain.Cache cache;
 
   private FeatureQueryEncoderSql queryTransformer;
   private AggregateStatsReader<SchemaSql> aggregateStatsReader;
@@ -163,6 +169,8 @@ public class FeatureProviderSql
       ValueStore valueStore,
       ProviderExtensionRegistry extensionRegistry,
       DecoderFactories decoderFactories,
+      VolatileRegistry volatileRegistry,
+      Cache cache,
       @Assisted FeatureProviderDataV2 data) {
     super(
         connectorFactory,
@@ -170,11 +178,13 @@ public class FeatureProviderSql
         crsTransformerFactory,
         extensionRegistry,
         valueStore.forType(Codelist.class),
-        data);
+        data,
+        volatileRegistry);
 
     this.crsTransformerFactory = crsTransformerFactory;
     this.crsInfo = crsInfo;
     this.cql = cql;
+    this.cache = cache.withPrefix(getEntityType(), getId());
 
     this.subdecoders =
         Map.of(
@@ -353,6 +363,25 @@ public class FeatureProviderSql
       boolean br = true;
     }
     boolean br = true;
+
+    if (getConnectionInfo().getAssumeExternalChanges()) {
+      getData().getTypes().keySet().forEach(this::clearCache);
+      changes()
+          .addListener(
+              (DatasetChangeListener) change -> change.getFeatureTypes().forEach(this::clearCache));
+      changes().addListener((FeatureChangeListener) change -> clearCache(change.getFeatureType()));
+
+      // TODO: trigger in AbstractFeatureProvider, remove explicit clear above
+      /* LOGGER.info("Dataset has changed (forced).");
+      changes().handle(
+          ImmutableDatasetChange.builder().featureTypes(getData().getTypes().keySet()).build()); */
+    }
+  }
+
+  private void clearCache(String type) {
+    cache.del(type, "stats", "count");
+    cache.del(type, "stats", "spatial");
+    cache.del(type, "stats", "temporal");
   }
 
   // TODO: implement auto mode for maxConnections=-1, how to get numberOfQueries in Connector?
@@ -537,14 +566,8 @@ public class FeatureProviderSql
   }
 
   @Override
-  public boolean supportsTransactions() {
-    return super.supportsTransactions()
-        && getData().getConnectionInfo().getDialect() == Dialect.PGIS;
-  }
-
-  @Override
-  public boolean supportsCrs() {
-    return super.supportsCrs() && getData().getNativeCrs().isPresent();
+  public boolean supportsMutationsInternal() {
+    return getData().getConnectionInfo().getDialect() == Dialect.PGIS;
   }
 
   @Override
@@ -568,6 +591,17 @@ public class FeatureProviderSql
       return -1;
     }
 
+    String[] cacheKey = {typeName, "stats", "count"};
+    String cacheValidator = getData().getStableHash();
+
+    if (cache.hasValid(cacheValidator, cacheKey)) {
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("Using cached feature count for '{}'", typeName);
+      }
+
+      return cache.get(cacheValidator, Long.class, cacheKey).orElse(0L);
+    }
+
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Computing feature count for '{}'", typeName);
     }
@@ -575,16 +609,21 @@ public class FeatureProviderSql
     try {
       Stream<Long> countGraph = aggregateStatsReader.getCount(getSourceSchemas().get(typeName));
 
-      return countGraph
-          .on(getStreamRunner())
-          .run()
-          .exceptionally(
-              throwable -> {
-                LogContext.errorAsWarn(LOGGER, throwable, "Cannot compute feature count");
-                return -1L;
-              })
-          .toCompletableFuture()
-          .join();
+      Long count =
+          countGraph
+              .on(getStreamRunner())
+              .run()
+              .exceptionally(
+                  throwable -> {
+                    LogContext.errorAsWarn(LOGGER, throwable, "Cannot compute feature count");
+                    return -1L;
+                  })
+              .toCompletableFuture()
+              .join();
+
+      cache.put(cacheValidator, count, cacheKey);
+
+      return count;
     } catch (Throwable e) {
       // continue
     }
@@ -596,6 +635,23 @@ public class FeatureProviderSql
   public Optional<BoundingBox> getSpatialExtent(String typeName) {
     if (!getSourceSchemas().containsKey(typeName)) {
       return Optional.empty();
+    }
+
+    String[] cacheKey = {typeName, "stats", "spatial"};
+    String cacheValidator = getData().getStableHash();
+
+    if (cache.hasValid(cacheValidator, cacheKey)) {
+      if (LOGGER.isDebugEnabled()) {
+        Optional.ofNullable(getData().getTypes().get(typeName))
+            .flatMap(SchemaBase::getPrimaryGeometry)
+            .map(SchemaBase::getName)
+            .ifPresent(
+                spatialProperty ->
+                    LOGGER.debug(
+                        "Using cached spatial extent for '{}.{}'", typeName, spatialProperty));
+      }
+
+      return cache.get(cacheValidator, BoundingBox.class, cacheKey);
     }
 
     if (LOGGER.isDebugEnabled()) {
@@ -611,16 +667,21 @@ public class FeatureProviderSql
       Stream<Optional<BoundingBox>> extentGraph =
           aggregateStatsReader.getSpatialExtent(getSourceSchemas().get(typeName), is3dSupported());
 
-      return extentGraph
-          .on(getStreamRunner())
-          .run()
-          .exceptionally(
-              throwable -> {
-                LogContext.errorAsWarn(LOGGER, throwable, "Cannot compute spatial extent");
-                return Optional.empty();
-              })
-          .toCompletableFuture()
-          .join();
+      Optional<BoundingBox> extent =
+          extentGraph
+              .on(getStreamRunner())
+              .run()
+              .exceptionally(
+                  throwable -> {
+                    LogContext.errorAsWarn(LOGGER, throwable, "Cannot compute spatial extent");
+                    return Optional.empty();
+                  })
+              .toCompletableFuture()
+              .join();
+
+      cache.put(cacheValidator, extent.orElse(null), cacheKey);
+
+      return extent;
     } catch (Throwable e) {
       // continue
     }
@@ -651,6 +712,34 @@ public class FeatureProviderSql
       return Optional.empty();
     }
 
+    String[] cacheKey = {typeName, "stats", "temporal"};
+    String cacheValidator = getData().getStableHash();
+
+    if (cache.hasValid(cacheValidator, cacheKey)) {
+      if (LOGGER.isDebugEnabled()) {
+        Optional.ofNullable(getData().getTypes().get(typeName))
+            .flatMap(SchemaBase::getPrimaryInstant)
+            .map(SchemaBase::getName)
+            .ifPresent(
+                temporalProperty ->
+                    LOGGER.debug(
+                        "Using cached temporal extent for '{}.{}'", typeName, temporalProperty));
+
+        Optional.ofNullable(getData().getTypes().get(typeName))
+            .flatMap(SchemaBase::getPrimaryInterval)
+            .ifPresent(
+                temporalProperties ->
+                    LOGGER.debug(
+                        "Using cached temporal extent for '{}.{}' and '{}.{}'",
+                        typeName,
+                        temporalProperties.first().getName(),
+                        typeName,
+                        temporalProperties.second().getName()));
+      }
+
+      return cache.get(cacheValidator, Interval.class, cacheKey);
+    }
+
     if (LOGGER.isDebugEnabled()) {
       Optional.ofNullable(getData().getTypes().get(typeName))
           .flatMap(SchemaBase::getPrimaryInstant)
@@ -676,16 +765,21 @@ public class FeatureProviderSql
       Stream<Optional<Interval>> extentGraph =
           aggregateStatsReader.getTemporalExtent(getSourceSchemas().get(typeName));
 
-      return extentGraph
-          .on(getStreamRunner())
-          .run()
-          .exceptionally(
-              throwable -> {
-                LogContext.errorAsWarn(LOGGER, throwable, "Cannot compute temporal extent");
-                return Optional.empty();
-              })
-          .toCompletableFuture()
-          .join();
+      Optional<Interval> extent =
+          extentGraph
+              .on(getStreamRunner())
+              .run()
+              .exceptionally(
+                  throwable -> {
+                    LogContext.errorAsWarn(LOGGER, throwable, "Cannot compute temporal extent");
+                    return Optional.empty();
+                  })
+              .toCompletableFuture()
+              .join();
+
+      cache.put(cacheValidator, extent.orElse(null), cacheKey);
+
+      return extent;
     } catch (Throwable e) {
       // continue
     }

@@ -8,14 +8,18 @@
 package de.ii.xtraplatform.feature.changes.sql.app;
 
 import com.github.azahnen.dagger.annotations.AutoBind;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.base.domain.util.Tuple;
 import de.ii.xtraplatform.feature.changes.sql.domain.FeatureChangesPgConfiguration;
+import de.ii.xtraplatform.features.domain.ExtensionConfiguration;
 import de.ii.xtraplatform.features.domain.FeatureChange;
-import de.ii.xtraplatform.features.domain.FeatureChangeHandler;
-import de.ii.xtraplatform.features.domain.FeatureProvider2;
+import de.ii.xtraplatform.features.domain.FeatureChanges;
+import de.ii.xtraplatform.features.domain.FeatureProvider;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
+import de.ii.xtraplatform.features.domain.FeatureProviderEntity;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.Query;
@@ -27,8 +31,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -75,7 +82,11 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
 
   @Inject
   public FeatureChangesPgListener() {
-    this.executorService = new ScheduledThreadPoolExecutor(1);
+    this.executorService =
+        MoreExecutors.getExitingScheduledExecutorService(
+            (ScheduledThreadPoolExecutor)
+                Executors.newScheduledThreadPool(
+                    1, new ThreadFactoryBuilder().setNameFormat("feature.changes-%d").build()));
     this.subscriptions = new ConcurrentHashMap<>();
   }
 
@@ -87,8 +98,11 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
 
   @Override
   public void on(
-      LIFECYCLE_HOOK hook, FeatureProvider2 provider, FeatureProviderConnector<?, ?, ?> connector) {
-    Optional<FeatureChangesPgConfiguration> configuration = getConfiguration(provider.getData());
+      LIFECYCLE_HOOK hook,
+      FeatureProviderEntity provider,
+      FeatureProviderConnector<?, ?, ?> connector) {
+    Optional<FeatureChangesPgConfiguration> configuration =
+        getConfiguration(provider.getData().getExtensions());
 
     if (configuration.isPresent()) {
       SqlClient sqlClient = ((SqlConnector) connector).getSqlClient();
@@ -110,8 +124,9 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
       Query query,
       BiConsumer<String, String> aliasResolver) {}
 
-  private Optional<FeatureChangesPgConfiguration> getConfiguration(FeatureProviderDataV2 data) {
-    return data.getExtensions().stream()
+  private Optional<FeatureChangesPgConfiguration> getConfiguration(
+      List<ExtensionConfiguration> extensions) {
+    return extensions.stream()
         .filter(
             extension ->
                 extension.isEnabled() && extension instanceof FeatureChangesPgConfiguration)
@@ -120,21 +135,21 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
   }
 
   private void subscribe(
-      FeatureProvider2 provider,
+      FeatureProvider provider,
       FeatureChangesPgConfiguration configuration,
       Supplier<Connection> connectionSupplier,
       Function<Connection, List<String>> notificationPoller) {
     subscriptions.put(provider.getId(), new ConcurrentHashMap<>());
 
     getSubscriptions(
-            provider.getData().getTypes(),
+            provider.info().getSchemas(),
             configuration.getListenForTypes(),
             connectionSupplier,
             notificationPoller)
         .forEach(subscription -> subscribe(provider.getId(), subscription));
 
     executorService.scheduleWithFixedDelay(
-        () -> poll(provider.getId(), provider.getChangeHandler()),
+        () -> poll(provider.getId(), provider.changes()),
         configuration.getPollingInterval().toSeconds(),
         configuration.getPollingInterval().toSeconds(),
         TimeUnit.SECONDS);
@@ -167,7 +182,7 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
     }
   }
 
-  private void poll(String provider, FeatureChangeHandler featureChangeHandler) {
+  private void poll(String provider, FeatureChanges featureChangeHandler) {
     if (subscriptions.containsKey(provider)) {
       subscriptions
           .get(provider)
@@ -176,7 +191,7 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
   }
 
   private void poll(
-      String provider, FeatureChangeHandler featureChangeHandler, Subscription subscription) {
+      String provider, FeatureChanges featureChangeHandler, Subscription subscription) {
     if (!subscription.isConnected()) {
       LOGGER.debug("Lost connection to retrieve feature changes for {}", subscription.getLabel());
       subscriptions.get(provider).remove(subscription.getChannel());
@@ -194,7 +209,7 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
   }
 
   private void onFeatureChange(
-      String featureType, FeatureChangeHandler featureChangeHandler, String payload) {
+      String featureType, FeatureChanges featureChangeHandler, String payload) {
     try {
       FeatureChange featureChange = Notification.from(featureType, payload).asFeatureChange();
 
@@ -210,31 +225,33 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
   }
 
   private List<Subscription> getSubscriptions(
-      Map<String, FeatureSchema> types,
+      Set<FeatureSchema> types,
       List<String> includes,
       Supplier<Connection> connectionSupplier,
       Function<Connection, List<String>> notificationPoller) {
     includes.forEach(
         include -> {
-          if (!types.containsKey(include)) {
+          if (types.stream()
+              .map(FeatureSchema::getName)
+              .noneMatch(type -> Objects.equals(type, include))) {
             LOGGER.warn("Change listener: unknown type '{}' in listenForTypes", include);
           }
         });
 
     final int[] count = {1};
 
-    return types.entrySet().stream()
-        .filter(type -> includes.isEmpty() || includes.contains(type.getKey()))
+    return types.stream()
+        .filter(type -> includes.isEmpty() || includes.contains(type.getName()))
         .flatMap(
             type ->
-                type.getValue().getEffectiveSourcePaths().stream()
+                type.getEffectiveSourcePaths().stream()
                     .map(
                         sourcePath ->
                             ImmutableSubscription.builder()
                                 .connectionFactory(connectionSupplier)
                                 .notificationPoller(notificationPoller)
                                 .index(count[0]++)
-                                .type(type.getKey())
+                                .type(type.getName())
                                 .table(
                                     sourcePath.substring(
                                         1,
@@ -242,25 +259,21 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
                                             ? sourcePath.indexOf("{")
                                             : sourcePath.length()))
                                 .idColumn(
-                                    type.getValue()
-                                        .getIdProperty()
+                                    type.getIdProperty()
                                         .flatMap(FeatureSchema::getSourcePath)
                                         .orElseThrow())
                                 .geometryColumn(
-                                    type.getValue()
-                                        .getPrimaryGeometry()
+                                    type.getPrimaryGeometry()
                                         .map(s -> s.getSourcePath().orElseThrow()))
                                 .intervalColumns(
-                                    type.getValue()
-                                        .getPrimaryInterval()
+                                    type.getPrimaryInterval()
                                         .map(
                                             t ->
                                                 Tuple.of(
                                                     t.first().getSourcePath().orElseThrow(),
                                                     t.second().getSourcePath().orElseThrow())))
                                 .instantColumn(
-                                    type.getValue()
-                                        .getPrimaryInstant()
+                                    type.getPrimaryInstant()
                                         .map(s -> s.getSourcePath().orElseThrow()))
                                 .build()))
         .collect(Collectors.toList());

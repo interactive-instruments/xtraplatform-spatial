@@ -7,12 +7,13 @@
  */
 package de.ii.xtraplatform.crs.domain;
 
+import de.ii.xtraplatform.base.domain.resiliency.Volatile2;
 import java.util.Optional;
 
 /**
  * @author zahnen
  */
-public interface CrsTransformerFactory {
+public interface CrsTransformerFactory extends Volatile2 {
 
   boolean isSupported(EpsgCrs crs);
 

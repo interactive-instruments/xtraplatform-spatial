@@ -12,8 +12,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.base.domain.resiliency.DelayedVolatile;
+import de.ii.xtraplatform.base.domain.resiliency.Volatile2;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
+import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.entities.domain.AbstractPersistentEntity;
 import de.ii.xtraplatform.entities.domain.ValidationResult;
 import de.ii.xtraplatform.entities.domain.ValidationResult.MODE;
@@ -39,19 +43,21 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
+import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class AbstractFeatureProvider<
         T, U, V extends FeatureProviderConnector.QueryOptions, W extends SchemaBase<W>>
     extends AbstractPersistentEntity<FeatureProviderDataV2>
-    implements FeatureProvider2, FeatureQueries {
+    implements FeatureProviderEntity, FeatureProvider, FeatureInfo, FeatureQueries {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractFeatureProvider.class);
   protected static final WithScope WITH_SCOPE_RETURNABLE = new WithScope(Scope.RETURNABLE);
@@ -67,11 +73,13 @@ public abstract class AbstractFeatureProvider<
   private final CrsTransformerFactory crsTransformerFactory;
   private final ProviderExtensionRegistry extensionRegistry;
   private final Values<Codelist> codelistStore;
-  private final FeatureChangeHandler changeHandler;
+  private final FeatureChanges changeHandler;
   private final ScheduledExecutorService delayedDisposer;
+  private final VolatileRegistry volatileRegistry;
   private Reactive.Runner streamRunner;
-  private FeatureProviderConnector<T, U, V> connector;
+  private final DelayedVolatile<FeatureProviderConnector<T, U, V>> connector;
   private boolean datasetChanged;
+  private boolean datasetChangedForced;
   private String previousDataset;
 
   protected AbstractFeatureProvider(
@@ -80,14 +88,20 @@ public abstract class AbstractFeatureProvider<
       CrsTransformerFactory crsTransformerFactory,
       ProviderExtensionRegistry extensionRegistry,
       Values<Codelist> codelistStore,
-      FeatureProviderDataV2 data) {
-    super(data);
+      FeatureProviderDataV2 data,
+      VolatileRegistry volatileRegistry) {
+    super(data, volatileRegistry);
     this.connectorFactory = connectorFactory;
     this.reactive = reactive;
     this.crsTransformerFactory = crsTransformerFactory;
     this.extensionRegistry = extensionRegistry;
     this.codelistStore = codelistStore;
+    this.volatileRegistry = volatileRegistry;
     this.changeHandler = new FeatureChangeHandlerImpl();
+    this.connector =
+        new DelayedVolatile<>(
+            volatileRegistry,
+            String.format("connector.%s", data.getProviderSubType().toLowerCase()));
     this.delayedDisposer =
         MoreExecutors.getExitingScheduledExecutorService(
             (ScheduledThreadPoolExecutor)
@@ -96,14 +110,64 @@ public abstract class AbstractFeatureProvider<
   }
 
   @Override
+  public String getType() {
+    return ProviderData.ENTITY_TYPE;
+  }
+
+  @Override
+  public FeatureProviderDataV2 getData() {
+    return super.getData();
+  }
+
+  @Override
+  protected State reconcileStateNoComponents(@Nullable String capability) {
+    return State.AVAILABLE;
+  }
+
+  @Override
   protected boolean onStartup() throws InterruptedException {
+    onVolatileStart();
+    addCapability(FeatureInfo.CAPABILITY);
+    addCapability(FeatureChanges.CAPABILITY);
+    if (queries().isSupported()) {
+      addCapability(FeatureQueries.CAPABILITY);
+    }
+    if (extents().isSupported()) {
+      addCapability(FeatureExtents.CAPABILITY);
+    }
+    if (passThrough().isSupported()) {
+      addCapability(FeatureQueriesPassThrough.CAPABILITY);
+    }
+    if (mutations().isSupported()) {
+      addCapability(FeatureTransactions.CAPABILITY);
+    }
+    if (crs().isSupported()) {
+      addCapability(FeatureCrs.CAPABILITY);
+    }
+    if (metadata().isSupported()) {
+      addCapability(FeatureMetadata.CAPABILITY);
+    }
+    if (multiQueries().isSupported()) {
+      addCapability(MultiFeatureQueries.CAPABILITY);
+    }
+    addSubcomponent(crsTransformerFactory, FeatureCrs.CAPABILITY);
+    addSubcomponent(
+        connector,
+        FeatureQueries.CAPABILITY,
+        FeatureExtents.CAPABILITY,
+        FeatureQueriesPassThrough.CAPABILITY,
+        FeatureTransactions.CAPABILITY,
+        FeatureMetadata.CAPABILITY,
+        MultiFeatureQueries.CAPABILITY);
+
     this.datasetChanged =
-        Objects.nonNull(connector) && !connector.isSameDataset(getConnectionInfo());
+        connector.isPresent() && !connector.get().isSameDataset(getConnectionInfo());
+    this.datasetChangedForced = getConnectionInfo().getAssumeExternalChanges();
     this.previousDataset =
-        Optional.ofNullable(connector)
+        Optional.ofNullable(connector.get())
             .map(FeatureProviderConnector::getDatasetIdentifier)
             .orElse("");
-    boolean previousAlive = softClosePrevious(streamRunner, connector);
+    boolean previousAlive = softClosePrevious(streamRunner, connector.get());
     boolean isShared = getConnectionInfo().isShared();
     String connectorId = getConnectorId(previousAlive, isShared);
 
@@ -112,13 +176,16 @@ public abstract class AbstractFeatureProvider<
             getData().getId(),
             getRunnerCapacity(getConnectionInfo()),
             getRunnerQueueSize(getConnectionInfo()));
-    this.connector =
+
+    FeatureProviderConnector<T, U, V> connector1 =
         (FeatureProviderConnector<T, U, V>)
             connectorFactory.createConnector(
                 getData().getProviderSubType(), connectorId, getConnectionInfo());
+    this.connector.set(connector1);
 
+    // TODO: ignore when startupMode=ASYNC
     if (!getConnector().isConnected()) {
-      connectorFactory.disposeConnector(connector);
+      connectorFactory.disposeConnector(connector1);
 
       Optional<Throwable> connectionError = getConnector().getConnectionError();
       String message = connectionError.map(Throwable::getMessage).orElse("unknown reason");
@@ -126,11 +193,12 @@ public abstract class AbstractFeatureProvider<
       if (connectionError.isPresent() && LOGGER.isDebugEnabled()) {
         LOGGER.debug("Stacktrace:", connectionError.get());
       }
+      // TODO: volatile defective
       return false;
     }
 
     if (isShared) {
-      connectorFactory.onDispose(connector, LogContext.withMdc(this::onSharedConnectorDispose));
+      connectorFactory.onDispose(connector1, LogContext.withMdc(this::onSharedConnectorDispose));
     }
 
     Optional<String> runnerError = getRunnerError(getConnectionInfo());
@@ -138,9 +206,11 @@ public abstract class AbstractFeatureProvider<
     if (runnerError.isPresent()) {
       LOGGER.error(
           "Feature provider with id '{}' could not be started: {}", getId(), runnerError.get());
+      // TODO: volatile defective
       return false;
     }
 
+    // TODO: validation does not make sense when startupMode=ASYNC, move to editor/CLI
     if (getTypeInfoValidator().isPresent() && getData().getTypeValidation() != MODE.NONE) {
       final boolean isSuccess = validate();
 
@@ -150,15 +220,26 @@ public abstract class AbstractFeatureProvider<
             getId(),
             getData().getTypeValidation().name().toLowerCase(),
             "validation failed");
+        // TODO: volatile defective
         return false;
       }
     }
+
+    addSubcomponent(Volatile2.available("base"), FeatureInfo.CAPABILITY, FeatureChanges.CAPABILITY);
 
     return true;
   }
 
   @Override
   protected void onStarted() {
+    super.onStarted();
+
+    onStateChange(
+        (from, to) -> {
+          LOGGER.info("Feature provider with id '{}' state changed: {}", getId(), getState());
+        },
+        true);
+
     String startupInfo =
         getStartupInfo()
             .map(map -> String.format(" (%s)", map.toString().replace("{", "").replace("}", "")))
@@ -172,6 +253,7 @@ public abstract class AbstractFeatureProvider<
             extension -> {
               if (extension.isSupported(getConnector())) {
                 extension.on(LIFECYCLE_HOOK.STARTED, this, getConnector());
+                // TODO: addSubcomponent
               }
             });
   }
@@ -185,11 +267,15 @@ public abstract class AbstractFeatureProvider<
 
     LOGGER.info("Feature provider with id '{}' reloaded successfully.{}", getId(), startupInfo);
 
-    if (datasetChanged) {
-      LOGGER.info(
-          "Dataset has changed ({} -> {}).",
-          previousDataset,
-          getConnectionInfo().getDatasetIdentifier());
+    if (datasetChanged || datasetChangedForced) {
+      if (datasetChangedForced) {
+        LOGGER.info("Dataset has changed (forced).");
+      } else {
+        LOGGER.info(
+            "Dataset has changed ({} -> {}).",
+            previousDataset,
+            getConnectionInfo().getDatasetIdentifier());
+      }
       changeHandler.handle(
           ImmutableDatasetChange.builder().featureTypes(getData().getTypes().keySet()).build());
     }
@@ -198,8 +284,25 @@ public abstract class AbstractFeatureProvider<
 
   @Override
   protected void onStopped() {
-    connectorFactory.disposeConnector(connector);
+    if (connector.isPresent()) {
+      connectorFactory.disposeConnector(connector.get());
+    }
     LOGGER.info("Feature provider with id '{}' stopped.", getId());
+  }
+
+  @Override
+  public Optional<EpsgCrs> getCrs() {
+    return getData().getNativeCrs();
+  }
+
+  @Override
+  public Optional<FeatureSchema> getSchema(String type) {
+    return Optional.ofNullable(getData().getTypes().get(type));
+  }
+
+  @Override
+  public Set<FeatureSchema> getSchemas() {
+    return Set.copyOf(getData().getTypes().values());
   }
 
   private boolean softClosePrevious(
@@ -231,7 +334,7 @@ public abstract class AbstractFeatureProvider<
 
   private void onSharedConnectorDispose() {
     if (((WithConnectionInfo<?>) getData()).getConnectionInfo().isShared()
-        && getState() != STATE.RELOADING) {
+        && getEntityState() != STATE.RELOADING) {
       LOGGER.debug("Shared connector has changed, reloading.");
       doReload();
     }
@@ -240,11 +343,12 @@ public abstract class AbstractFeatureProvider<
   private String getConnectorId(boolean previousAlive, boolean isShared) {
     Optional<Integer> previousIteration =
         previousAlive
-            ? connector.getProviderId().contains(".")
+            ? connector.get().getProviderId().contains(".")
                 ? Optional.of(
                         connector
+                            .get()
                             .getProviderId()
-                            .substring(connector.getProviderId().lastIndexOf('.') + 1))
+                            .substring(connector.get().getProviderId().lastIndexOf('.') + 1))
                     .flatMap(
                         i -> {
                           try {
@@ -327,7 +431,7 @@ public abstract class AbstractFeatureProvider<
   protected abstract FeatureQueryEncoder<U, V> getQueryEncoder();
 
   protected FeatureProviderConnector<T, U, V> getConnector() {
-    return Objects.requireNonNull(connector);
+    return Objects.requireNonNull(connector.get());
   }
 
   protected Reactive.Runner getStreamRunner() {
@@ -365,6 +469,7 @@ public abstract class AbstractFeatureProvider<
     return getQueryEncoder().getCapabilities();
   }
 
+  // TODO: throw exception when connector absent
   @Override
   public FeatureStream getFeatureStream(FeatureQuery query) {
     validateQuery(query);
@@ -401,7 +506,7 @@ public abstract class AbstractFeatureProvider<
   }
 
   @Override
-  public FeatureChangeHandler getChangeHandler() {
+  public FeatureChanges changes() {
     return changeHandler;
   }
 
@@ -497,6 +602,7 @@ public abstract class AbstractFeatureProvider<
     return path;
   }
 
+  // TODO: throw exception when connector absent
   protected <W extends ResultBase> CompletionStage<W> runQuery(
       BiFunction<FeatureTokenSource, Map<String, String>, Stream<W>> stream,
       Query query,

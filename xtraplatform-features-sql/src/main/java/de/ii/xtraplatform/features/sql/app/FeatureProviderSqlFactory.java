@@ -13,6 +13,8 @@ import com.google.common.collect.ImmutableMap;
 import dagger.Lazy;
 import dagger.assisted.AssistedFactory;
 import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
+import de.ii.xtraplatform.cache.domain.Cache;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
@@ -86,6 +88,8 @@ public class FeatureProviderSqlFactory
       ValueStore valueStore,
       ProviderExtensionRegistry extensionRegistry,
       DecoderFactories decoderFactories,
+      VolatileRegistry volatileRegistry,
+      Cache cache,
       ProviderSqlFactoryAssisted providerSqlFactoryAssisted) {
     super(providerSqlFactoryAssisted);
     this.schemaResolvers = schemaResolvers;
@@ -133,8 +137,6 @@ public class FeatureProviderSqlFactory
                     new ImmutablePoolSettings.Builder()
                         .maxConnections(-1)
                         .minConnections(1)
-                        .initFailFast(true)
-                        .initFailTimeout("1")
                         .idleTimeout("10m")
                         .shared(false)
                         .build())

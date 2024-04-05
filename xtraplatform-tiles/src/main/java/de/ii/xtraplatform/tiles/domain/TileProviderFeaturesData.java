@@ -187,9 +187,6 @@ public interface TileProviderFeaturesData extends TileProviderData, WithCaches, 
   @Override
   Optional<Boolean> getAuto();
 
-  @Override
-  Optional<Boolean> getAutoPersist();
-
   /**
    * @langEn Defaults for all `tilesets`, see [Tileset Defaults](#tileset-defaults).
    * @langDe Defaults für alle `tilesets`, siehe [Tileset Defaults](#tileset-defaults).

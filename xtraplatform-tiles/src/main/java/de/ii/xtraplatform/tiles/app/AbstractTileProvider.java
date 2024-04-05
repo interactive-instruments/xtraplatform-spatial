@@ -8,8 +8,10 @@
 package de.ii.xtraplatform.tiles.app;
 
 import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.entities.domain.AbstractPersistentEntity;
 import de.ii.xtraplatform.services.domain.AbstractService;
+import de.ii.xtraplatform.tiles.domain.TileAccess;
 import de.ii.xtraplatform.tiles.domain.TileProvider;
 import de.ii.xtraplatform.tiles.domain.TileProviderData;
 import de.ii.xtraplatform.tiles.domain.TilesetMetadata;
@@ -18,15 +20,30 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class AbstractTileProvider<T extends TileProviderData>
-    extends AbstractPersistentEntity<T> implements TileProvider {
+    extends AbstractPersistentEntity<T> implements TileProvider, TileAccess {
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractService.class);
 
-  public AbstractTileProvider(T data) {
-    super(data);
+  public AbstractTileProvider(VolatileRegistry volatileRegistry, T data, String... capabilities) {
+    super(data, volatileRegistry, capabilities);
+  }
+
+  @Override
+  protected boolean onStartup() throws InterruptedException {
+    onVolatileStart();
+
+    return super.onStartup();
   }
 
   @Override
   protected void onStarted() {
+    super.onStarted();
+
+    onStateChange(
+        (from, to) -> {
+          LOGGER.info("Tile provider with id '{}' state changed: {}", getId(), getState());
+        },
+        true);
+
     LOGGER.info("Tile provider with id '{}' started successfully.", getId());
   }
 
@@ -46,7 +63,7 @@ public abstract class AbstractTileProvider<T extends TileProviderData>
   }
 
   @Override
-  public Optional<TilesetMetadata> metadata(String tileset) {
+  public Optional<TilesetMetadata> getMetadata(String tileset) {
     return Optional.empty();
   }
 }

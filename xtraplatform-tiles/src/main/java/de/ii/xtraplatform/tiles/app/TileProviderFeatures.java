@@ -13,6 +13,9 @@ import com.google.common.collect.Range;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.base.domain.AppContext;
+import de.ii.xtraplatform.base.domain.resiliency.OptionalVolatileCapability;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
+import de.ii.xtraplatform.base.domain.util.Tuple;
 import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
@@ -21,6 +24,7 @@ import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.entities.domain.Entity;
 import de.ii.xtraplatform.entities.domain.Entity.SubType;
 import de.ii.xtraplatform.entities.domain.EntityRegistry;
+import de.ii.xtraplatform.features.domain.FeatureProvider.FeatureVolatileCapability;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ProviderData;
 import de.ii.xtraplatform.services.domain.TaskContext;
@@ -31,6 +35,7 @@ import de.ii.xtraplatform.tiles.domain.ChainedTileProvider;
 import de.ii.xtraplatform.tiles.domain.ImmutableSeedingOptions;
 import de.ii.xtraplatform.tiles.domain.ImmutableTilesetMetadata;
 import de.ii.xtraplatform.tiles.domain.SeedingOptions;
+import de.ii.xtraplatform.tiles.domain.TileAccess;
 import de.ii.xtraplatform.tiles.domain.TileCache;
 import de.ii.xtraplatform.tiles.domain.TileGenerationParameters;
 import de.ii.xtraplatform.tiles.domain.TileGenerationSchema;
@@ -74,20 +79,22 @@ import org.slf4j.LoggerFactory;
     },
     data = TileProviderFeaturesData.class)
 public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeaturesData>
-    implements TileProvider, TileSeeding {
+    implements TileProvider, TileAccess, TileSeeding {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileProviderFeatures.class);
   static final String TILES_DIR_NAME = "tiles";
 
   private final TileGeneratorFeatures tileGenerator;
-  private final TileEncoders tileEncoders;
-  private final ChainedTileProvider generatorProviderChain;
-  private final ChainedTileProvider combinerProviderChain;
   private final Map<Type, Map<Storage, TileStore>> tileStores;
   private final List<TileCache> generatorCaches;
   private final List<TileCache> combinerCaches;
   private final Map<String, TilesetMetadata> metadata;
   private final ResourceStore tilesStore;
+  private final TileWalker tileWalker;
+  private final boolean asyncStartup;
+  private TileEncoders tileEncoders;
+  private ChainedTileProvider generatorProviderChain;
+  private ChainedTileProvider combinerProviderChain;
 
   @AssistedInject
   public TileProviderFeatures(
@@ -98,11 +105,20 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
       Cql cql,
       ResourceStore blobStore,
       TileWalker tileWalker,
+      VolatileRegistry volatileRegistry,
       @Assisted TileProviderFeaturesData data) {
-    super(data);
+    super(volatileRegistry, data, "access", "generation", "seeding");
 
+    this.asyncStartup = appContext.getConfiguration().getModules().isStartupAsync();
     this.tileGenerator =
-        new TileGeneratorFeatures(data, crsInfo, crsTransformerFactory, entityRegistry, cql);
+        new TileGeneratorFeatures(
+            data,
+            crsInfo,
+            crsTransformerFactory,
+            entityRegistry,
+            cql,
+            volatileRegistry,
+            asyncStartup);
     this.tileStores =
         new ConcurrentHashMap<>(
             Map.of(
@@ -113,15 +129,41 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     this.generatorCaches = new ArrayList<>();
     this.combinerCaches = new ArrayList<>();
     this.metadata = new LinkedHashMap<>();
-
     this.tilesStore = blobStore.with(TILES_DIR_NAME, clean(data.getId()));
+    this.tileWalker = tileWalker;
+  }
+
+  @Override
+  protected boolean onStartup() throws InterruptedException {
+    onVolatileStart();
+
+    addSubcomponent(tilesStore, "access", "generation", "seeding");
+    addSubcomponent(tileGenerator, "generation", "seeding");
+    addSubcomponent(tileWalker, "seeding");
+
+    if (!asyncStartup) {
+      init();
+    }
+
+    return super.onStartup();
+  }
+
+  @Override
+  protected Tuple<State, String> volatileInit() {
+    if (asyncStartup) {
+      init();
+    }
+    return super.volatileInit();
+  }
+
+  private void init() {
     ChainedTileProvider current = tileGenerator;
 
-    for (int i = 0; i < data.getCaches().size(); i++) {
-      Cache cache = data.getCaches().get(i);
+    for (int i = 0; i < getData().getCaches().size(); i++) {
+      Cache cache = getData().getCaches().get(i);
       ResourceStore cacheStore =
           tilesStore.writableWith(String.format("cache_%s", cache.getType().getSuffix()));
-      TileStore tileStore = getTileStore(cache, cacheStore, data.getId(), data.getTilesets());
+      TileStore tileStore = getTileStore(cache, cacheStore, getId(), getData().getTilesets());
 
       if (cache.getType() == Type.DYNAMIC) {
         current =
@@ -136,14 +178,14 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
 
     this.generatorProviderChain = current;
 
-    this.tileEncoders = new TileEncoders(data, generatorProviderChain);
+    this.tileEncoders = new TileEncoders(getData(), generatorProviderChain);
     current = tileEncoders;
 
-    for (int i = 0; i < data.getCaches().size(); i++) {
-      Cache cache = data.getCaches().get(i);
+    for (int i = 0; i < getData().getCaches().size(); i++) {
+      Cache cache = getData().getCaches().get(i);
       ResourceStore cacheStore =
           tilesStore.writableWith(String.format("cache_%s", cache.getType().getSuffix()));
-      TileStore tileStore = getTileStore(cache, cacheStore, data.getId(), data.getTilesets());
+      TileStore tileStore = getTileStore(cache, cacheStore, getId(), getData().getTilesets());
 
       if (cache.getType() == Type.DYNAMIC) {
         current =
@@ -157,6 +199,8 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     }
 
     this.combinerProviderChain = current;
+
+    loadMetadata();
   }
 
   private TileStore getTileStore(
@@ -268,15 +312,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   }
 
   @Override
-  protected boolean onStartup() throws InterruptedException {
-
-    loadMetadata();
-
-    return super.onStartup();
-  }
-
-  @Override
-  public Optional<TilesetMetadata> metadata(String tileset) {
+  public Optional<TilesetMetadata> getMetadata(String tileset) {
     return Optional.ofNullable(metadata.get(tileset));
   }
 
@@ -322,18 +358,8 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   }
 
   @Override
-  public boolean supportsGeneration() {
-    return true;
-  }
-
-  @Override
-  public TileGenerator generator() {
-    return tileGenerator;
-  }
-
-  @Override
-  public String getType() {
-    return TileProviderFeaturesData.PROVIDER_TYPE;
+  public OptionalVolatileCapability<TileGenerator> generator() {
+    return new FeatureVolatileCapability<>(tileGenerator, TileGenerator.CAPABILITY, this);
   }
 
   @Override

@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.tiles.domain;
 
 import com.google.common.collect.Range;
+import de.ii.xtraplatform.base.domain.resiliency.Volatile2;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.services.domain.TaskContext;
 import java.io.IOException;
@@ -17,7 +18,7 @@ import java.util.Optional;
 import java.util.Set;
 import javax.ws.rs.core.MediaType;
 
-public interface TileWalker {
+public interface TileWalker extends Volatile2 {
 
   interface TileVisitor {
     boolean visit(

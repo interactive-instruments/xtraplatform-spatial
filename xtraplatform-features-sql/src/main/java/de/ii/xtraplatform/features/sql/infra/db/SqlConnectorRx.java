@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.sql.infra.db;
 
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.health.HealthCheck;
 import com.codahale.metrics.health.HealthCheckRegistry;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap.Builder;
@@ -16,6 +17,12 @@ import com.zaxxer.hikari.HikariDataSource;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.base.domain.AppContext;
+import de.ii.xtraplatform.base.domain.LogContext.MARKER;
+import de.ii.xtraplatform.base.domain.resiliency.AbstractVolatilePolling;
+import de.ii.xtraplatform.base.domain.resiliency.Volatile2.Polling;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry.ChangeHandler;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileUnavailableException;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.app.FeatureProviderSql;
@@ -23,11 +30,17 @@ import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.features.sql.domain.SqlClient;
 import de.ii.xtraplatform.features.sql.domain.SqlConnector;
+import de.ii.xtraplatform.features.sql.domain.SqlQueryBatch;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
+import de.ii.xtraplatform.features.sql.domain.SqlRow;
+import de.ii.xtraplatform.streams.domain.Reactive.Source;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
@@ -38,11 +51,12 @@ import org.davidmoten.rxjava3.jdbc.Database;
 import org.davidmoten.rxjava3.jdbc.pool.DatabaseType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 /**
  * @author zahnen
  */
-public class SqlConnectorRx implements SqlConnector {
+public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnector, Polling {
 
   public static final String CONNECTOR_TYPE = "SLICK";
   private static final SqlQueryOptions NO_OPTIONS = SqlQueryOptions.withColumnTypes(String.class);
@@ -60,20 +74,24 @@ public class SqlConnectorRx implements SqlConnector {
   private final String applicationName;
   private final String providerId;
   private final AtomicInteger refCounter;
+  private final boolean asyncStartup;
 
   private Database session;
   private HikariDataSource dataSource;
   private SqlClient sqlClient;
   private Throwable connectionError;
+  private Connection pollConnection;
 
   @AssistedInject
   public SqlConnectorRx(
       SqlDataSourceFactory sqlDataSourceFactory,
       AppContext appContext,
+      VolatileRegistry volatileRegistry,
       @Assisted MetricRegistry metricRegistry,
       @Assisted HealthCheckRegistry healthCheckRegistry,
       @Assisted String providerId,
       @Assisted ConnectionInfoSql connectionInfo) {
+    super(volatileRegistry);
     this.sqlDataSourceFactory = sqlDataSourceFactory;
     this.connectionInfo = connectionInfo;
     this.poolName = String.format("db.%s", providerId);
@@ -98,6 +116,16 @@ public class SqlConnectorRx implements SqlConnector {
         String.format("%s %s - %s", appContext.getName(), appContext.getVersion(), providerId);
     this.providerId = providerId;
     this.refCounter = new AtomicInteger(0);
+    this.asyncStartup = appContext.getConfiguration().getModules().isStartupAsync();
+
+    /*RxJavaPlugins.setErrorHandler(
+    e -> {
+      if (e instanceof UndeliverableException) {
+        LogContext.error(LOGGER, e.getCause(), "RXUD");
+      } else {
+        LogContext.error(LOGGER, e, "RX");
+      }
+    });*/
   }
 
   @Override
@@ -133,9 +161,8 @@ public class SqlConnectorRx implements SqlConnector {
       this.session = createSession(dataSource);
       this.sqlClient = new SqlClientRx(session, connectionInfo.getDialect());
     } catch (Throwable e) {
-      // TODO: handle properly, service start should fail with error message, show in manager
-      // LOGGER.error("CONNECTING TO DB FAILED", e);
       this.connectionError = e;
+      setMessage(e.getMessage());
     }
   }
 
@@ -159,6 +186,13 @@ public class SqlConnectorRx implements SqlConnector {
     if (Objects.nonNull(dataSource)) {
       try {
         dataSource.close();
+      } catch (Throwable e) {
+        // ignore
+      }
+    }
+    if (Objects.nonNull(pollConnection)) {
+      try {
+        pollConnection.close();
       } catch (Throwable e) {
         // ignore
       }
@@ -235,10 +269,10 @@ public class SqlConnectorRx implements SqlConnector {
               "schemas",
               Objects.equals(this.connectionInfo.getSchemas(), connectionInfoSql.getSchemas()))
           .put(
-              "initFailFast",
+              "initFailTimeout",
               Objects.equals(
-                  this.connectionInfo.getPool().getInitFailFast(),
-                  connectionInfoSql.getPool().getInitFailFast()))
+                  this.connectionInfo.getPool().getInitFailTimeout(),
+                  connectionInfoSql.getPool().getInitFailTimeout()))
           .put(
               "idleTimeout",
               Objects.equals(
@@ -283,8 +317,8 @@ public class SqlConnectorRx implements SqlConnector {
     config.setUsername(connectionInfo.getUser().orElse(""));
     config.setPassword(getPassword(connectionInfo));
     config.setMaximumPoolSize(maxConnections);
-    config.setMinimumIdle(minConnections);
-    config.setInitializationFailTimeout(getInitFailTimeout(connectionInfo));
+    config.setMinimumIdle(asyncStartup ? 0 : minConnections);
+    config.setInitializationFailTimeout(asyncStartup ? -1 : getInitFailTimeout(connectionInfo));
     config.setIdleTimeout(parseMs(connectionInfo.getPool().getIdleTimeout()));
     config.setPoolName(poolName);
     config.setKeepaliveTime(300000);
@@ -293,13 +327,17 @@ public class SqlConnectorRx implements SqlConnector {
     sqlDataSourceFactory.getInitSql(connectionInfo).ifPresent(config::setConnectionInitSql);
 
     config.setMetricRegistry(metricRegistry);
-    config.setHealthCheckRegistry(healthCheckRegistry);
+    // config.setHealthCheckRegistry(healthCheckRegistry);
+
+    if (asyncStartup) {
+      config.setConnectionTimeout(5000);
+    }
 
     return config;
   }
 
   private Database createSession(HikariDataSource dataSource) {
-    int maxIdleTime = minConnections == maxConnections ? 0 : 600;
+    int maxIdleTime = 600; // minConnections == maxConnections ? 0 : 600;
     DatabaseType healthCheck =
         connectionInfo.getDialect() == Dialect.GPKG ? DatabaseType.SQLITE : DatabaseType.POSTGRES;
     int idleTimeBeforeHealthCheck = 60;
@@ -323,10 +361,7 @@ public class SqlConnectorRx implements SqlConnector {
   }
 
   private static long getInitFailTimeout(ConnectionInfoSql connectionInfo) {
-    if (!connectionInfo.getPool().getInitFailFast()) {
-      return -1;
-    }
-    return parseMs(connectionInfo.getPool().getInitFailTimeout());
+    return parseMs(Objects.requireNonNullElse(connectionInfo.getPool().getInitFailTimeout(), "1"));
   }
 
   private static long parseMs(String duration) {
@@ -347,5 +382,122 @@ public class SqlConnectorRx implements SqlConnector {
     }
 
     return password;
+  }
+
+  @Override
+  public int getIntervalMs() {
+    return 1000;
+  }
+
+  @Override
+  public Optional<String> getInstanceId() {
+    return Optional.of(providerId);
+  }
+
+  public static ChangeHandler withMdc(ChangeHandler consumer) {
+    Map<String, String> mdc = MDC.getCopyOfContextMap();
+
+    if (Objects.nonNull(mdc)) {
+      return (u, v) -> {
+        MDC.setContextMap(mdc);
+        consumer.change(u, v);
+      };
+    }
+    return consumer;
+  }
+
+  @Override
+  protected synchronized void onVolatileStart() {
+    super.onVolatileStart();
+
+    if (asyncStartup) {
+      if (getState() == State.UNAVAILABLE) {
+        LOGGER.warn("Could not establish connection to database: {}", getDatasetIdentifier());
+      }
+
+      onStateChange(
+          withMdc(
+              (from, to) -> {
+                if (to == State.AVAILABLE) {
+                  LOGGER.info("Re-established connection to database: {}", getDatasetIdentifier());
+                } else if (to == State.UNAVAILABLE) {
+                  LOGGER.warn("Lost connection to database: {}", getDatasetIdentifier());
+                }
+              }),
+          false);
+    }
+  }
+
+  @Override
+  public Source<SqlRow> getSourceStream(SqlQueryBatch queryBatch, SqlQueryOptions options) {
+    if (!isAvailable()) {
+      throw new VolatileUnavailableException("Connector is not available");
+    }
+    return SqlConnector.super.getSourceStream(queryBatch, options);
+  }
+
+  @Override
+  public de.ii.xtraplatform.base.domain.util.Tuple<State, String> check() {
+    if (Objects.isNull(sqlClient)) {
+      // TODO: retry
+      if (Objects.nonNull(connectionError)) {
+        return de.ii.xtraplatform.base.domain.util.Tuple.of(
+            State.LIMITED, connectionError.getMessage());
+      }
+      return de.ii.xtraplatform.base.domain.util.Tuple.of(State.UNAVAILABLE, null);
+    }
+
+    try {
+      if (Objects.nonNull(pollConnection) && !pollConnection.isValid(1)) {
+        try {
+          pollConnection.close();
+        } catch (Throwable e) {
+          // ignore
+        }
+        this.pollConnection = null;
+      }
+      if (Objects.isNull(pollConnection)) {
+        this.pollConnection = dataSource.getConnection();
+        // boolean valid = pollConnection.isValid(1);
+        // sqlClient.getSqlDialect().getDbInfo(connection);
+      }
+    } catch (SQLException e) {
+      if (LOGGER.isDebugEnabled(MARKER.DI)) {
+        LOGGER.debug(
+            "SQL {} {} {} {}", e.getClass(), e.getSQLState(), e.getErrorCode(), e.getMessage());
+      }
+      if (isUnavailable(e)) {
+        dataSource.getHikariConfigMXBean().setMinimumIdle(0);
+        dataSource.getHikariPoolMXBean().softEvictConnections();
+
+        return de.ii.xtraplatform.base.domain.util.Tuple.of(State.UNAVAILABLE, e.getMessage());
+      }
+
+      return de.ii.xtraplatform.base.domain.util.Tuple.of(State.LIMITED, e.getMessage());
+    } catch (Throwable e) {
+      if (LOGGER.isDebugEnabled(MARKER.DI)) {
+        LOGGER.debug("SQL OTHER {}", e.getMessage());
+      }
+    }
+
+    dataSource.getHikariConfigMXBean().setMinimumIdle(minConnections);
+
+    return de.ii.xtraplatform.base.domain.util.Tuple.of(State.AVAILABLE, null);
+  }
+
+  @Override
+  public Optional<HealthCheck> asHealthCheck() {
+    return Optional.empty();
+  }
+
+  // TODO: SQLite
+  private static boolean isUnavailable(SQLException e) {
+    // see https://www.postgresql.org/docs/current/errcodes-appendix.html
+    return Objects.isNull(e.getSQLState()) // no connection
+        || e.getSQLState().startsWith("08") // Connection Exception
+        || e.getSQLState().startsWith("53") // Insufficient Resources
+        || e.getSQLState().startsWith("57") // Operator Intervention
+        || e.getSQLState().startsWith("58") // System Error
+        || e.getSQLState().startsWith("XX"); // Internal Error
   }
 }

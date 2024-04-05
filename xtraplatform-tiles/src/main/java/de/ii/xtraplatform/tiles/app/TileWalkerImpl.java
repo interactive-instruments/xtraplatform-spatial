@@ -9,6 +9,8 @@ package de.ii.xtraplatform.tiles.app;
 
 import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.Range;
+import de.ii.xtraplatform.base.domain.resiliency.AbstractVolatileComposed;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.CrsTransformationException;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
@@ -30,7 +32,7 @@ import javax.ws.rs.core.MediaType;
 
 @Singleton
 @AutoBind
-public class TileWalkerImpl implements TileWalker {
+public class TileWalkerImpl extends AbstractVolatileComposed implements TileWalker {
 
   private final TileMatrixSetRepository tileMatrixSetRepository;
   private final CrsTransformerFactory crsTransformerFactory;
@@ -38,9 +40,18 @@ public class TileWalkerImpl implements TileWalker {
   @Inject
   public TileWalkerImpl(
       TileMatrixSetRepository tileMatrixSetRepository,
-      CrsTransformerFactory crsTransformerFactory) {
+      CrsTransformerFactory crsTransformerFactory,
+      VolatileRegistry volatileRegistry) {
+    super("tileWalker", volatileRegistry, true);
     this.tileMatrixSetRepository = tileMatrixSetRepository;
     this.crsTransformerFactory = crsTransformerFactory;
+
+    onVolatileStart();
+
+    addSubcomponent(tileMatrixSetRepository);
+    addSubcomponent(crsTransformerFactory);
+
+    onVolatileStarted();
   }
 
   @Override

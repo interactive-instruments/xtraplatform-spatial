@@ -11,6 +11,8 @@ import de.ii.xtraplatform.crs.domain.EpsgCrs;
 
 public interface FeatureCrs {
 
+  String CAPABILITY = "crs";
+
   EpsgCrs getNativeCrs();
 
   // TODO: is there a way to move the whole crs transformation stuff to the provider?

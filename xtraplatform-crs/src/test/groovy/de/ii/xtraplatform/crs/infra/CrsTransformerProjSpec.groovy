@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.crs.infra
 
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry
 import de.ii.xtraplatform.blobs.domain.ResourceStore
 import de.ii.xtraplatform.crs.domain.*
 import de.ii.xtraplatform.proj.domain.ProjLoaderImpl
@@ -16,6 +17,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import java.nio.file.Path
+import java.util.concurrent.CompletableFuture
 
 class CrsTransformerProjSpec extends Specification {
 
@@ -26,8 +28,10 @@ class CrsTransformerProjSpec extends Specification {
     // to the location below to find out if the failures result from changes in the code or the data
     def setupSpec() {
         ResourceStore resourceStore = Stub()
-        transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")), resourceStore)
-        transformerFactory.onStart()
+        VolatileRegistry volatileRegistry = Stub()
+        volatileRegistry.onAvailable(*_) >> CompletableFuture.completedFuture(null)
+        transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")), resourceStore, volatileRegistry)
+        transformerFactory.onStart(false).toCompletableFuture().join()
     }
 
     def 'find transformer - #dim (#src, #trgt)'() {

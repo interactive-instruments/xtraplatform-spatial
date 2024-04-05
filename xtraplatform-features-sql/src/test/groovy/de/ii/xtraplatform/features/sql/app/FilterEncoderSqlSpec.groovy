@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.features.sql.app
 
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry
 import de.ii.xtraplatform.blobs.domain.ResourceStore
 import de.ii.xtraplatform.cql.app.CqlFilterExamples
 import de.ii.xtraplatform.cql.app.CqlImpl
@@ -20,6 +21,7 @@ import spock.lang.Shared
 import spock.lang.Specification
 
 import java.nio.file.Path
+import java.util.concurrent.CompletableFuture
 
 class FilterEncoderSqlSpec extends Specification {
 
@@ -33,8 +35,10 @@ class FilterEncoderSqlSpec extends Specification {
 
         filterEncoder = new FilterEncoderSql(OgcCrs.CRS84, new SqlDialectPostGis(), null, null, new CqlImpl(), null)
         ResourceStore resourceStore = Stub()
-        CrsTransformerFactoryProj transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")), resourceStore)
-        transformerFactory.onStart()
+        VolatileRegistry volatileRegistry = Stub()
+        volatileRegistry.onAvailable(*_) >> CompletableFuture.completedFuture(null)
+        CrsTransformerFactoryProj transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")), resourceStore, volatileRegistry)
+        transformerFactory.onStart(false).toCompletableFuture().join()
         filterEncoder2 = new FilterEncoderSql(OgcCrs.CRS84, new SqlDialectPostGis(), (CrsTransformerFactory) transformerFactory, null, new CqlImpl(), null)
 
     }

@@ -15,9 +15,9 @@ import de.ii.xtraplatform.crs.domain.CrsTransformer;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
-import de.ii.xtraplatform.features.domain.FeatureProvider2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
+import de.ii.xtraplatform.features.domain.FeatureProviderEntity;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.Query;
@@ -109,7 +109,9 @@ public class RoutesQueriesSql implements FeatureQueriesExtension {
 
   @Override
   public void on(
-      LIFECYCLE_HOOK hook, FeatureProvider2 provider, FeatureProviderConnector<?, ?, ?> connector) {
+      LIFECYCLE_HOOK hook,
+      FeatureProviderEntity provider,
+      FeatureProviderConnector<?, ?, ?> connector) {
     Optional<RoutesConfiguration> routesConfiguration = getRoutesConfiguration(provider.getData());
 
     if (routesConfiguration.isPresent()) {

@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Range;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.base.domain.util.Tuple;
 import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
@@ -26,6 +27,7 @@ import de.ii.xtraplatform.tiles.domain.MbtilesMetadata;
 import de.ii.xtraplatform.tiles.domain.MbtilesMetadata.MbtilesFormat;
 import de.ii.xtraplatform.tiles.domain.MbtilesTileset;
 import de.ii.xtraplatform.tiles.domain.MinMax;
+import de.ii.xtraplatform.tiles.domain.TileAccess;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSet;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetRepository;
 import de.ii.xtraplatform.tiles.domain.TileProvider;
@@ -61,11 +63,13 @@ import org.slf4j.LoggerFactory;
     },
     data = TileProviderMbtilesData.class)
 public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtilesData>
-    implements TileProvider {
+    implements TileProvider, TileAccess {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileProviderMbTiles.class);
+
   private final ResourceStore tilesStore;
   private final TileMatrixSetRepository tileMatrixSetRepository;
+  private final VolatileRegistry volatileRegistry;
   private final Map<String, TilesetMetadata> metadata;
   private final Map<String, Map<String, Range<Integer>>> tmsRanges;
   private ChainedTileProvider providerChain;
@@ -74,17 +78,26 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
   public TileProviderMbTiles(
       ResourceStore blobStore,
       TileMatrixSetRepository tileMatrixSetRepository,
+      VolatileRegistry volatileRegistry,
       @Assisted TileProviderMbtilesData data) {
-    super(data);
+    super(volatileRegistry, data, "access");
 
     this.tilesStore = blobStore.with(TileProviderFeatures.TILES_DIR_NAME);
     this.tileMatrixSetRepository = tileMatrixSetRepository;
+    this.volatileRegistry = volatileRegistry;
     this.metadata = new LinkedHashMap<>();
     this.tmsRanges = new LinkedHashMap<>();
   }
 
   @Override
   protected boolean onStartup() throws InterruptedException {
+    onVolatileStart();
+
+    addSubcomponent(tilesStore, "access");
+    addSubcomponent(tileMatrixSetRepository, "access");
+
+    volatileRegistry.onAvailable(tilesStore).toCompletableFuture().join();
+
     // we know there is exactly one tileset and one tile matrix set
     Map<String, Path> tilesetSources =
         getData().getTilesets().entrySet().stream()
@@ -139,7 +152,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
   }
 
   @Override
-  public Optional<TilesetMetadata> metadata(String tileset) {
+  public Optional<TilesetMetadata> getMetadata(String tileset) {
     return Optional.ofNullable(metadata.get(tileset));
   }
 
@@ -155,18 +168,8 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
   }
 
   @Override
-  public boolean supportsGeneration() {
-    return false;
-  }
-
-  @Override
   public boolean tilesMayBeUnavailable() {
     return true;
-  }
-
-  @Override
-  public String getType() {
-    return TileProviderMbtilesData.PROVIDER_TYPE;
   }
 
   private void loadMetadata(Map<String, Path> tilesetSources) {
