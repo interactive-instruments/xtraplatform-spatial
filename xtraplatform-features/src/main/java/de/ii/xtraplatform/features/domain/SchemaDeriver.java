@@ -15,6 +15,7 @@ import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.features.domain.SchemaBase.Role;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.transform.FeatureRefResolver;
+import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import de.ii.xtraplatform.strings.domain.StringTemplateFilters;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
@@ -265,7 +266,12 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
         }
         break;
       case GEOMETRY:
-        valueSchema = getSchemaForGeometry(schema, role);
+        valueSchema =
+            getSchemaForGeometry(
+                schema.getGeometryType().orElse(SimpleFeatureGeometry.ANY),
+                label,
+                description,
+                role);
         break;
       case OBJECT:
       case OBJECT_ARRAY:
@@ -360,7 +366,11 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
       Optional<String> refCollectionId,
       Optional<String> refUriTemplate);
 
-  protected abstract T getSchemaForGeometry(FeatureSchema schema, Optional<String> role);
+  protected abstract T getSchemaForGeometry(
+      SimpleFeatureGeometry geometryType,
+      Optional<String> title,
+      Optional<String> description,
+      Optional<String> role);
 
   protected abstract T withName(T schema, String propertyName);
 
