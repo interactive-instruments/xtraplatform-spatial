@@ -11,6 +11,7 @@ import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
 import java.util.List;
+import java.util.Objects;
 
 public class WithoutProperties implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
 
@@ -33,7 +34,8 @@ public class WithoutProperties implements SchemaVisitorTopDown<FeatureSchema, Fe
     if (!schema.isPrimaryGeometry()
         && !fields.isEmpty()
         && !parents.isEmpty()
-        && !fields.contains(getEffectiveSchema(schema, parents).getFullPathAsString())) {
+        && !(fields.contains(getEffectiveSchema(schema, parents).getFullPathAsString())
+            || visitedProperties.stream().anyMatch(Objects::nonNull))) {
       return null;
     }
 
