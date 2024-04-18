@@ -36,6 +36,11 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
 
   Optional<String> getSortKey();
 
+  @Value.Default
+  default boolean getSortKeyUnique() {
+    return true;
+  }
+
   List<String> getParentSortKeys();
 
   Optional<Cql2Expression> getFilter();
@@ -149,7 +154,13 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
     if (!onlyRelations) {
       // add key for value table
       keys.add(
-          String.format("%s.%s AS SKEY_%d", aliasesIterator.next(), getSortKey().get(), keyIndex));
+          String.format(
+              getSortKeyUnique()
+                  ? "%s.%s AS SKEY_%d"
+                  : "ROW_NUMBER() OVER (ORDER BY %s.%s) AS SKEY_%d",
+              aliasesIterator.next(),
+              getSortKey().get(),
+              keyIndex));
     }
 
     return keys.build();

@@ -35,6 +35,11 @@ public interface SqlPath extends SourcePath {
 
   String getPrimaryKey();
 
+  @Value.Default
+  default boolean getSortKeyUnique() {
+    return true;
+  }
+
   Optional<Cql2Expression> getFilter();
 
   Optional<String> getFilterString();
