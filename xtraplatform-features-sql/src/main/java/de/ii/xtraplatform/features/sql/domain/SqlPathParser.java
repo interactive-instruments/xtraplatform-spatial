@@ -43,6 +43,7 @@ public class SqlPathParser {
     TARGETFIELD,
     FLAGS,
     SORTKEY,
+    SORTKEYUNIQUE,
     PRIMARYKEY,
     FILTER,
     CONNECTOR
@@ -65,6 +66,8 @@ public class SqlPathParser {
             MatcherGroups.SCHEMA, IDENTIFIER, Pattern.quote(Tokens.SCHEMA_SEPARATOR), IDENTIFIER);
     String FLAGS = "(?:\\{[a-z_]+.*?\\})*";
     String SORT_KEY_FLAG = String.format("\\{sortKey=(?<%s>.+?)\\}", MatcherGroups.SORTKEY);
+    String SORT_KEY_FLAG_UNIQUE =
+        String.format("\\{sortKeyUnique=(?<%s>true|false)\\}", MatcherGroups.SORTKEYUNIQUE);
     String PRIMARY_KEY_FLAG =
         String.format("\\{primaryKey=(?<%s>.+?)\\}", MatcherGroups.PRIMARYKEY);
     String FILTER_FLAG = String.format("\\{filter=(?<%s>.+?)\\}", MatcherGroups.FILTER);
@@ -135,6 +138,8 @@ public class SqlPathParser {
 
     Pattern SORT_KEY_FLAG = Pattern.compile(PatternStrings.SORT_KEY_FLAG);
 
+    Pattern SORT_KEY_UNIQUE_FLAG = Pattern.compile(PatternStrings.SORT_KEY_FLAG_UNIQUE);
+
     Pattern FILTER_FLAG = Pattern.compile(PatternStrings.FILTER_FLAG);
 
     Pattern PRIMARY_KEY_FLAG = Pattern.compile(PatternStrings.PRIMARY_KEY_FLAG);
@@ -184,7 +189,7 @@ public class SqlPathParser {
         }
 
         // TODO
-        builder.sortKey("").primaryKey("").junction(false);
+        builder.sortKey("").sortKeyUnique(true).primaryKey("").junction(false);
 
         return builder.build();
       }
@@ -286,6 +291,7 @@ public class SqlPathParser {
 
     builder
         .sortKey(getSortKey(flags))
+        .sortKeyUnique(getSortKeyUnique(flags))
         .primaryKey(getPrimaryKey(flags))
         .junction(isJunctionTable(table, flags))
         .filter(getFilterFlag(flags).map(filterText -> cql.read(filterText, Format.TEXT)))
@@ -309,7 +315,11 @@ public class SqlPathParser {
     String flags =
         Optional.ofNullable(connectedMatcher.group(MatcherGroups.FLAGS.name())).orElse("");
 
-    builder.sortKey(getSortKey(flags)).primaryKey(getPrimaryKey(flags)).junction(false);
+    builder
+        .sortKey(getSortKey(flags))
+        .sortKeyUnique(getSortKeyUnique(flags))
+        .primaryKey(getPrimaryKey(flags))
+        .junction(false);
 
     String connectorSpec = connectedMatcher.group(0);
     String pathInConnector = path.substring(path.indexOf(connectorSpec) + connectorSpec.length());
@@ -351,6 +361,16 @@ public class SqlPathParser {
     }
 
     return defaults.getSortKey();
+  }
+
+  public boolean getSortKeyUnique(String flags) {
+    Matcher matcher = Patterns.SORT_KEY_UNIQUE_FLAG.matcher(flags);
+
+    if (matcher.find()) {
+      return Boolean.parseBoolean(matcher.group(MatcherGroups.SORTKEYUNIQUE.name()));
+    }
+
+    return true;
   }
 
   public String getPrimaryKey(String flags) {

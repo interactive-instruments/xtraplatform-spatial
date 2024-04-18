@@ -79,6 +79,7 @@ import org.immutables.value.Value;
  *     the example above, the filter would look like this: `[oid=kita_fk]plaetze{filter=anzahl IS
  *     NOT NULL AND anzahl>0}`
  *     <p>A non-default sort key can be set by adding `{sortKey=columnName}` after the table name.
+ *     If that sort key is not unique, add `{sortKeyUnique=false}`.
  * @langDe ## SQL-Pfad-Syntax
  *     <p>In dem Beispiel oben sind die wesentlichen Elemente der Pfadsyntax in der Datenbank
  *     bereits erkennbar. Der Pfad zu einer Eigenschaft ergibt sich immer als Konkatenation der
@@ -104,7 +105,8 @@ import org.immutables.value.Value;
  *     sollen, deren Wert nicht NULL und gleichzeitig größer als Null ist, dann könnte man
  *     schreiben: `[oid=kita_fk]plaetze{filter=anzahl IS NOT NULL AND anzahl>0}`.
  *     <p>Ein vom Standard abweichender `sortKey` kann durch den Zusatz von `{sortKey=Spaltenname}`
- *     nach dem Tabellennamen angegeben werden.
+ *     nach dem Tabellennamen angegeben werden. Wenn dieser nicht eindeutig ist, kann
+ *     `{sortKeyUnique=false}` hinzugefügt werden.
  *     <p>Ein vom Standard abweichender `primaryKey` kann durch den Zusatz von
  *     `{primaryKey=Spaltenname}` nach dem Tabellennamen angegeben werden.
  * @langEn ## Query Generation
