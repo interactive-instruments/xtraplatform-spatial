@@ -110,7 +110,7 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
         List<String> expected = SqlQueryFixtures.fromYaml(queries)
 
         then:
-// sourceFilter in relation might be missing
+
         actual == expected
 
         where:
