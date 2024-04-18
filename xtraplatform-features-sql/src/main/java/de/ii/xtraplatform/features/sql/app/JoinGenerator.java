@@ -83,19 +83,20 @@ public class JoinGenerator {
       List<SchemaSql> parents,
       FilterEncoderSql filterEncoder,
       boolean ignoreRelationFilters) {
-    return Stream.concat(
-            parents.stream().flatMap(parent -> parent.getRelation().stream()),
-            schema.getRelation().stream())
-        .map(
-            sqlRelation ->
+    return Stream.concat(parents.stream(), Stream.of(schema))
+        .flatMap(
+            table ->
                 ignoreRelationFilters
-                    ? Optional.<String>empty()
-                    : sqlRelation
-                        .getTargetFilter()
-                        .flatMap(
-                            filter ->
-                                filterEncoder.encodeRelationFilter(
-                                    Optional.of(schema), Optional.empty())))
+                    ? Stream.of(Optional.<String>empty())
+                    : table.getRelation().stream()
+                        .map(
+                            relation ->
+                                relation
+                                    .getTargetFilter()
+                                    .flatMap(
+                                        filter ->
+                                            filterEncoder.encodeRelationFilter(
+                                                Optional.of(table), Optional.empty()))))
         .collect(Collectors.toList());
   }
 
