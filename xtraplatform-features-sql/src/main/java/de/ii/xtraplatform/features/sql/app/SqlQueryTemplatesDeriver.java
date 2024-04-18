@@ -364,7 +364,13 @@ public class SqlQueryTemplatesDeriver
     } else {
       return Stream.concat(
               customSortKeys,
-              Stream.of(String.format("%s.%s AS SKEY", aliases.get(0), schema.getSortKey().get())))
+              Stream.of(
+                  String.format(
+                      schema.getSortKeyUnique()
+                          ? "%s.%s AS SKEY"
+                          : "ROW_NUMBER() OVER (ORDER BY %s.%s) AS SKEY",
+                      aliases.get(0),
+                      schema.getSortKey().get())))
           .collect(Collectors.toList());
     }
   }

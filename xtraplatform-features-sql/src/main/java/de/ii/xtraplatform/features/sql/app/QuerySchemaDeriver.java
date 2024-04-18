@@ -347,6 +347,7 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                           .addAllRelation(entry.getKey())
                           .properties(newProperties)
                           .sortKey(tablePath.getSortKey())
+                          .sortKeyUnique(tablePath.getSortKeyUnique())
                           .primaryKey(tablePath.getPrimaryKey())
                           .sourcePath(
                               !targetSchema.isFeature()
@@ -488,7 +489,10 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
     if (targetSchema.isObject()) {
       if (targetSchema.getProperties().stream()
           .anyMatch(prop -> prop.isValue() || prop.getEffectiveSourcePaths().isEmpty())) {
-        builder.sortKey(path.getSortKey()).primaryKey(path.getPrimaryKey());
+        builder
+            .sortKey(path.getSortKey())
+            .sortKeyUnique(path.getSortKeyUnique())
+            .primaryKey(path.getPrimaryKey());
       }
       builder.filter(path.getFilter()).filterString(path.getFilterString());
     }
