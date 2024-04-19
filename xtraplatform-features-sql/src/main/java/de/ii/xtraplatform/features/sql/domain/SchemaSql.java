@@ -14,7 +14,6 @@ import de.ii.xtraplatform.features.domain.SchemaBase;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -65,13 +64,25 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
                 .collect(Collectors.toList());
 
     // shorten paths that overlap parents, can only happen when relation is present
-    if (path.size() > 1
-        && !getParentPath().isEmpty()
-        && Objects.equals(getParentPath().get(getParentPath().size() - 1), path.get(0))) {
-      return path.subList(1, path.size());
+    if (path.size() > 1 && !getParentPath().isEmpty()) {
+      int overlap = getOverlap(getParentPath(), path);
+
+      if (overlap > 0) {
+        return path.subList(overlap, path.size());
+      }
     }
 
     return path;
+  }
+
+  static int getOverlap(List<String> path1, List<String> path2) {
+    int overlap = 0;
+    for (int i = 1; i <= Math.min(path1.size(), path2.size()); i++) {
+      if (path1.subList(path1.size() - i, path1.size()).equals(path2.subList(0, i))) {
+        overlap = i;
+      }
+    }
+    return overlap;
   }
 
   @Value.Derived
