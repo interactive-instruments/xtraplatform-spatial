@@ -11,9 +11,14 @@ import com.google.common.collect.ImmutableMap
 import de.ii.xtraplatform.cql.app.CqlImpl
 import de.ii.xtraplatform.cql.domain.*
 import de.ii.xtraplatform.crs.domain.OgcCrs
+import de.ii.xtraplatform.features.domain.FeatureSchemaFixtures
+import de.ii.xtraplatform.features.domain.MappingOperationResolver
 import de.ii.xtraplatform.features.domain.SortKey
 import de.ii.xtraplatform.features.domain.Tuple
+import de.ii.xtraplatform.features.sql.domain.ImmutableSqlPathDefaults
+import de.ii.xtraplatform.features.sql.domain.SchemaSql
 import de.ii.xtraplatform.features.sql.domain.SqlDialectPostGis
+import de.ii.xtraplatform.features.sql.domain.SqlPathParser
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -25,6 +30,19 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
     SqlQueryTemplatesDeriver td = new SqlQueryTemplatesDeriver(null, filterEncoder, new SqlDialectPostGis(), true, false)
     @Shared
     SqlQueryTemplatesDeriver tdNoNm = new SqlQueryTemplatesDeriver(null, filterEncoder, new SqlDialectPostGis(), false, false)
+
+    @Shared
+    QuerySchemaDeriver schemaDeriver
+    @Shared
+    MappingOperationResolver mappingOperationResolver
+
+    def setupSpec() {
+        def defaults = new ImmutableSqlPathDefaults.Builder().build()
+        def cql = new CqlImpl()
+        def pathParser = new SqlPathParser(defaults, cql, Set.of("JSON"))
+        schemaDeriver = new QuerySchemaDeriver(pathParser)
+        mappingOperationResolver = new MappingOperationResolver()
+    }
 
     static Optional<Cql2Expression> noFilter = Optional.empty()
 
@@ -82,6 +100,26 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
 
     }
 
+    def 'value query templates too: #casename'() {
+
+        when:
+
+        def source = sqlSchema(schema, schemaDeriver, mappingOperationResolver)
+        SqlQueryTemplates templates = source.accept(deriver)
+        List<String> actual = values(templates, limit, offset, sortBy, filter)
+        List<String> expected = SqlQueryFixtures.fromYaml(queries)
+
+        then:
+
+        actual == expected
+
+        where:
+
+        casename                                      | deriver | limit | offset | sortBy | filter | schema             || queries
+        "self join with nested duplicate and filters" | td      | 0     | 0      | []     | null   | "okstra_abschnitt" || "okstra_abschnitt"
+
+    }
+
 
     static String meta(SqlQueryTemplates templates, List<SortKey> sortBy, Optional<Cql2Expression> userFilter) {
         return templates.getMetaQueryTemplate().generateMetaQuery(10, 10, 0, sortBy, userFilter, ImmutableMap.of(), false, true)
@@ -89,6 +127,12 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
 
     static List<String> values(SqlQueryTemplates templates, int limit, int offset, List<SortKey> sortBy, Cql2Expression filter) {
         return templates.getValueQueryTemplates().collect { it.generateValueQuery(limit, offset, sortBy, Optional.ofNullable(filter), limit == 0 ? Optional.<Tuple<Object, Object>> empty() : Optional.of(Tuple.of(offset, offset + limit - 1)), ImmutableMap.of()) }
+    }
+
+    static SchemaSql sqlSchema(String featureSchemaName, QuerySchemaDeriver schemaDeriver, MappingOperationResolver mappingOperationResolver) {
+        def schema = FeatureSchemaFixtures.fromYaml(featureSchemaName)
+        List<SchemaSql> sqlSchema = schema.accept(mappingOperationResolver, List.of()).accept(schemaDeriver)
+        return sqlSchema.get(0)
     }
 
 }
