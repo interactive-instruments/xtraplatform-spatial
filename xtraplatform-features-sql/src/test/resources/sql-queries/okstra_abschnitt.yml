@@ -1,0 +1,21 @@
+- >-
+  SELECT A.id AS SKEY, A.oid
+  FROM abschnitt A
+  ORDER BY 1
+- >-
+  SELECT A.id AS SKEY, E.id AS SKEY_1, E.strassennummer, E.zusatzbuchstabe
+  FROM abschnitt A
+  JOIN zwischentab B ON (A.oid=B.id AND (B.role = 'zu_Strasse'))
+  JOIN strasse C ON (B.rid=C.oid)
+  JOIN zwischentab D ON (C.oid=D.id AND (D.role = 'hat_Strassenbezeichnung'))
+  JOIN strassenbezeichnung E ON (D.rid=E.oid)
+  ORDER BY 1,2
+- >-
+  SELECT A.id AS SKEY, E.id AS SKEY_1, F.id AS SKEY_2, F.kennung
+  FROM abschnitt A
+  JOIN zwischentab B ON (A.oid=B.id AND (B.role = 'zu_Strasse'))
+  JOIN strasse C ON (B.rid=C.oid)
+  JOIN zwischentab D ON (C.oid=D.id AND (D.role = 'hat_Strassenbezeichnung'))
+  JOIN strassenbezeichnung E ON (D.rid=E.oid)
+  JOIN strassenklasse F ON (E.strassenklasse=F.oid)
+  ORDER BY 1,2,3
