@@ -156,6 +156,9 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
       String tileset, TileMatrixSetBase tileMatrixSet, TileMatrixSetLimits limits, boolean inverse)
       throws IOException {
     if (!inverse) {
+      if (!dirty.containsKey(tileset)) {
+        return;
+      }
       if (!dirty.get(tileset).containsKey(tileMatrixSet.getId())) {
         dirty.get(tileset).put(tileMatrixSet.getId(), new CopyOnWriteArrayList<>());
       }
