@@ -24,7 +24,6 @@ import de.ii.xtraplatform.tiles.domain.ChainedTileProvider;
 import de.ii.xtraplatform.tiles.domain.ImmutableMinMax;
 import de.ii.xtraplatform.tiles.domain.ImmutableTilesetMetadata;
 import de.ii.xtraplatform.tiles.domain.MbtilesMetadata;
-import de.ii.xtraplatform.tiles.domain.MbtilesMetadata.MbtilesFormat;
 import de.ii.xtraplatform.tiles.domain.MbtilesTileset;
 import de.ii.xtraplatform.tiles.domain.MinMax;
 import de.ii.xtraplatform.tiles.domain.TileAccess;
@@ -36,6 +35,7 @@ import de.ii.xtraplatform.tiles.domain.TileProviderMbtilesData;
 import de.ii.xtraplatform.tiles.domain.TileQuery;
 import de.ii.xtraplatform.tiles.domain.TileResult;
 import de.ii.xtraplatform.tiles.domain.TileStoreReadOnly;
+import de.ii.xtraplatform.tiles.domain.TilesFormat;
 import de.ii.xtraplatform.tiles.domain.TilesetMbTiles;
 import de.ii.xtraplatform.tiles.domain.TilesetMetadata;
 import de.ii.xtraplatform.tiles.domain.VectorLayer;
@@ -215,7 +215,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
               ? Optional.of(
                   BoundingBox.of(bbox.get(0), bbox.get(1), bbox.get(2), bbox.get(3), OgcCrs.CRS84))
               : Optional.empty();
-      String format = getFormat(metadata.getFormat());
+      TilesFormat format = metadata.getFormat();
       List<FeatureSchema> vectorSchemas =
           metadata.getVectorLayers().stream()
               .map(VectorLayer::toFeatureSchema)
@@ -231,17 +231,6 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
     } catch (Exception e) {
       throw new RuntimeException("Could not derive metadata from Mbtiles tile provider.", e);
     }
-  }
-
-  private String getFormat(MbtilesFormat format) {
-    if (format == MbtilesMetadata.MbtilesFormat.pbf) return "MVT";
-    else if (format == MbtilesMetadata.MbtilesFormat.jpg) return "JPEG";
-    else if (format == MbtilesMetadata.MbtilesFormat.png) return "PNG";
-    else if (format == MbtilesMetadata.MbtilesFormat.webp) return "WEBP";
-    else if (format == MbtilesMetadata.MbtilesFormat.tiff) return "TIFF";
-
-    throw new UnsupportedOperationException(
-        String.format("Mbtiles format '%s' is currently not supported.", format));
   }
 
   private String toTilesetKey(String tileset, String tms) {

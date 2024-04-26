@@ -50,6 +50,7 @@ import de.ii.xtraplatform.tiles.domain.TileResult;
 import de.ii.xtraplatform.tiles.domain.TileSeeding;
 import de.ii.xtraplatform.tiles.domain.TileStore;
 import de.ii.xtraplatform.tiles.domain.TileWalker;
+import de.ii.xtraplatform.tiles.domain.TilesFormat;
 import de.ii.xtraplatform.tiles.domain.TilesetFeatures;
 import de.ii.xtraplatform.tiles.domain.TilesetMetadata;
 import java.io.IOException;
@@ -468,7 +469,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
                 });
 
     return ImmutableTilesetMetadata.builder()
-        .addEncodings("MVT")
+        .addEncodings(TilesFormat.MVT)
         .levels(
             tileset.getLevels().isEmpty()
                 ? getData().getTilesetDefaults().getLevels()

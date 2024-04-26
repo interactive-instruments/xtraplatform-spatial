@@ -110,7 +110,7 @@ public class MbtilesTileset {
 
       // populate metadata
       SqlHelper.addMetadata(connection, "name", metadata.getName());
-      SqlHelper.addMetadata(connection, "format", metadata.getFormat());
+      SqlHelper.addMetadata(connection, "format", metadata.getFormat().asMbtilesString());
       if (metadata.getBounds().size() == 4)
         SqlHelper.addMetadata(
             connection,
@@ -131,7 +131,7 @@ public class MbtilesTileset {
       metadata.getDescription().ifPresent(v -> SqlHelper.addMetadata(connection, "description", v));
       metadata.getType().ifPresent(v -> SqlHelper.addMetadata(connection, "type", v));
       metadata.getVersion().ifPresent(v -> SqlHelper.addMetadata(connection, "version", v));
-      if (metadata.getFormat() == MbtilesMetadata.MbtilesFormat.pbf) {
+      if (metadata.getFormat() == TilesFormat.MVT) {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new Jdk8Module());
         try {
@@ -156,7 +156,7 @@ public class MbtilesTileset {
       }
 
       // create empty MVT tile with rowid=1
-      if (metadata.getFormat().equals(MbtilesMetadata.MbtilesFormat.pbf)) {
+      if (metadata.getFormat().equals(TilesFormat.MVT)) {
         try (PreparedStatement statement =
             connection.prepareStatement("INSERT INTO tile_blobs (tile_id,tile_data) VALUES(?,?)")) {
           statement.setInt(1, EMPTY_TILE_ID);
@@ -252,7 +252,7 @@ public class MbtilesTileset {
               builder.name(value);
               break;
             case "format":
-              MbtilesMetadata.MbtilesFormat format = MbtilesMetadata.MbtilesFormat.of(value);
+              TilesFormat format = TilesFormat.of(value);
               if (Objects.isNull(format))
                 throw new IllegalArgumentException(
                     String.format(

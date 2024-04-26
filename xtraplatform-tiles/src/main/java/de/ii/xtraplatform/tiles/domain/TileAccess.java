@@ -21,6 +21,14 @@ public interface TileAccess {
     return false;
   }
 
+  default boolean tilesetHasVectorTiles(String tileset) {
+    return getMetadata(tileset).map(TilesetMetadata::isVector).orElse(false);
+  }
+
+  default boolean tilesetHasMapTiles(String tileset) {
+    return getMetadata(tileset).map(TilesetMetadata::isRaster).orElse(false);
+  }
+
   default Optional<TileResult> validate(TileQuery tile) {
     Optional<TilesetMetadata> metadata = getMetadata(tile.getTileset());
 

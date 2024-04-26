@@ -23,6 +23,7 @@ import de.ii.xtraplatform.tiles.domain.TileQuery;
 import de.ii.xtraplatform.tiles.domain.TileResult;
 import de.ii.xtraplatform.tiles.domain.TileStore;
 import de.ii.xtraplatform.tiles.domain.TileStoreReadOnly;
+import de.ii.xtraplatform.tiles.domain.TilesFormat;
 import de.ii.xtraplatform.tiles.domain.VectorLayer;
 import java.io.IOException;
 import java.io.InputStream;
@@ -404,7 +405,7 @@ public class TileStoreMbTiles implements TileStore {
     MbtilesMetadata md =
         ImmutableMbtilesMetadata.builder()
             .name(name)
-            .format(MbtilesMetadata.MbtilesFormat.pbf)
+            .format(TilesFormat.MVT)
             .vectorLayers(vectorLayers)
             .build();
     try {
