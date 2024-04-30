@@ -10,6 +10,7 @@ package de.ii.xtraplatform.features.gml.app;
 import com.google.common.collect.ImmutableList;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
@@ -106,6 +107,7 @@ public class FeatureProviderWfs
       Reactive reactive,
       ValueStore valueStore,
       ProviderExtensionRegistry extensionRegistry,
+      VolatileRegistry volatileRegistry,
       @Assisted FeatureProviderDataV2 data) {
     super(
         connectorFactory,
@@ -113,8 +115,8 @@ public class FeatureProviderWfs
         crsTransformerFactory,
         extensionRegistry,
         valueStore.forType(Codelist.class),
-        data, /*TODO*/
-        null);
+        data,
+        volatileRegistry);
 
     this.crsTransformerFactory = crsTransformerFactory;
     this.cql = cql;

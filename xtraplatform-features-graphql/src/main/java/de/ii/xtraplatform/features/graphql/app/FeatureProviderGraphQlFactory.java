@@ -10,6 +10,7 @@ package de.ii.xtraplatform.features.graphql.app;
 import com.github.azahnen.dagger.annotations.AutoBind;
 import dagger.Lazy;
 import dagger.assisted.AssistedFactory;
+import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.entities.domain.AbstractEntityFactory;
@@ -58,6 +59,7 @@ public class FeatureProviderGraphQlFactory
       Reactive reactive,
       ValueStore valueStore,
       ProviderExtensionRegistry extensionRegistry,
+      VolatileRegistry volatileRegistry,
       ProviderGraphQlFactoryAssisted providerGraphQlFactoryAssisted) {
     super(providerGraphQlFactoryAssisted);
     this.schemaResolvers = schemaResolvers;
