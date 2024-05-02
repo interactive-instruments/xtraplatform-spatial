@@ -138,8 +138,8 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   protected boolean onStartup() throws InterruptedException {
     onVolatileStart();
 
-    addSubcomponent(tilesStore, "access", "generation", "seeding");
-    addSubcomponent(tileGenerator, "generation", "seeding");
+    addSubcomponent(tilesStore, true, "access", "generation", "seeding");
+    addSubcomponent(tileGenerator, true, "generation", "seeding");
     addSubcomponent(tileWalker, "seeding");
 
     if (!asyncStartup) {

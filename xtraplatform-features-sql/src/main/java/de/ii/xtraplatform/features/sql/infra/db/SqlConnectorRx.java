@@ -168,6 +168,8 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
 
   @Override
   public void stop() {
+    getVolatileRegistry().unregister(this);
+
     this.sqlClient = null;
     if (Objects.nonNull(healthCheckRegistry)) {
       try {

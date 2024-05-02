@@ -84,7 +84,11 @@ public class TileProviderHttp extends AbstractTileProvider<TileProviderHttpData>
 
     loadMetadata();
 
-    return super.onStartup();
+    onVolatileStart();
+
+    addCapability("access", true);
+
+    return true;
   }
 
   @Override
