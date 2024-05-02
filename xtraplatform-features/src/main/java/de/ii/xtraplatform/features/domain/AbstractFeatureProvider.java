@@ -127,6 +127,9 @@ public abstract class AbstractFeatureProvider<
   @Override
   protected boolean onStartup() throws InterruptedException {
     onVolatileStart();
+
+    connector.reset();
+
     addCapability(FeatureInfo.CAPABILITY);
     addCapability(FeatureChanges.CAPABILITY);
     if (queries().isSupported()) {
