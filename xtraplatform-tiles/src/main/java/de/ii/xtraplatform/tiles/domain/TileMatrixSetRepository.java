@@ -21,6 +21,7 @@ public interface TileMatrixSetRepository extends Volatile2 {
           "WorldCRS84Quad",
           "WorldMercatorWGS84Quad",
           "AdV_25832",
+          "AdV_25833",
           "EU_25832",
           "gdi_de_25832");
 
