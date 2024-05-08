@@ -7,6 +7,10 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.google.common.hash.Funnel;
+import de.ii.xtraplatform.tiles.domain.JacksonXmlAnnotation.XmlIgnore;
+import java.nio.charset.StandardCharsets;
 import java.util.function.IntPredicate;
 import java.util.stream.IntStream;
 import org.immutables.value.Value;
@@ -14,14 +18,19 @@ import org.immutables.value.Value;
 @Value.Immutable
 public interface TileMatrixSetLimits {
 
+  @JacksonXmlProperty(namespace = "http://www.opengis.net/wmts/1.0", localName = "TileMatrix")
   String getTileMatrix();
 
+  @JacksonXmlProperty(namespace = "http://www.opengis.net/wmts/1.0", localName = "MinTileRow")
   Integer getMinTileRow();
 
+  @JacksonXmlProperty(namespace = "http://www.opengis.net/wmts/1.0", localName = "MaxTileRow")
   Integer getMaxTileRow();
 
+  @JacksonXmlProperty(namespace = "http://www.opengis.net/wmts/1.0", localName = "MinTileCol")
   Integer getMinTileCol();
 
+  @JacksonXmlProperty(namespace = "http://www.opengis.net/wmts/1.0", localName = "MaxTileCol")
   Integer getMaxTileCol();
 
   default boolean contains(int row, int col) {
@@ -33,6 +42,7 @@ public interface TileMatrixSetLimits {
 
   @Value.Derived
   @Value.Auxiliary
+  @XmlIgnore
   default long getNumberOfTiles() {
     return ((long) getMaxTileRow() - getMinTileRow() + 1) * (getMaxTileCol() - getMinTileCol() + 1);
   }
@@ -43,4 +53,14 @@ public interface TileMatrixSetLimits {
 
     return (getMaxTileRow() - getMinTileRow() + 1) * numCols;
   }
+
+  @SuppressWarnings("UnstableApiUsage")
+  Funnel<TileMatrixSetLimits> FUNNEL =
+      (from, into) -> {
+        into.putString(from.getTileMatrix(), StandardCharsets.UTF_8);
+        into.putInt(from.getMinTileRow());
+        into.putInt(from.getMaxTileRow());
+        into.putInt(from.getMinTileCol());
+        into.putInt(from.getMaxTileCol());
+      };
 }

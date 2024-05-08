@@ -7,21 +7,43 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
+import javax.ws.rs.core.MediaType;
+
 public enum TilesFormat {
-  MVT("pbf"),
-  JPEG("jpg"),
-  PNG("png"),
-  WebP("webp"),
-  TIFF("tiff");
+  MVT("pbf", "mvt", MediaType.valueOf("application/vnd.mapbox-vector-tile")),
+  JPEG("jpg", "jpeg", MediaType.valueOf("image/jpeg")),
+  PNG("png", "png", MediaType.valueOf("image/png")),
+  WebP("webp", "webp", MediaType.valueOf("image/webp")),
+  TIFF("tiff", "tiff", MediaType.valueOf("image/tiff"));
 
   private final String mbtilesString;
+  private final String fString;
+  private final MediaType mediaType;
 
-  TilesFormat(String mbtilesString) {
+  TilesFormat(String mbtilesString, String fString, MediaType mediaType) {
     this.mbtilesString = mbtilesString;
+    this.fString = fString;
+    this.mediaType = mediaType;
   }
 
   public String asMbtilesString() {
     return mbtilesString;
+  }
+
+  public String asFString() {
+    return fString;
+  }
+
+  public MediaType asMediaType() {
+    return mediaType;
+  }
+
+  public boolean isRaster() {
+    return this != MVT;
+  }
+
+  public boolean isVector() {
+    return this == MVT;
   }
 
   public static TilesFormat of(String value) {
