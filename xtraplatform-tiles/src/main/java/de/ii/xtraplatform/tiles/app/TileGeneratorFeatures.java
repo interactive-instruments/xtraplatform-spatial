@@ -143,13 +143,13 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
               false,
               "generation");
 
+      addSubcomponent(delayedVolatile);
+
       featureProviders.putIfAbsent(featureProviderId, delayedVolatile);
 
       entityRegistry
           .getEntity(FeatureProviderEntity.class, featureProviderId)
           .ifPresent(delayedVolatile::set);
-
-      addSubcomponent(delayedVolatile);
     }
 
     onVolatileStarted();
