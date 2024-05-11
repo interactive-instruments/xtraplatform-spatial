@@ -18,19 +18,21 @@ import org.immutables.value.Value;
 @Value.Immutable
 public interface TileMatrixSetLimits {
 
-  @JacksonXmlProperty(namespace = "http://www.opengis.net/wmts/1.0", localName = "TileMatrix")
+  String XMLNS = "http://www.opengis.net/wmts/1.0";
+
+  @JacksonXmlProperty(namespace = XMLNS, localName = "TileMatrix")
   String getTileMatrix();
 
-  @JacksonXmlProperty(namespace = "http://www.opengis.net/wmts/1.0", localName = "MinTileRow")
+  @JacksonXmlProperty(namespace = XMLNS, localName = "MinTileRow")
   Integer getMinTileRow();
 
-  @JacksonXmlProperty(namespace = "http://www.opengis.net/wmts/1.0", localName = "MaxTileRow")
+  @JacksonXmlProperty(namespace = XMLNS, localName = "MaxTileRow")
   Integer getMaxTileRow();
 
-  @JacksonXmlProperty(namespace = "http://www.opengis.net/wmts/1.0", localName = "MinTileCol")
+  @JacksonXmlProperty(namespace = XMLNS, localName = "MinTileCol")
   Integer getMinTileCol();
 
-  @JacksonXmlProperty(namespace = "http://www.opengis.net/wmts/1.0", localName = "MaxTileCol")
+  @JacksonXmlProperty(namespace = XMLNS, localName = "MaxTileCol")
   Integer getMaxTileCol();
 
   default boolean contains(int row, int col) {
