@@ -206,6 +206,14 @@ public interface TileProviderFeaturesData extends TileProviderData, WithCaches, 
   BuildableMap<TilesetFeatures, ImmutableTilesetFeatures.Builder> getTilesets();
 
   /**
+   * @langEn Definition of raster tilesets, see [Raster Tileset](#raster-tileset).
+   * @langDe Definition von Raster-Tilesets, see [Raster-Tileset](#raster-tileset).
+   * @since v4.0
+   * @default {}
+   */
+  BuildableMap<TilesetRaster, ImmutableTilesetRaster.Builder> getRasterTilesets();
+
+  /**
    * @langEn List of cache definitions, see [Cache](#cache).
    * @langDe Liste von Cache-Definitionen, siehe [Cache](#cache).
    * @since v3.4
