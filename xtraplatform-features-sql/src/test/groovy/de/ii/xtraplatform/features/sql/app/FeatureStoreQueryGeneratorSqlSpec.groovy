@@ -9,7 +9,7 @@ package de.ii.xtraplatform.features.sql.app
 
 import de.ii.xtraplatform.cql.app.CqlFilterExamples
 import de.ii.xtraplatform.crs.domain.OgcCrs
-import de.ii.xtraplatform.features.sql.domain.SqlDialectPostGis
+import de.ii.xtraplatform.features.sql.domain.SqlDialectPgis
 import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
@@ -26,7 +26,7 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
 
 
     def setupSpec() {
-        queryGeneratorSql = new FeatureStoreQueryGeneratorSql(new SqlDialectPostGis(), OgcCrs.CRS84, null)
+        queryGeneratorSql = new FeatureStoreQueryGeneratorSql(new SqlDialectPgis(), OgcCrs.CRS84, null)
     }
 
 

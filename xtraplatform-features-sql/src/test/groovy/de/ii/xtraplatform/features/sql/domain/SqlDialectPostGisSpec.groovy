@@ -9,7 +9,6 @@ package de.ii.xtraplatform.features.sql.domain
 
 import de.ii.xtraplatform.crs.domain.BoundingBox
 import de.ii.xtraplatform.crs.domain.EpsgCrs
-import de.ii.xtraplatform.features.sql.infra.db.SchemaGeneratorSql
 import org.threeten.extra.Interval
 import spock.lang.Ignore
 import spock.lang.Shared
@@ -19,10 +18,10 @@ import java.time.DateTimeException
 
 class SqlDialectPostGisSpec extends Specification {
 
-    @Shared SqlDialectPostGis sqlDialectPostGis
+    @Shared SqlDialectPgis sqlDialectPostGis
 
     def setupSpec() {
-        sqlDialectPostGis = new SqlDialectPostGis()
+        sqlDialectPostGis = new SqlDialectPgis()
     }
 
     def 'Temporal extent start and end are present and correctly formatted'() {

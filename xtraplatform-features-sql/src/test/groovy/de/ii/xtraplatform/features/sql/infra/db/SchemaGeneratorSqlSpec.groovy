@@ -9,7 +9,6 @@ package de.ii.xtraplatform.features.sql.infra.db
 
 import com.google.common.collect.ImmutableList
 import com.google.common.collect.ImmutableMap
-import de.ii.xtraplatform.features.sql.domain.SqlDialectPostGis
 import de.ii.xtraplatform.features.domain.SchemaBase
 import de.ii.xtraplatform.features.sql.domain.ImmutableConnectionInfoSql
 import de.ii.xtraplatform.features.sql.domain.SqlClient

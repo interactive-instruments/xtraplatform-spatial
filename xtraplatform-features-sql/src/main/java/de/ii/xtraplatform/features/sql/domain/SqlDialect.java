@@ -14,16 +14,11 @@ import de.ii.xtraplatform.cql.domain.SpatialFunction;
 import de.ii.xtraplatform.cql.domain.TemporalFunction;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql.PropertyTypeInfo;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.List;
+import java.text.Collator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import javax.annotation.Nullable;
-import org.immutables.value.Value;
 import org.threeten.extra.Interval;
 
 public interface SqlDialect {
@@ -64,20 +59,6 @@ public interface SqlDialect {
 
   String escapeString(String value);
 
-  String geometryInfoQuery(Map<String, String> dbInfo);
-
-  Map<String, GeoInfo> getGeoInfo(Connection connection, DbInfo dbInfo) throws SQLException;
-
-  DbInfo getDbInfo(Connection connection) throws SQLException;
-
-  default EpsgCrs.Force forceAxisOrder(DbInfo dbInfo) {
-    return Force.NONE;
-  }
-
-  List<String> getSystemSchemas();
-
-  List<String> getSystemTables();
-
   default String getSpatialOperator(SpatialFunction spatialFunction, boolean is3d) {
     return is3d && SPATIAL_OPERATORS_3D.containsKey(spatialFunction)
         ? SPATIAL_OPERATORS_3D.get(spatialFunction)
@@ -93,40 +74,7 @@ public interface SqlDialect {
     return ImmutableSet.of();
   }
 
-  interface DbInfo {}
-
-  @Value.Immutable
-  interface GeoInfo {
-
-    String SCHEMA = "schema";
-    String TABLE = "table";
-    String COLUMN = "column";
-    String DIMENSION = "dimension";
-    String SRID = "srid";
-    String TYPE = "type";
-
-    @Nullable
-    @Value.Parameter
-    String getSchema();
-
-    @Value.Parameter
-    String getTable();
-
-    @Value.Parameter
-    String getColumn();
-
-    @Value.Parameter
-    String getDimension();
-
-    @Value.Parameter
-    String getSrid();
-
-    @Value.Parameter
-    String getForce();
-
-    @Value.Parameter
-    String getType();
-  }
+  Collator getRowSortingCollator();
 
   Map<SpatialFunction, String> SPATIAL_OPERATORS =
       new ImmutableMap.Builder<SpatialFunction, String>()

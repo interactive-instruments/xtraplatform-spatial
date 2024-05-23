@@ -15,7 +15,7 @@ import de.ii.xtraplatform.cql.domain.Not
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory
 import de.ii.xtraplatform.crs.domain.OgcCrs
 import de.ii.xtraplatform.crs.infra.CrsTransformerFactoryProj
-import de.ii.xtraplatform.features.sql.domain.SqlDialectPostGis
+import de.ii.xtraplatform.features.sql.domain.SqlDialectPgis
 import de.ii.xtraplatform.proj.domain.ProjLoaderImpl
 import spock.lang.Shared
 import spock.lang.Specification
@@ -33,13 +33,13 @@ class FilterEncoderSqlSpec extends Specification {
 
     def setupSpec() {
 
-        filterEncoder = new FilterEncoderSql(OgcCrs.CRS84, new SqlDialectPostGis(), null, null, new CqlImpl(), null)
+        filterEncoder = new FilterEncoderSql(OgcCrs.CRS84, new SqlDialectPgis(), null, null, new CqlImpl(), null)
         ResourceStore resourceStore = Stub()
         VolatileRegistry volatileRegistry = Stub()
         volatileRegistry.onAvailable(*_) >> CompletableFuture.completedFuture(null)
         CrsTransformerFactoryProj transformerFactory = new CrsTransformerFactoryProj(new ProjLoaderImpl(Path.of(System.getProperty("java.io.tmpdir"), "proj", "data")), resourceStore, volatileRegistry)
         transformerFactory.onStart(false).toCompletableFuture().join()
-        filterEncoder2 = new FilterEncoderSql(OgcCrs.CRS84, new SqlDialectPostGis(), (CrsTransformerFactory) transformerFactory, null, new CqlImpl(), null)
+        filterEncoder2 = new FilterEncoderSql(OgcCrs.CRS84, new SqlDialectPgis(), (CrsTransformerFactory) transformerFactory, null, new CqlImpl(), null)
 
     }
 

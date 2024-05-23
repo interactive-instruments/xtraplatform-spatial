@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.features.sql.app;
+package de.ii.xtraplatform.features.sql.domain;
 
 import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
 
@@ -72,25 +72,22 @@ import de.ii.xtraplatform.features.domain.transform.PropertyTransformationsColle
 import de.ii.xtraplatform.features.domain.transform.SchemaTransformerChain;
 import de.ii.xtraplatform.features.sql.ImmutableSqlPathSyntax;
 import de.ii.xtraplatform.features.sql.SqlPathSyntax;
-import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
-import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
-import de.ii.xtraplatform.features.sql.domain.FeatureProviderSqlData;
-import de.ii.xtraplatform.features.sql.domain.FeatureTokenStatsCollector;
-import de.ii.xtraplatform.features.sql.domain.ImmutableConnectionInfoSql;
-import de.ii.xtraplatform.features.sql.domain.ImmutablePoolSettings;
-import de.ii.xtraplatform.features.sql.domain.ImmutableSchemaMappingSql;
-import de.ii.xtraplatform.features.sql.domain.SchemaMappingSql;
-import de.ii.xtraplatform.features.sql.domain.SchemaSql;
-import de.ii.xtraplatform.features.sql.domain.SqlClient;
-import de.ii.xtraplatform.features.sql.domain.SqlConnector;
-import de.ii.xtraplatform.features.sql.domain.SqlDialect;
-import de.ii.xtraplatform.features.sql.domain.SqlDialectGpkg;
-import de.ii.xtraplatform.features.sql.domain.SqlDialectPostGis;
-import de.ii.xtraplatform.features.sql.domain.SqlPathDefaults;
-import de.ii.xtraplatform.features.sql.domain.SqlPathParser;
-import de.ii.xtraplatform.features.sql.domain.SqlQueryBatch;
-import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
-import de.ii.xtraplatform.features.sql.domain.SqlRow;
+import de.ii.xtraplatform.features.sql.app.AggregateStatsQueryGenerator;
+import de.ii.xtraplatform.features.sql.app.AggregateStatsReaderSql;
+import de.ii.xtraplatform.features.sql.app.FeatureDecoderSql;
+import de.ii.xtraplatform.features.sql.app.FeatureEncoderSql2;
+import de.ii.xtraplatform.features.sql.app.FeatureMutationsSql;
+import de.ii.xtraplatform.features.sql.app.FeatureQueryEncoderSql;
+import de.ii.xtraplatform.features.sql.app.FeatureSql;
+import de.ii.xtraplatform.features.sql.app.FilterEncoderSql;
+import de.ii.xtraplatform.features.sql.app.ModifiableFeatureSql;
+import de.ii.xtraplatform.features.sql.app.MutationSchemaBuilderSql;
+import de.ii.xtraplatform.features.sql.app.MutationSchemaDeriver;
+import de.ii.xtraplatform.features.sql.app.PathParserSql;
+import de.ii.xtraplatform.features.sql.app.QuerySchemaDeriver;
+import de.ii.xtraplatform.features.sql.app.SqlInsertGenerator2;
+import de.ii.xtraplatform.features.sql.app.SqlQueryTemplates;
+import de.ii.xtraplatform.features.sql.app.SqlQueryTemplatesDeriver;
 import de.ii.xtraplatform.features.sql.infra.db.SourceSchemaValidatorSql;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.RunnableStream;
@@ -145,6 +142,7 @@ public class FeatureProviderSql
   private final CrsTransformerFactory crsTransformerFactory;
   private final CrsInfo crsInfo;
   private final Cql cql;
+  private final SqlDbmsAdapters dbmsAdapters;
   private final Map<String, Supplier<Decoder>> subdecoders;
 
   private final de.ii.xtraplatform.cache.domain.Cache cache;
@@ -165,6 +163,7 @@ public class FeatureProviderSql
       CrsInfo crsInfo,
       Cql cql,
       ConnectorFactory connectorFactory,
+      SqlDbmsAdapters dbmsAdapters,
       Reactive reactive,
       ValueStore valueStore,
       ProviderExtensionRegistry extensionRegistry,
@@ -184,6 +183,7 @@ public class FeatureProviderSql
     this.crsTransformerFactory = crsTransformerFactory;
     this.crsInfo = crsInfo;
     this.cql = cql;
+    this.dbmsAdapters = dbmsAdapters;
     this.cache = cache.withPrefix(getEntityType(), getId());
 
     this.subdecoders =
@@ -204,10 +204,17 @@ public class FeatureProviderSql
 
   @Override
   protected boolean onStartup() throws InterruptedException {
+    if (!dbmsAdapters.isSupported(getData().getConnectionInfo().getDialect())) {
+      LOGGER.error(
+          "Feature provider with id '{}' could not be started: dialect '{}' is not supported",
+          getId(),
+          getData().getConnectionInfo().getDialect());
+      return false;
+    }
+
     List<String> validationSchemas =
-        getData().getConnectionInfo().getDialect() == Dialect.PGIS
-                && getData().getConnectionInfo().getSchemas().isEmpty()
-            ? ImmutableList.of("public")
+        getData().getConnectionInfo().getSchemas().isEmpty()
+            ? dbmsAdapters.get(getData().getConnectionInfo().getDialect()).getDefaultSchemas()
             : getData().getConnectionInfo().getSchemas();
     this.sourceSchemaValidator =
         new SourceSchemaValidatorSql(validationSchemas, this::getSqlClient);
@@ -248,10 +255,7 @@ public class FeatureProviderSql
       return false;
     }
 
-    SqlDialect sqlDialect =
-        getData().getConnectionInfo().getDialect() == Dialect.PGIS
-            ? new SqlDialectPostGis()
-            : new SqlDialectGpkg();
+    SqlDialect sqlDialect = dbmsAdapters.getDialect(getData().getConnectionInfo().getDialect());
     String accentiCollation =
         Objects.nonNull(getData().getQueryGeneration())
             ? getData().getQueryGeneration().getAccentiCollation().orElse(null)
@@ -567,7 +571,7 @@ public class FeatureProviderSql
 
   @Override
   public boolean supportsMutationsInternal() {
-    return getData().getConnectionInfo().getDialect() == Dialect.PGIS;
+    return Objects.equals(getData().getConnectionInfo().getDialect(), SqlDbmsPgis.ID);
   }
 
   @Override

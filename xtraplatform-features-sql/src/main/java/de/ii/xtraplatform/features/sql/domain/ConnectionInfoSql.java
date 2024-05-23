@@ -57,8 +57,8 @@ public interface ConnectionInfoSql extends ConnectionInfo {
    * @default PGIS
    */
   @Value.Default
-  default Dialect getDialect() {
-    return Dialect.PGIS;
+  default String getDialect() {
+    return SqlDbmsPgis.ID;
   }
 
   /**

@@ -18,9 +18,10 @@ import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.ConnectorFactory2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
-import de.ii.xtraplatform.features.sql.app.FeatureProviderSql;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
+import de.ii.xtraplatform.features.sql.domain.FeatureProviderSql;
 import de.ii.xtraplatform.features.sql.domain.SqlConnector;
+import de.ii.xtraplatform.features.sql.domain.SqlDbmsAdapters;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryBatch;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.SqlRow;
@@ -45,8 +46,8 @@ public class SqlConnectorRxFactory
 
   @Inject
   public SqlConnectorRxFactory(
-      SqlDataSourceFactory
-          sqlDataSourceFactory, // TODO: needed because dagger-auto does not parse SqlConnectorRx
+      SqlDbmsAdapters
+          sqlDbmsAdapter, // TODO: needed because dagger-auto does not parse SqlConnectorRx
       AppContext appContext, // TODO: needed because dagger-auto does not parse SqlConnectorRx
       VolatileRegistry
           volatileRegistry, // TODO: needed because dagger-auto does not parse SqlConnectorRx

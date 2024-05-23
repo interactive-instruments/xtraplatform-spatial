@@ -47,7 +47,7 @@ import org.apache.commons.lang3.function.TriFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQueryOptions> {
+public class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQueryOptions> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureQueryEncoderSql.class);
 
@@ -57,7 +57,7 @@ class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch, SqlQu
   private final boolean skipRedundantMetaQueries;
   private final SqlDialect sqlDialect;
 
-  FeatureQueryEncoderSql(
+  public FeatureQueryEncoderSql(
       Map<String, List<SqlQueryTemplates>> allQueryTemplates,
       Map<String, List<SqlQueryTemplates>> allQueryTemplatesMutations,
       QueryGeneratorSettings queryGeneratorSettings,

@@ -7,8 +7,8 @@
  */
 package de.ii.xtraplatform.features.sql.domain;
 
-import de.ii.xtraplatform.features.sql.domain.SqlDialect.DbInfo;
-import de.ii.xtraplatform.features.sql.domain.SqlDialect.GeoInfo;
+import de.ii.xtraplatform.features.sql.domain.SqlDbmsAdapter.DbInfo;
+import de.ii.xtraplatform.features.sql.domain.SqlDbmsAdapter.GeoInfo;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Map;
@@ -18,11 +18,13 @@ public interface SqlClientBasic {
 
   SqlDialect getSqlDialect();
 
+  SqlDbmsAdapter getDbmsAdapter();
+
   default DbInfo getDbInfo() throws SQLException {
-    return getSqlDialect().getDbInfo(getConnection());
+    return getDbmsAdapter().getDbInfo(getConnection());
   }
 
   default Map<String, GeoInfo> getGeoInfo() throws SQLException {
-    return getSqlDialect().getGeoInfo(getConnection(), getDbInfo());
+    return getDbmsAdapter().getGeoInfo(getConnection(), getDbInfo());
   }
 }

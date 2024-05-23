@@ -8,7 +8,6 @@
 package de.ii.xtraplatform.features.sql.app;
 
 import com.github.azahnen.dagger.annotations.AutoBind;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import dagger.Lazy;
 import dagger.assisted.AssistedFactory;
@@ -40,7 +39,8 @@ import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
 import de.ii.xtraplatform.features.domain.transform.FeatureRefResolver;
 import de.ii.xtraplatform.features.domain.transform.ImplicitMappingResolver;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
-import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
+import de.ii.xtraplatform.features.sql.domain.ConstantsResolver;
+import de.ii.xtraplatform.features.sql.domain.FeatureProviderSql;
 import de.ii.xtraplatform.features.sql.domain.FeatureProviderSqlData;
 import de.ii.xtraplatform.features.sql.domain.ImmutableConnectionInfoSql;
 import de.ii.xtraplatform.features.sql.domain.ImmutableFeatureProviderSqlData;
@@ -49,6 +49,7 @@ import de.ii.xtraplatform.features.sql.domain.ImmutablePoolSettings;
 import de.ii.xtraplatform.features.sql.domain.ImmutableQueryGeneratorSettings;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlPathDefaults;
 import de.ii.xtraplatform.features.sql.domain.SqlClientBasicFactory;
+import de.ii.xtraplatform.features.sql.domain.SqlDbmsAdapters;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.values.domain.ValueStore;
 import java.util.LinkedHashMap;
@@ -72,6 +73,7 @@ public class FeatureProviderSqlFactory
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderSqlFactory.class);
 
   private final Lazy<Set<SchemaFragmentResolver>> schemaResolvers;
+  private final SqlDbmsAdapters dbmsAdapters;
   private final FeatureProviderSqlAuto featureProviderSqlAuto;
   private final boolean skipHydration;
   private final Set<String> connectors;
@@ -84,6 +86,7 @@ public class FeatureProviderSqlFactory
       CrsInfo crsInfo,
       Cql cql,
       ConnectorFactory connectorFactory,
+      SqlDbmsAdapters dbmsAdapters,
       Reactive reactive,
       ValueStore valueStore,
       ProviderExtensionRegistry extensionRegistry,
@@ -93,17 +96,21 @@ public class FeatureProviderSqlFactory
       ProviderSqlFactoryAssisted providerSqlFactoryAssisted) {
     super(providerSqlFactoryAssisted);
     this.schemaResolvers = schemaResolvers;
+    this.dbmsAdapters = dbmsAdapters;
     this.featureProviderSqlAuto =
-        new FeatureProviderSqlAuto(new SqlClientBasicFactoryDefault(connectorFactory));
+        new FeatureProviderSqlAuto(
+            new SqlClientBasicFactoryDefault(connectorFactory, dbmsAdapters));
     this.skipHydration = false;
     // TODO
     this.connectors = Set.of("JSON");
   }
 
   // for ldproxy-cfg
-  public FeatureProviderSqlFactory(SqlClientBasicFactory sqlClientBasicFactory) {
+  public FeatureProviderSqlFactory(
+      SqlDbmsAdapters dbmsAdapters, SqlClientBasicFactory sqlClientBasicFactory) {
     super(null);
     this.schemaResolvers = null;
+    this.dbmsAdapters = dbmsAdapters;
     this.featureProviderSqlAuto = new FeatureProviderSqlAuto(sqlClientBasicFactory);
     this.skipHydration = true;
     this.connectors = Set.of();
@@ -184,16 +191,10 @@ public class FeatureProviderSqlFactory
 
         ConnectionInfoSql connectionInfo = data.getConnectionInfo();
 
-        List<String> schemas =
-            connectionInfo.getSchemas().isEmpty()
-                ? connectionInfo.getDialect() == Dialect.GPKG
-                    ? ImmutableList.of()
-                    : ImmutableList.of("public")
-                : connectionInfo.getSchemas();
-
+        List<String> schemas = dbmsAdapters.get(connectionInfo.getDialect()).getDefaultSchemas();
         Map<String, List<String>> tables = featureProviderSqlAuto.analyze(data);
 
-        if (connectionInfo.getDialect() != Dialect.GPKG) {
+        if (!schemas.isEmpty()) {
           Map<String, List<String>> schemaTables = new LinkedHashMap<>();
 
           for (String schema : schemas) {
