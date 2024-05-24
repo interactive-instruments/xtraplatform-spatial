@@ -83,7 +83,7 @@ public class SqlDialectOras implements SqlDialect {
 
   @Override
   public String applyToDate(String column) {
-    return String.format("to_char(%s, 'YYYY-MM-DD\"Z\"')", column);
+    return String.format("to_char(%s)", column);
   }
 
   @Override
