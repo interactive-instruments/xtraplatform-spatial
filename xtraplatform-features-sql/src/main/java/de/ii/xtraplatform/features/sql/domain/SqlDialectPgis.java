@@ -21,12 +21,10 @@ import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql.PropertyTypeInfo;
-import java.text.Collator;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -279,14 +277,5 @@ public class SqlDialectPgis implements SqlDialect {
   @Override
   public String escapeString(String value) {
     return value.replaceAll("'", "''");
-  }
-
-  /* NOTE: If the db uses e.g. the DE collation and some sort key actually contains e.g. umlauts
-           this might lead to wrong results.
-           To cover such cases, the locale would need to be configurable.
-  */
-  @Override
-  public Collator getRowSortingCollator() {
-    return Collator.getInstance(Locale.US);
   }
 }

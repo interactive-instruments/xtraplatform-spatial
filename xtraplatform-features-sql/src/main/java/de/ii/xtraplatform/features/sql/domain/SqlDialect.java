@@ -15,7 +15,6 @@ import de.ii.xtraplatform.cql.domain.TemporalFunction;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql.PropertyTypeInfo;
-import java.text.Collator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -51,6 +50,18 @@ public interface SqlDialect {
         "Arrays as queryables are not supported for this feature provider.");
   }
 
+  default String applyToLimit(long limit) {
+    return String.format(" LIMIT %d", limit);
+  }
+
+  default String applyToOffset(long offset) {
+    return String.format(" OFFSET %d", offset);
+  }
+
+  default String applyToNoTable(String select) {
+    return select;
+  }
+
   String castToBigInt(int value);
 
   Optional<BoundingBox> parseExtent(String extent, EpsgCrs crs);
@@ -73,8 +84,6 @@ public interface SqlDialect {
   default Set<TemporalFunction> getTemporalOperators() {
     return ImmutableSet.of();
   }
-
-  Collator getRowSortingCollator();
 
   Map<SpatialFunction, String> SPATIAL_OPERATORS =
       new ImmutableMap.Builder<SpatialFunction, String>()

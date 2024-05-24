@@ -10,6 +10,7 @@ package de.ii.xtraplatform.features.sql.domain;
 import com.github.azahnen.dagger.annotations.AutoMultiBind;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.text.Collator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -40,6 +41,8 @@ public interface SqlDbmsAdapter {
   Map<String, GeoInfo> getGeoInfo(Connection connection, DbInfo dbInfo) throws SQLException;
 
   DbInfo getDbInfo(Connection connection) throws SQLException;
+
+  Collator getRowSortingCollator();
 
   interface DbInfo {}
 

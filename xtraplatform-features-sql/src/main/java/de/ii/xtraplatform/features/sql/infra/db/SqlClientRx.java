@@ -56,7 +56,7 @@ public class SqlClientRx implements SqlClient {
     this.session = session;
     this.dbmsAdapter = dbmsAdapter;
     this.dialect = dialect;
-    this.collator = dialect.getRowSortingCollator();
+    this.collator = dbmsAdapter.getRowSortingCollator();
   }
 
   @Override

@@ -12,7 +12,6 @@ import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql.PropertyTypeInfo;
-import java.text.Collator;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -181,10 +180,5 @@ public class SqlDialectGpkg implements SqlDialect {
   @Override
   public String escapeString(String value) {
     return value.replaceAll("'", "''");
-  }
-
-  @Override
-  public Collator getRowSortingCollator() {
-    return null;
   }
 }

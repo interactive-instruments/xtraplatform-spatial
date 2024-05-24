@@ -26,6 +26,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.Collator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -215,6 +216,11 @@ public class SqlDbmsAdapterGpkg implements SqlDbmsAdapter {
 
     return ImmutableDbInfoGpkg.of(
         rs.getString(1), rs.getString(2), SpatialMetadata.valueOf(rs.getString(3)));
+  }
+
+  @Override
+  public Collator getRowSortingCollator() {
+    return null;
   }
 
   private EpsgCrs.Force forceAxisOrder(DbInfoGpkg dbInfo) {

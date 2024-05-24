@@ -22,8 +22,10 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.text.Collator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -201,6 +203,15 @@ public class SqlDbmsAdapterPgis implements SqlDbmsAdapter {
     rs.next();
 
     return ImmutableDbInfoPgis.of(rs.getString(1), rs.getString(2));
+  }
+
+  /* NOTE: If the db uses e.g. the DE collation and some sort key actually contains e.g. umlauts
+           this might lead to wrong results.
+           To cover such cases, the locale would need to be configurable.
+  */
+  @Override
+  public Collator getRowSortingCollator() {
+    return Collator.getInstance(Locale.US);
   }
 
   @Value.Immutable
