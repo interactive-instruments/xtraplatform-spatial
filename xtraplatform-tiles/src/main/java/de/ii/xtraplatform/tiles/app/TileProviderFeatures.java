@@ -568,9 +568,11 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   }
 
   private static String getRasterTilesetId(String vectorTilesetId, String style) {
-    return String.format(
-        "%s_%s",
-        vectorTilesetId, Files.getNameWithoutExtension(Path.of(style).getFileName().toString()));
+    return String.format("%s_%s", vectorTilesetId, getStyleId(style));
+  }
+
+  private static String getStyleId(String style) {
+    return Files.getNameWithoutExtension(Path.of(style).getFileName().toString());
   }
 
   private static Optional<String> getStyleId(String vectorTilesetId, String key) {
@@ -648,6 +650,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
         .levels(levels)
         .center(tileset.getCenter().or(() -> getData().getTilesetDefaults().getCenter()))
         .bounds(bounds)
+        .styleId(getStyleId(style))
         .build();
   }
 }

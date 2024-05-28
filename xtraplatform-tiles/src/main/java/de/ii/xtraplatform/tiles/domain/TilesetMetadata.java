@@ -33,6 +33,8 @@ public interface TilesetMetadata extends WithTmsLevels {
 
   List<FeatureSchema> getVectorSchemas();
 
+  Optional<String> getStyleId();
+
   @JsonIgnore
   @Value.Derived
   default Set<String> getTileMatrixSets() {
