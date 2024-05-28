@@ -33,6 +33,7 @@ import de.ii.xtraplatform.tiles.domain.Cache;
 import de.ii.xtraplatform.tiles.domain.Cache.Storage;
 import de.ii.xtraplatform.tiles.domain.Cache.Type;
 import de.ii.xtraplatform.tiles.domain.ChainedTileProvider;
+import de.ii.xtraplatform.tiles.domain.ImmutableMinMax;
 import de.ii.xtraplatform.tiles.domain.ImmutableSeedingOptions;
 import de.ii.xtraplatform.tiles.domain.ImmutableTilesetMetadata;
 import de.ii.xtraplatform.tiles.domain.MinMax;
@@ -619,9 +620,28 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
 
     Map<String, Map<String, Range<Integer>>> cacheRanges = getCacheRanges(cache.get(), 1);
 
+    Map<String, Integer> defaults =
+        getMetadata(vectorTilesetId)
+            .map(TilesetMetadata::getLevels)
+            .map(
+                levels ->
+                    levels.entrySet().stream()
+                        .filter(entry -> entry.getValue().getDefault().isPresent())
+                        .collect(
+                            Collectors.toMap(
+                                Entry::getKey, entry -> entry.getValue().getDefault().get())))
+            .orElse(ImmutableMap.of());
     Map<String, MinMax> levels =
         cacheRanges.get(getRasterTilesetId(vectorTilesetId, style)).entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, entry -> MinMax.of(entry.getValue())));
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    entry ->
+                        new ImmutableMinMax.Builder()
+                            .min(entry.getValue().lowerEndpoint())
+                            .max(entry.getValue().upperEndpoint())
+                            .getDefault(Optional.ofNullable(defaults.get(entry.getKey())))
+                            .build()));
 
     return ImmutableTilesetMetadata.builder()
         .addEncodings(TilesFormat.PNG)
