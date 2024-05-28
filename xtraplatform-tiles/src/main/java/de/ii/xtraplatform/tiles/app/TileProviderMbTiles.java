@@ -152,8 +152,8 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
   }
 
   @Override
-  public Optional<TilesetMetadata> getMetadata(String tileset) {
-    return Optional.ofNullable(metadata.get(tileset));
+  public Optional<TilesetMetadata> getMetadata(String tilesetId) {
+    return Optional.ofNullable(metadata.get(tilesetId));
   }
 
   @Override

@@ -400,8 +400,27 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   }
 
   @Override
-  public Optional<TilesetMetadata> getMetadata(String tileset) {
-    return Optional.ofNullable(metadata.get(tileset));
+  public Optional<TilesetMetadata> getMetadata(String tilesetId) {
+    return Optional.ofNullable(metadata.get(tilesetId));
+  }
+
+  @Override
+  public Optional<TilesetMetadata> getMetadata(String vectorTilesetId, String mapStyleId) {
+    return Optional.ofNullable(metadata.get(getMapStyleTileset(vectorTilesetId, mapStyleId)));
+  }
+
+  @Override
+  public List<String> getMapStyles(String vectorTilesetId) {
+    return metadata.keySet().stream()
+        .map(key -> getStyleId(vectorTilesetId, key))
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .collect(Collectors.toUnmodifiableList());
+  }
+
+  @Override
+  public String getMapStyleTileset(String vectorTilesetId, String mapStyleId) {
+    return String.format("%s_%s", vectorTilesetId, mapStyleId);
   }
 
   @Override
@@ -544,14 +563,20 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
                         style ->
                             metadata.put(
                                 getRasterTilesetId(tileset.getPrefix().orElse(key), style),
-                                loadMetadata(
-                                    getRasterTilesetId(tileset.getPrefix().orElse(key), style),
-                                    tileset))));
+                                loadMetadata(tileset.getPrefix().orElse(key), style, tileset))));
   }
 
-  private static String getRasterTilesetId(String tilesetId, String style) {
+  private static String getRasterTilesetId(String vectorTilesetId, String style) {
     return String.format(
-        "%s_%s", tilesetId, Files.getNameWithoutExtension(Path.of(style).getFileName().toString()));
+        "%s_%s",
+        vectorTilesetId, Files.getNameWithoutExtension(Path.of(style).getFileName().toString()));
+  }
+
+  private static Optional<String> getStyleId(String vectorTilesetId, String key) {
+    if (key.startsWith(String.format("%s_", vectorTilesetId))) {
+      return Optional.of(key.substring(vectorTilesetId.length() + 1));
+    }
+    return Optional.empty();
   }
 
   private TilesetMetadata loadMetadata(TilesetFeatures tileset) {
@@ -586,15 +611,16 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
         .build();
   }
 
-  private TilesetMetadata loadMetadata(String tilesetId, TilesetRaster tileset) {
-    Optional<BoundingBox> bounds = tileGenerator.getBounds(tileset.getPrefix().get());
+  private TilesetMetadata loadMetadata(
+      String vectorTilesetId, String style, TilesetRaster tileset) {
+    Optional<BoundingBox> bounds = tileGenerator.getBounds(vectorTilesetId);
 
     Optional<Cache> cache = getData().getCaches().stream().filter(Cache::getSeeded).findFirst();
 
     Map<String, Map<String, Range<Integer>>> cacheRanges = getCacheRanges(cache.get(), 1);
 
     Map<String, MinMax> levels =
-        cacheRanges.get(tilesetId).entrySet().stream()
+        cacheRanges.get(getRasterTilesetId(vectorTilesetId, style)).entrySet().stream()
             .collect(Collectors.toMap(Map.Entry::getKey, entry -> MinMax.of(entry.getValue())));
 
     return ImmutableTilesetMetadata.builder()

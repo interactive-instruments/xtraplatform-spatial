@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.tiles.domain;
 
 import de.ii.xtraplatform.crs.domain.BoundingBox;
+import java.util.List;
 import java.util.Optional;
 
 public interface TileAccess {
@@ -15,18 +16,33 @@ public interface TileAccess {
 
   TileResult getTile(TileQuery tileQuery);
 
-  Optional<TilesetMetadata> getMetadata(String tileset);
+  Optional<TilesetMetadata> getMetadata(String tilesetId);
+
+  Optional<TilesetMetadata> getMetadata(String vectorTilesetId, String mapStyleId);
+
+  List<String> getMapStyles(String vectorTilesetId);
+
+  String getMapStyleTileset(String vectorTilesetId, String mapStyleId);
 
   default boolean tilesMayBeUnavailable() {
     return false;
   }
 
-  default boolean tilesetHasVectorTiles(String tileset) {
-    return getMetadata(tileset).map(TilesetMetadata::isVector).orElse(false);
+  default boolean tilesetHasVectorTiles(String tilesetId) {
+    return getMetadata(tilesetId).map(TilesetMetadata::isVector).orElse(false);
   }
 
-  default boolean tilesetHasMapTiles(String tileset) {
-    return getMetadata(tileset).map(TilesetMetadata::isRaster).orElse(false);
+  default boolean tilesetHasMapTiles(String tilesetId) {
+    return getMetadata(tilesetId).map(TilesetMetadata::isRaster).orElse(false);
+  }
+
+  default boolean tilesetHasStyledMapTiles(String vectorTilesetId) {
+    return getMapStyles(vectorTilesetId).stream()
+        .anyMatch(
+            mapStyleId ->
+                getMetadata(vectorTilesetId, mapStyleId)
+                    .map(TilesetMetadata::isRaster)
+                    .orElse(false));
   }
 
   default Optional<TileResult> validate(TileQuery tile) {
