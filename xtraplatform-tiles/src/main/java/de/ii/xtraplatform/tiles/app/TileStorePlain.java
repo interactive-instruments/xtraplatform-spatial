@@ -33,7 +33,7 @@ class TileStorePlain implements TileStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(TileStorePlain.class);
 
   private static Map<MediaType, String> EXTENSIONS =
-      ImmutableMap.of(FeatureEncoderMVT.FORMAT, "mvt");
+      ImmutableMap.of(FeatureEncoderMVT.FORMAT, "mvt", MediaType.valueOf("image/png"), "png");
 
   private final ResourceStore blobStore;
 
