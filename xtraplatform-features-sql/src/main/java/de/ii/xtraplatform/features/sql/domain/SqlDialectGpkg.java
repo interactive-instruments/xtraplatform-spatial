@@ -34,6 +34,11 @@ public class SqlDialectGpkg implements SqlDialect {
   }
 
   @Override
+  public String applyToWkt(String wkt, int srid) {
+    return String.format("ST_GeomFromText('%s',%s)", wkt, srid);
+  }
+
+  @Override
   public String applyToExtent(String column, boolean is3d) {
     // Extent() results in a 2D Polygon in Spatialite
     return String.format("ST_AsText(Extent(%s))", column);
@@ -82,12 +87,12 @@ public class SqlDialectGpkg implements SqlDialect {
   }
 
   @Override
-  public String applyToDate(String column) {
+  public String applyToDate(String column, Optional<String> format) {
     return String.format("date(%s)", column);
   }
 
   @Override
-  public String applyToDatetime(String column) {
+  public String applyToDatetime(String column, Optional<String> format) {
     return String.format("datetime(%s)", column);
   }
 

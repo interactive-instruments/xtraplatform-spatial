@@ -8,17 +8,30 @@
 package de.ii.xtraplatform.features.oracle.app;
 
 import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.cql.domain.SpatialFunction;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql.PropertyTypeInfo;
 import de.ii.xtraplatform.features.sql.domain.SqlDialect;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.threeten.extra.Interval;
+
+// TODO. Notes:
+// - only simple feature geometries are supported
+// - only 2D geometries are supported / have been tested
+// - S_CROSSES not supported
+// - identifiers must be unquoted, that is, in uppercase in Oracle
+// - the test data uses quoted identifiers (expect for the sort key and the geometry),
+//   temporary changes have been made to support testing for now until the data is
+//   corrected
 
 public class SqlDialectOras implements SqlDialect {
 
@@ -30,7 +43,12 @@ public class SqlDialectOras implements SqlDialect {
     if (!forcePolygonCCW) {
       return String.format("SDO_UTIL.TO_WKTGEOMETRY(%s)", column);
     }
-    return String.format("SDO_UTIL.TO_WKTGEOMETRY(SDO_UTIL.RECTIFY_GEOMETRY(%s, 0.005))", column);
+    return String.format("SDO_UTIL.TO_WKTGEOMETRY(SDO_UTIL.RECTIFY_GEOMETRY(%s, 0.001))", column);
+  }
+
+  @Override
+  public String applyToWkt(String wkt, int srid) {
+    return String.format("SDO_GEOMETRY('%s',%s)", wkt, srid);
   }
 
   @Override
@@ -82,24 +100,27 @@ public class SqlDialectOras implements SqlDialect {
   }
 
   @Override
-  public String applyToDate(String column) {
-    return String.format("to_char(%s)", column);
+  public String applyToDate(String column, Optional<String> format) {
+    String date = format.map(f -> String.format("to_date(%s,'%s')", column, f)).orElse(column);
+    return String.format("to_char(%s,'YYYY-MM-DD')", date);
   }
 
   @Override
-  public String applyToDatetime(String column) {
-    return String.format(
-        "to_char(to_timestamp(%s, 'YYYY-MM-DD\"Z\"'),'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')", column);
+  public String applyToDatetime(String column, Optional<String> format) {
+    String datetime =
+        format.map(f -> String.format("to_timestamp_tz(%s,'%s')", column, f)).orElse(column);
+    return String.format("to_char(%s,'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')", datetime);
   }
 
   @Override
   public String applyToDateLiteral(String date) {
-    return String.format("to_timestamp('%s', 'YYYY-MM-DD\"Z\"')", date);
+    return String.format("to_char(DATE '%s','YYYY-MM-DD')", date);
   }
 
   @Override
   public String applyToDatetimeLiteral(String datetime) {
-    return String.format("to_timestamp('%s', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')", datetime);
+    return String.format(
+        "to_char(to_utc_timestamp_tz('%s'),'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')", datetime);
   }
 
   @Override
@@ -148,5 +169,40 @@ public class SqlDialectOras implements SqlDialect {
   @Override
   public String escapeString(String value) {
     return value.replaceAll("'", "''");
+  }
+
+  @Override
+  public Tuple<String, Optional<String>> getSpatialOperator(
+      SpatialFunction spatialFunction, boolean is3d) {
+    if (is3d) {
+      throw new IllegalArgumentException(
+          "3D spatial operators are not supported for Oracle feature providers.");
+    }
+    Tuple<String, Optional<String>> op = SPATIAL_OPERATORS.get(spatialFunction);
+    if (Objects.isNull(op)) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Spatial operator '%s' is not supported for Oracle feature providers.",
+              spatialFunction.toString()));
+    }
+    return op;
+  }
+
+  private final Map<SpatialFunction, Tuple<String, Optional<String>>> SPATIAL_OPERATORS =
+      new ImmutableMap.Builder<SpatialFunction, Tuple<String, Optional<String>>>()
+          .put(SpatialFunction.S_EQUALS, Tuple.of("SDO_EQUAL", Optional.empty()))
+          .put(SpatialFunction.S_DISJOINT, Tuple.of("SDO_GEOM.RELATE", Optional.of("DISJOINT")))
+          .put(SpatialFunction.S_TOUCHES, Tuple.of("SDO_TOUCH", Optional.empty()))
+          .put(
+              SpatialFunction.S_WITHIN, Tuple.of("SDO_GEOM.RELATE", Optional.of("COVERS+CONTAINS")))
+          .put(SpatialFunction.S_OVERLAPS, Tuple.of("SDO_OVERLAPS", Optional.empty()))
+          // S_CROSSES is not supported
+          .put(SpatialFunction.S_INTERSECTS, Tuple.of("SDO_ANYINTERACT", Optional.empty()))
+          .put(SpatialFunction.S_CONTAINS, Tuple.of("SDO_CONTAINS", Optional.empty()))
+          .build();
+
+  @Override
+  public String getSpatialOperatorMatch(SpatialFunction spatialFunction) {
+    return " = 'TRUE'";
   }
 }

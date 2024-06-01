@@ -77,7 +77,8 @@ public class AggregateStatsQueryGenerator {
             .map(
                 attribute ->
                     sqlDialect.applyToDatetime(
-                        getQualifiedColumn(temporalAlias, attribute.getName())))
+                        getQualifiedColumn(temporalAlias, attribute.getName()),
+                        attribute.getFormat()))
             .get();
 
     String join =
@@ -105,14 +106,16 @@ public class AggregateStatsQueryGenerator {
               .map(
                   attributes ->
                       sqlDialect.applyToDatetime(
-                          getQualifiedColumn(temporalAlias, attributes.first().getName())))
+                          getQualifiedColumn(temporalAlias, attributes.first().getName()),
+                          attributes.first().getFormat()))
               .get();
       String endColumn =
           primaryInterval
               .map(
                   attributes ->
                       sqlDialect.applyToDatetime(
-                          getQualifiedColumn(temporalAlias, attributes.second().getName())))
+                          getQualifiedColumn(temporalAlias, attributes.second().getName()),
+                          attributes.second().getFormat()))
               .get();
       String join =
           JoinGenerator.getJoins(startSchema, ImmutableList.of(mainSchema), aliases, filterEncoder);
@@ -138,14 +141,16 @@ public class AggregateStatsQueryGenerator {
               .map(
                   attributes ->
                       sqlDialect.applyToDatetime(
-                          getQualifiedColumn(startAlias, attributes.first().getName())))
+                          getQualifiedColumn(startAlias, attributes.first().getName()),
+                          attributes.first().getFormat()))
               .get();
       String endColumn =
           primaryInterval
               .map(
                   attributes ->
                       sqlDialect.applyToDatetime(
-                          getQualifiedColumn(endAlias, attributes.second().getName())))
+                          getQualifiedColumn(endAlias, attributes.second().getName()),
+                          attributes.second().getFormat()))
               .get();
 
       String startJoin =

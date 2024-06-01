@@ -56,6 +56,7 @@ import org.slf4j.LoggerFactory;
   "label",
   "description",
   "unit",
+  "format",
   "scope",
   "excludedScopes",
   "transformations",
@@ -214,6 +215,17 @@ public interface FeatureSchema
    * @langDe Die Maßeinheit des Wertes, nur relevant bei numerischen Eigenschaften.
    */
   Optional<String> getUnit();
+
+  /**
+   * @langEn The SQL date/time format string of the values in the database column. This parameter
+   *     only applies to `DATE` and `DATETIME` values where the value is stored in a string column
+   *     in a `PGIS` or `ORACLE` database.
+   * @langDe Die Zeichenfolge des SQL-Datums-/Zeitformats der Werte in der Datenbankspalte. Dieser
+   *     Parameter gilt nur für `DATE`- und `DATETIME`-Werte, wenn der Wert in einer String-Spalte
+   *     in einer `PGIS`- oder `ORACLE`-Datenbank gespeichert ist.
+   */
+  @Override
+  Optional<String> getFormat();
 
   /**
    * @langEn Might be used instead of `sourcePath` to define a property with a constant value.

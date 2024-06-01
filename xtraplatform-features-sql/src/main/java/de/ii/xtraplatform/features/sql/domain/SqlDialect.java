@@ -14,6 +14,7 @@ import de.ii.xtraplatform.cql.domain.SpatialFunction;
 import de.ii.xtraplatform.cql.domain.TemporalFunction;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql.PropertyTypeInfo;
 import java.util.Map;
 import java.util.Optional;
@@ -24,13 +25,15 @@ public interface SqlDialect {
 
   String applyToWkt(String column, boolean forcePolygonCCW, boolean linearizeCurves);
 
+  String applyToWkt(String wkt, int srid);
+
   String applyToExtent(String column, boolean is3d);
 
   String applyToString(String string);
 
-  String applyToDate(String column);
+  String applyToDate(String column, Optional<String> format);
 
-  String applyToDatetime(String column);
+  String applyToDatetime(String column, Optional<String> format);
 
   String applyToDateLiteral(String date);
 
@@ -70,10 +73,15 @@ public interface SqlDialect {
 
   String escapeString(String value);
 
-  default String getSpatialOperator(SpatialFunction spatialFunction, boolean is3d) {
+  default Tuple<String, Optional<String>> getSpatialOperator(
+      SpatialFunction spatialFunction, boolean is3d) {
     return is3d && SPATIAL_OPERATORS_3D.containsKey(spatialFunction)
-        ? SPATIAL_OPERATORS_3D.get(spatialFunction)
-        : SPATIAL_OPERATORS.get(spatialFunction);
+        ? Tuple.of(SPATIAL_OPERATORS_3D.get(spatialFunction), Optional.empty())
+        : Tuple.of(SPATIAL_OPERATORS.get(spatialFunction), Optional.empty());
+  }
+
+  default String getSpatialOperatorMatch(SpatialFunction spatialFunction) {
+    return "";
   }
 
   default String getTemporalOperator(TemporalFunction temporalFunction) {

@@ -20,6 +20,7 @@ import de.ii.xtraplatform.cql.domain.TemporalFunction;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
+import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql.PropertyTypeInfo;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -63,6 +64,11 @@ public class SqlDialectPgis implements SqlDialect {
       queryBuilder.append(",32,0,1)");
     }
     return queryBuilder.append(")").toString();
+  }
+
+  @Override
+  public String applyToWkt(String wkt, int srid) {
+    return String.format("ST_GeomFromText('%s',%s)", wkt, srid);
   }
 
   @Override
@@ -123,9 +129,10 @@ public class SqlDialectPgis implements SqlDialect {
   }
 
   @Override
-  public String getSpatialOperator(SpatialFunction spatialFunction, boolean is3d) {
+  public Tuple<String, Optional<String>> getSpatialOperator(
+      SpatialFunction spatialFunction, boolean is3d) {
     return is3d && SPATIAL_OPERATORS_3D.containsKey(spatialFunction)
-        ? SPATIAL_OPERATORS_3D.get(spatialFunction)
+        ? Tuple.of(SPATIAL_OPERATORS_3D.get(spatialFunction), Optional.empty())
         : SqlDialect.super.getSpatialOperator(spatialFunction, is3d);
   }
 
@@ -145,14 +152,30 @@ public class SqlDialectPgis implements SqlDialect {
   }
 
   @Override
-  public String applyToDate(String column) {
+  public String applyToDate(String column, Optional<String> format) {
+    return format
+        .map(f -> String.format("to_date(%s, '%s')", column, f))
+        .orElse(String.format("%s::date", column));
+  }
+
+  @Override
+  public String applyToDatetime(String column, Optional<String> format) {
+    return format
+        .map(f -> String.format("to_timestamp_tz(%s, '%s')", column, f))
+        .orElse(String.format("%s::timestamp(0)", column));
+  }
+
+  /* FIXME
+  @Override
+  public String applyToDate(String column, Optional<String> format) {
     return String.format("%s::date", column);
   }
 
   @Override
-  public String applyToDatetime(String column) {
+  public String applyToDatetime(String column, Optional<String> format) {
     return String.format("%s::timestamp(0)", column);
   }
+   */
 
   @Override
   public String applyToDateLiteral(String date) {

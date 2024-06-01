@@ -251,9 +251,11 @@ public class FilterEncoderSql {
                 if (column.isTemporal()) {
                   if (column.getType() == DATE)
                     return Tuple.of(
-                        sqlDialect.applyToDate(qualifiedColumn), Optional.<String>empty());
+                        sqlDialect.applyToDate(qualifiedColumn, column.getFormat()),
+                        Optional.<String>empty());
                   return Tuple.of(
-                      sqlDialect.applyToDatetime(qualifiedColumn), Optional.<String>empty());
+                      sqlDialect.applyToDatetime(qualifiedColumn, column.getFormat()),
+                      Optional.<String>empty());
                 }
                 return Tuple.of(qualifiedColumn, Optional.<String>empty());
               })
@@ -806,14 +808,20 @@ public class FilterEncoderSql {
     public String visit(BinarySpatialOperation spatialOperation, List<String> children) {
       boolean is3d = has3dOperand(spatialOperation.getArgs());
 
-      String operator = sqlDialect.getSpatialOperator(spatialOperation.getSpatialOperator(), is3d);
+      Tuple<String, Optional<String>> operator =
+          sqlDialect.getSpatialOperator(spatialOperation.getSpatialOperator(), is3d);
+
+      String match = sqlDialect.getSpatialOperatorMatch(spatialOperation.getSpatialOperator());
 
       List<String> expressions = processBinary(spatialOperation.getArgs(), children);
 
       return String.format(
           expressions.get(0),
-          String.format("%s(", operator),
-          String.format(", %s)", expressions.get(1)));
+          String.format("%s(", operator.first()),
+          operator
+              .second()
+              .map(mask -> String.format(", '%s', %s)%s", mask, expressions.get(1), match))
+              .orElse(String.format(", %s)%s", expressions.get(1), match)));
     }
 
     @Override
@@ -855,64 +863,59 @@ public class FilterEncoderSql {
 
     @Override
     public String visit(Geometry.Point point, List<String> children) {
-      return String.format(
-          "ST_GeomFromText('%s',%s)", super.visit(point, children), nativeCrs.getCode());
+      return sqlDialect.applyToWkt(super.visit(point, children), nativeCrs.getCode());
     }
 
     @Override
     public String visit(Geometry.LineString lineString, List<String> children) {
-      return String.format(
-          "ST_GeomFromText('%s',%s)", super.visit(lineString, children), nativeCrs.getCode());
+      return sqlDialect.applyToWkt(super.visit(lineString, children), nativeCrs.getCode());
     }
 
     @Override
     public String visit(Geometry.Polygon polygon, List<String> children) {
-      return String.format(
-          "ST_GeomFromText('%s',%s)", super.visit(polygon, children), nativeCrs.getCode());
+      return sqlDialect.applyToWkt(super.visit(polygon, children), nativeCrs.getCode());
     }
 
     @Override
     public String visit(Geometry.MultiPoint multiPoint, List<String> children) {
-      return String.format(
-          "ST_GeomFromText('%s',%s)", super.visit(multiPoint, children), nativeCrs.getCode());
+      return sqlDialect.applyToWkt(super.visit(multiPoint, children), nativeCrs.getCode());
     }
 
     @Override
     public String visit(Geometry.MultiLineString multiLineString, List<String> children) {
-      return String.format(
-          "ST_GeomFromText('%s',%s)", super.visit(multiLineString, children), nativeCrs.getCode());
+      return sqlDialect.applyToWkt(super.visit(multiLineString, children), nativeCrs.getCode());
     }
 
     @Override
     public String visit(Geometry.MultiPolygon multiPolygon, List<String> children) {
-      return String.format(
-          "ST_GeomFromText('%s',%s)", super.visit(multiPolygon, children), nativeCrs.getCode());
+      return sqlDialect.applyToWkt(super.visit(multiPolygon, children), nativeCrs.getCode());
     }
 
     @Override
     public String visit(Geometry.GeometryCollection geometryCollection, List<String> children) {
-      return String.format(
-          "ST_GeomFromText('GEOMETRYCOLLECTION%s',%s)",
-          geometryCollection.getCoordinates().stream()
-              .map(
-                  geom -> {
-                    if (geom instanceof Geometry.Point) {
-                      return super.visit((Geometry.Point) geom, children);
-                    } else if (geom instanceof Geometry.MultiPoint) {
-                      return super.visit((Geometry.MultiPoint) geom, children);
-                    } else if (geom instanceof Geometry.LineString) {
-                      return super.visit((Geometry.LineString) geom, children);
-                    } else if (geom instanceof Geometry.MultiLineString) {
-                      return super.visit((Geometry.MultiLineString) geom, children);
-                    } else if (geom instanceof Geometry.Polygon) {
-                      return super.visit((Geometry.Polygon) geom, children);
-                    } else if (geom instanceof Geometry.MultiPolygon) {
-                      return super.visit((Geometry.MultiPolygon) geom, children);
-                    }
-                    throw new IllegalStateException(
-                        "unsupported spatial type: " + geom.getClass().getSimpleName());
-                  })
-              .collect(Collectors.joining(",", "(", ")")),
+      return sqlDialect.applyToWkt(
+          String.format(
+              "GEOMETRYCOLLECTION%s",
+              geometryCollection.getCoordinates().stream()
+                  .map(
+                      geom -> {
+                        if (geom instanceof Geometry.Point) {
+                          return super.visit((Geometry.Point) geom, children);
+                        } else if (geom instanceof Geometry.MultiPoint) {
+                          return super.visit((Geometry.MultiPoint) geom, children);
+                        } else if (geom instanceof Geometry.LineString) {
+                          return super.visit((Geometry.LineString) geom, children);
+                        } else if (geom instanceof Geometry.MultiLineString) {
+                          return super.visit((Geometry.MultiLineString) geom, children);
+                        } else if (geom instanceof Geometry.Polygon) {
+                          return super.visit((Geometry.Polygon) geom, children);
+                        } else if (geom instanceof Geometry.MultiPolygon) {
+                          return super.visit((Geometry.MultiPolygon) geom, children);
+                        }
+                        throw new IllegalStateException(
+                            "unsupported spatial type: " + geom.getClass().getSimpleName());
+                      })
+                  .collect(Collectors.joining(",", "(", ")"))),
           nativeCrs.getCode());
     }
 

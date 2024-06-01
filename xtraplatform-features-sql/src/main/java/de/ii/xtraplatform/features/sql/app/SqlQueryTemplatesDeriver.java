@@ -216,8 +216,8 @@ public class SqlQueryTemplatesDeriver
                           }
                           if (column.isTemporal()) {
                             if (column.getType() == SchemaBase.Type.DATE)
-                              return sqlDialect.applyToDate(name);
-                            return sqlDialect.applyToDatetime(name);
+                              return sqlDialect.applyToDate(name, column.getFormat());
+                            return sqlDialect.applyToDatetime(name, column.getFormat());
                           }
 
                           return name;
