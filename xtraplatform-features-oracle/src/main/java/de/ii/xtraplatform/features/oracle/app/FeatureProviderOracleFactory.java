@@ -91,8 +91,7 @@ public class FeatureProviderOracleFactory
     super(providerOracleFactoryAssisted);
     this.schemaResolvers = schemaResolvers;
     this.skipHydration = false;
-    // TODO
-    this.connectors = Set.of("JSON");
+    this.connectors = Set.of();
   }
 
   // for ldproxy-cfg

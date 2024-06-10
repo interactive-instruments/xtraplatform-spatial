@@ -29,10 +29,6 @@ import org.threeten.extra.Interval;
 // - only 2D geometries are supported / have been tested
 // - S_CROSSES not supported
 // - identifiers must be unquoted, that is, in uppercase in Oracle
-// - the test data uses quoted identifiers (expect for the sort key and the geometry),
-//   temporary changes have been made to support testing for now until the data is
-//   corrected
-
 public class SqlDialectOras implements SqlDialect {
 
   private static final Splitter BBOX_SPLITTER =
@@ -203,6 +199,6 @@ public class SqlDialectOras implements SqlDialect {
 
   @Override
   public String getSpatialOperatorMatch(SpatialFunction spatialFunction) {
-    return " = 'TRUE'";
+    return " <> 'FALSE'";
   }
 }

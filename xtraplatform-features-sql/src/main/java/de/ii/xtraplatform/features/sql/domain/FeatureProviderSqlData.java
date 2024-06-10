@@ -80,6 +80,7 @@ import org.immutables.value.Value;
  *     NOT NULL AND anzahl>0}`
  *     <p>A non-default sort key can be set by adding `{sortKey=columnName}` after the table name.
  *     If that sort key is not unique, add `{sortKeyUnique=false}`.
+ *     <p>All table and column names must be unquoted identifiers.
  * @langDe ## SQL-Pfad-Syntax
  *     <p>In dem Beispiel oben sind die wesentlichen Elemente der Pfadsyntax in der Datenbank
  *     bereits erkennbar. Der Pfad zu einer Eigenschaft ergibt sich immer als Konkatenation der
@@ -109,6 +110,7 @@ import org.immutables.value.Value;
  *     `{sortKeyUnique=false}` hinzugefügt werden.
  *     <p>Ein vom Standard abweichender `primaryKey` kann durch den Zusatz von
  *     `{primaryKey=Spaltenname}` nach dem Tabellennamen angegeben werden.
+ *     <p>Alle Tabellen- und Spaltennamen müssen "unquoted Identifier" sein.
  * @langEn ## Query Generation
  *     <p>Options for query generation.
  * @langDe ## Query-Generierung
