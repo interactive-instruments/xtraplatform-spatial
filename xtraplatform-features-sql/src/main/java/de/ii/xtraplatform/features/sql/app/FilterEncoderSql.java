@@ -24,6 +24,7 @@ import de.ii.xtraplatform.cql.domain.BinaryArrayOperation;
 import de.ii.xtraplatform.cql.domain.BinaryScalarOperation;
 import de.ii.xtraplatform.cql.domain.BinarySpatialOperation;
 import de.ii.xtraplatform.cql.domain.BinaryTemporalOperation;
+import de.ii.xtraplatform.cql.domain.BooleanValue2;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.Cql.Format;
 import de.ii.xtraplatform.cql.domain.Cql2Expression;
@@ -1152,6 +1153,11 @@ public class FilterEncoderSql {
       }
 
       return super.visit(not, children);
+    }
+
+    @Override
+    public String visit(BooleanValue2 booleanValue, List<String> children) {
+      return booleanValue.getValue().equals(Boolean.TRUE) ? "1=1" : "1=0";
     }
   }
 
