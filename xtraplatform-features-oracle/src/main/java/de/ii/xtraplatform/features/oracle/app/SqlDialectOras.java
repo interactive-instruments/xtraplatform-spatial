@@ -187,10 +187,9 @@ public class SqlDialectOras implements SqlDialect {
   private final Map<SpatialFunction, Tuple<String, Optional<String>>> SPATIAL_OPERATORS =
       new ImmutableMap.Builder<SpatialFunction, Tuple<String, Optional<String>>>()
           .put(SpatialFunction.S_EQUALS, Tuple.of("SDO_EQUAL", Optional.empty()))
-          .put(SpatialFunction.S_DISJOINT, Tuple.of("SDO_GEOM.RELATE", Optional.of("DISJOINT")))
+          .put(SpatialFunction.S_DISJOINT, Tuple.of("SDO_RELATE", Optional.of("DISJOINT")))
           .put(SpatialFunction.S_TOUCHES, Tuple.of("SDO_TOUCH", Optional.empty()))
-          .put(
-              SpatialFunction.S_WITHIN, Tuple.of("SDO_GEOM.RELATE", Optional.of("COVERS+CONTAINS")))
+          .put(SpatialFunction.S_WITHIN, Tuple.of("SDO_INSIDE", Optional.empty()))
           .put(SpatialFunction.S_OVERLAPS, Tuple.of("SDO_OVERLAPS", Optional.empty()))
           // S_CROSSES is not supported
           .put(SpatialFunction.S_INTERSECTS, Tuple.of("SDO_ANYINTERACT", Optional.empty()))
@@ -199,6 +198,6 @@ public class SqlDialectOras implements SqlDialect {
 
   @Override
   public String getSpatialOperatorMatch(SpatialFunction spatialFunction) {
-    return " <> 'FALSE'";
+    return " = 'TRUE'";
   }
 }

@@ -821,7 +821,7 @@ public class FilterEncoderSql {
           String.format("%s(", operator.first()),
           operator
               .second()
-              .map(mask -> String.format(", '%s', %s)%s", mask, expressions.get(1), match))
+              .map(mask -> String.format(", %s, 'mask=%s')%s", expressions.get(1), mask, match))
               .orElse(String.format(", %s)%s", expressions.get(1), match)));
     }
 
