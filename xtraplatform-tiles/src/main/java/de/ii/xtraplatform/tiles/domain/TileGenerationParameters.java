@@ -7,8 +7,10 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformations;
+import java.util.Map;
 import java.util.Optional;
 import org.immutables.value.Value;
 
@@ -17,8 +19,19 @@ public interface TileGenerationParameters {
 
   Optional<BoundingBox> getClipBoundingBox();
 
-  Optional<PropertyTransformations> getPropertyTransformations();
+  Map<String, String> getSubstitutions();
 
+  @JsonIgnore
+  @Value.Derived
+  default Optional<PropertyTransformations> getPropertyTransformations() {
+    if (getSubstitutions().isEmpty()) {
+      return Optional.empty();
+    }
+
+    return Optional.of(((PropertyTransformations) Map::of).withSubstitutions(getSubstitutions()));
+  }
+
+  @JsonIgnore
   @Value.Derived
   default boolean isEmpty() {
     return getClipBoundingBox().isEmpty() && getPropertyTransformations().isEmpty();

@@ -19,6 +19,8 @@ import de.ii.xtraplatform.tiles.domain.MinMax;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetBase;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetLimits;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetRepository;
+import de.ii.xtraplatform.tiles.domain.TileSeedingJob;
+import de.ii.xtraplatform.tiles.domain.TileSubMatrix;
 import de.ii.xtraplatform.tiles.domain.TileWalker;
 import java.io.IOException;
 import java.util.List;
@@ -82,29 +84,6 @@ public class TileWalkerImpl extends AbstractVolatileComposed implements TileWalk
   }
 
   @Override
-  public void walkTilesetsAndTiles(
-      Set<String> tilesets,
-      List<MediaType> outputFormats,
-      Map<String, Map<String, Range<Integer>>> tmsRanges,
-      Map<String, Optional<BoundingBox>> boundingBoxes,
-      TaskContext taskContext,
-      TileVisitor tileWalker)
-      throws IOException {
-    for (Map.Entry<String, Map<String, Range<Integer>>> entry : tmsRanges.entrySet()) {
-      String tileset = entry.getKey();
-
-      if (tilesets.contains(tileset)) {
-        Map<String, Range<Integer>> ranges = entry.getValue();
-        Optional<BoundingBox> boundingBox = boundingBoxes.get(tileset);
-
-        if (boundingBox.isPresent()) {
-          walkTiles(tileset, outputFormats, ranges, boundingBox.get(), taskContext, tileWalker);
-        }
-      }
-    }
-  }
-
-  @Override
   public void walkTilesetsAndLimits(
       Set<String> tilesets,
       Map<String, Map<String, Range<Integer>>> tmsRanges,
@@ -126,19 +105,55 @@ public class TileWalkerImpl extends AbstractVolatileComposed implements TileWalk
   }
 
   @Override
-  public void walkTilesetsAndLimits(
-      Set<String> tilesets,
+  public void walkTileSeedingJob(
+      TileSeedingJob job,
+      Map<String, Map<String, Range<Integer>>> tmsRanges,
+      TileVisitor tileVisitor)
+      throws IOException {
+    if (!tmsRanges.containsKey(job.getTileSet())
+        || !tmsRanges.get(job.getTileSet()).containsKey(job.getTileMatrixSet())) {
+      return;
+    }
+
+    Range<Integer> levels = tmsRanges.get(job.getTileSet()).get(job.getTileMatrixSet());
+
+    for (TileSubMatrix subMatrix : job.getSubMatrices()) {
+      if (!levels.contains(subMatrix.getLevel())) {
+        continue;
+      }
+      for (int row = subMatrix.getRowMin(); row <= subMatrix.getRowMax(); row++) {
+        for (int col = subMatrix.getColMin(); col <= subMatrix.getColMax(); col++) {
+          tileVisitor.visit(
+              job.getTileSet(),
+              job.getEncoding(),
+              getTileMatrixSetById(job.getTileMatrixSet()),
+              subMatrix.getLevel(),
+              row,
+              col);
+        }
+      }
+    }
+  }
+
+  @Override
+  public void walkTileSeedingJobLimits(
+      TileSeedingJob job,
       Map<String, Map<String, Range<Integer>>> tmsRanges,
       LimitsVisitor limitsVisitor)
       throws IOException {
-    for (Map.Entry<String, Map<String, Range<Integer>>> entry : tmsRanges.entrySet()) {
-      String tileset = entry.getKey();
+    if (!tmsRanges.containsKey(job.getTileSet())
+        || !tmsRanges.get(job.getTileSet()).containsKey(job.getTileMatrixSet())) {
+      return;
+    }
 
-      if (tilesets.contains(tileset)) {
-        Map<String, Range<Integer>> ranges = entry.getValue();
+    Range<Integer> levels = tmsRanges.get(job.getTileSet()).get(job.getTileMatrixSet());
 
-        walkLimits(tileset, ranges, limitsVisitor);
+    for (TileSubMatrix subMatrix : job.getSubMatrices()) {
+      if (!levels.contains(subMatrix.getLevel())) {
+        continue;
       }
+      limitsVisitor.visit(
+          job.getTileSet(), getTileMatrixSetById(job.getTileMatrixSet()), subMatrix.toLimits());
     }
   }
 
@@ -157,57 +172,6 @@ public class TileWalkerImpl extends AbstractVolatileComposed implements TileWalk
 
       for (TileMatrixSetLimits limits : allLimits) {
         limitsVisitor.visit(tileset, tileMatrixSet, limits);
-      }
-    }
-  }
-
-  private void walkLimits(
-      String tileset, Map<String, Range<Integer>> tmsRanges, LimitsVisitor limitsVisitor)
-      throws IOException {
-    for (Map.Entry<String, Range<Integer>> entry : tmsRanges.entrySet()) {
-      TileMatrixSetBase tileMatrixSet = getTileMatrixSetById(entry.getKey());
-
-      List<? extends TileMatrixSetLimits> allLimits =
-          tileMatrixSet.getLimitsList(MinMax.of(entry.getValue()), tileMatrixSet.getBoundingBox());
-
-      for (TileMatrixSetLimits limits : allLimits) {
-        limitsVisitor.visit(tileset, tileMatrixSet, limits);
-      }
-    }
-  }
-
-  private void walkTiles(
-      String tileset,
-      List<MediaType> outputFormats,
-      Map<String, Range<Integer>> tmsRanges,
-      BoundingBox boundingBox,
-      TaskContext taskContext,
-      TileVisitor tileWalker)
-      throws IOException {
-    for (MediaType outputFormat : outputFormats) {
-      for (Map.Entry<String, Range<Integer>> entry : tmsRanges.entrySet()) {
-        TileMatrixSetBase tileMatrixSet = getTileMatrixSetById(entry.getKey());
-        BoundingBox bbox = getBbox(boundingBox, tileMatrixSet);
-
-        List<? extends TileMatrixSetLimits> allLimits =
-            tileMatrixSet.getLimitsList(MinMax.of(entry.getValue()), bbox);
-
-        for (TileMatrixSetLimits limits : allLimits) {
-          int level = Integer.parseInt(limits.getTileMatrix());
-
-          for (int row = limits.getMinTileRow(); row <= limits.getMaxTileRow(); row++) {
-            for (int col = limits.getMinTileCol(); col <= limits.getMaxTileCol(); col++) {
-              if (taskContext.isPartial() && !taskContext.matchesPartialModulo(col)) {
-                continue;
-              }
-              boolean shouldContinue =
-                  tileWalker.visit(tileset, outputFormat, tileMatrixSet, level, row, col);
-              if (!shouldContinue) {
-                return;
-              }
-            }
-          }
-        }
       }
     }
   }

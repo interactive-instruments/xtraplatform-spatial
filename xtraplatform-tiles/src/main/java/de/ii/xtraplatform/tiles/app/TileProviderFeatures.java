@@ -14,6 +14,7 @@ import com.google.common.io.Files;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.base.domain.AppContext;
+import de.ii.xtraplatform.base.domain.LogContext.MARKER;
 import de.ii.xtraplatform.base.domain.resiliency.OptionalVolatileCapability;
 import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.base.domain.util.Tuple;
@@ -28,7 +29,7 @@ import de.ii.xtraplatform.entities.domain.EntityRegistry;
 import de.ii.xtraplatform.features.domain.FeatureProvider.FeatureVolatileCapability;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ProviderData;
-import de.ii.xtraplatform.services.domain.TaskContext;
+import de.ii.xtraplatform.jobs.domain.JobQueue;
 import de.ii.xtraplatform.tiles.domain.Cache;
 import de.ii.xtraplatform.tiles.domain.Cache.Storage;
 import de.ii.xtraplatform.tiles.domain.Cache.Type;
@@ -51,6 +52,8 @@ import de.ii.xtraplatform.tiles.domain.TileProviderFeaturesData;
 import de.ii.xtraplatform.tiles.domain.TileQuery;
 import de.ii.xtraplatform.tiles.domain.TileResult;
 import de.ii.xtraplatform.tiles.domain.TileSeeding;
+import de.ii.xtraplatform.tiles.domain.TileSeedingJob;
+import de.ii.xtraplatform.tiles.domain.TileSeedingJobSet;
 import de.ii.xtraplatform.tiles.domain.TileStore;
 import de.ii.xtraplatform.tiles.domain.TileWalker;
 import de.ii.xtraplatform.tiles.domain.TilesFormat;
@@ -59,21 +62,26 @@ import de.ii.xtraplatform.tiles.domain.TilesetMetadata;
 import de.ii.xtraplatform.tiles.domain.TilesetRaster;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.ws.rs.core.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.threeten.extra.AmountFormats;
 
 @Entity(
     type = TileProviderData.ENTITY_TYPE,
@@ -113,6 +121,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
       ResourceStore blobStore,
       TileWalker tileWalker,
       VolatileRegistry volatileRegistry,
+      JobQueue jobQueue,
       @Assisted TileProviderFeaturesData data) {
     super(volatileRegistry, data, "access", "generation", "seeding");
 
@@ -481,40 +490,152 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   }
 
   @Override
-  public void seed(
-      Map<String, TileGenerationParameters> tilesets,
-      List<MediaType> mediaTypes,
-      boolean reseed,
-      TaskContext taskContext)
-      throws IOException {
-
+  public Map<String, Map<String, Set<TileMatrixSetLimits>>> getCoverage(
+      Map<String, TileGenerationParameters> tilesets) throws IOException {
     Map<String, TileGenerationParameters> validTilesets = validTilesets(tilesets);
     Map<String, TileGenerationParameters> sourcedTilesets = sourcedTilesets(validTilesets);
     Map<String, TileGenerationParameters> combinedTilesets = combinedTilesets(validTilesets);
 
-    if (!sourcedTilesets.isEmpty()) {
-      for (TileCache cache : generatorCaches) {
-        cache.purge(sourcedTilesets, mediaTypes, reseed, "tile generator", taskContext);
-      }
-    }
-    if (!combinedTilesets.isEmpty()) {
-      for (TileCache cache : combinerCaches) {
-        cache.purge(combinedTilesets, mediaTypes, reseed, "tile combiner", taskContext);
-      }
-    }
+    Map<String, Map<String, Set<TileMatrixSetLimits>>> coverage = new LinkedHashMap<>();
 
     if (!sourcedTilesets.isEmpty()) {
       for (TileCache cache : generatorCaches) {
-        cache.seed(sourcedTilesets, mediaTypes, reseed, "tile generator", taskContext);
+        mergeCoverageInto(cache.getCoverage(sourcedTilesets), coverage);
       }
     }
     if (!combinedTilesets.isEmpty()) {
       for (TileCache cache : combinerCaches) {
-        cache.seed(combinedTilesets, mediaTypes, reseed, "tile combiner", taskContext);
+        mergeCoverageInto(cache.getCoverage(combinedTilesets), coverage);
       }
+    }
+
+    return coverage;
+  }
+
+  private static void mergeCoverageInto(
+      Map<String, Map<String, Set<TileMatrixSetLimits>>> source,
+      Map<String, Map<String, Set<TileMatrixSetLimits>>> target) {
+    source.forEach(
+        (tileset, tms) -> {
+          if (!target.containsKey(tileset)) {
+            target.put(tileset, new LinkedHashMap<>());
+          }
+          tms.forEach(
+              (tmsId, limits) -> {
+                if (!target.get(tileset).containsKey(tmsId)) {
+                  target.get(tileset).put(tmsId, new LinkedHashSet<>());
+                }
+                target.get(tileset).get(tmsId).addAll(limits);
+              });
+        });
+  }
+
+  @Override
+  public void setupSeeding(TileSeedingJobSet jobSet) throws IOException {
+    for (Tuple<TileCache, String> cache : getCaches(jobSet)) {
+      cache.first().setupSeeding(jobSet, cache.second());
+    }
+  }
+
+  @Override
+  public void cleanupSeeding(TileSeedingJobSet jobSet) throws IOException {
+    LOGGER.debug("{}: cleaning up tile caches", TileSeedingJobSet.LABEL);
+
+    for (Tuple<TileCache, String> cache : getCaches(jobSet)) {
+      cache.first().cleanupSeeding(jobSet, cache.second());
     }
 
     // TODO: cleanup all orphaned tiles that are not within current cache limits
+  }
+
+  private List<Tuple<TileCache, String>> getCaches(TileSeedingJobSet jobSet) {
+    List<Tuple<TileCache, String>> result = new ArrayList<>();
+    Set<TileCache> done = new LinkedHashSet<>();
+
+    jobSet
+        .getTileSets()
+        .keySet()
+        .forEach(
+            tileSet -> {
+              if (!metadata.containsKey(tileSet)) {
+                LOGGER.warn("Tileset with name '{}' not found", tileSet);
+                return;
+              }
+
+              boolean isCombined = getData().getTilesets().get(tileSet).isCombined();
+              List<TileCache> caches = isCombined ? combinerCaches : generatorCaches;
+              String label = isCombined ? "tile combiner" : "tile generator";
+
+              for (TileCache cache : caches) {
+                if (cache.canProcess(jobSet) && !done.contains(cache)) {
+                  done.add(cache);
+                  result.add(Tuple.of(cache, label));
+                }
+              }
+            });
+
+    return result;
+  }
+
+  @Override
+  public void runSeeding(TileSeedingJob job) throws IOException {
+    if (!metadata.containsKey(job.getTileSet())) {
+      LOGGER.warn("Tileset with name '{}' not found", job.getTileSet());
+      return;
+    }
+
+    boolean isCombined = getData().getTilesets().get(job.getTileSet()).isCombined();
+    List<TileCache> caches = isCombined ? combinerCaches : generatorCaches;
+    String label = isCombined ? "tile combiner" : "tile generator";
+    String action = isCombined ? "combining" : "generating";
+    Instant start = Instant.now();
+
+    if (LOGGER.isDebugEnabled() || LOGGER.isDebugEnabled(MARKER.JOBS)) {
+      LOGGER.debug(
+          MARKER.JOBS,
+          "{}: {} {} tiles (Tileset: {}, TileMatrixSet: {}, Scope: {}, Encoding: {})",
+          TileSeedingJobSet.LABEL,
+          action,
+          job.getNumberOfTiles(),
+          job.getTileSet(),
+          job.getTileMatrixSet(),
+          job.getSubMatrices().get(0).asString(),
+          job.getEncoding());
+    }
+
+    if (job.isReseed()) {
+      for (TileCache cache : caches) {
+        if (cache.canProcess(job)) {
+          cache.purge(job, label);
+        }
+      }
+    }
+
+    for (TileCache cache : caches) {
+      if (cache.canProcess(job)) {
+        cache.seed(job, label);
+      }
+    }
+
+    if (LOGGER.isDebugEnabled() || LOGGER.isDebugEnabled(MARKER.JOBS)) {
+      long duration = Instant.now().toEpochMilli() - start.toEpochMilli();
+      LOGGER.debug(
+          MARKER.JOBS,
+          "{}: finished {} {} tiles in {} (Tileset: {}, TileMatrixSet: {}, Scope: {}, Encoding: {})",
+          TileSeedingJobSet.LABEL,
+          action,
+          job.getNumberOfTiles(),
+          pretty(duration),
+          job.getTileSet(),
+          job.getTileMatrixSet(),
+          job.getSubMatrices().get(0).asString(),
+          job.getEncoding());
+    }
+  }
+
+  private static String pretty(long milliseconds) {
+    Duration d = Duration.ofSeconds(milliseconds / 1000);
+    return AmountFormats.wordBased(d, Locale.ENGLISH);
   }
 
   private Map<String, TileGenerationParameters> validTilesets(

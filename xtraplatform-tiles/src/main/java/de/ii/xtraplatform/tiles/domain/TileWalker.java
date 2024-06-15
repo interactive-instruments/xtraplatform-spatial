@@ -20,8 +20,14 @@ import javax.ws.rs.core.MediaType;
 
 public interface TileWalker extends Volatile2 {
 
+  void walkTileSeedingJobLimits(
+      TileSeedingJob job,
+      Map<String, Map<String, Range<Integer>>> tmsRanges,
+      LimitsVisitor limitsVisitor)
+      throws IOException;
+
   interface TileVisitor {
-    boolean visit(
+    void visit(
         String tileset,
         MediaType outputFormat,
         TileMatrixSetBase tileMatrixSet,
@@ -43,25 +49,16 @@ public interface TileWalker extends Volatile2 {
       Map<String, Optional<BoundingBox>> boundingBoxes,
       TaskContext taskContext);
 
-  void walkTilesetsAndTiles(
-      Set<String> tilesets,
-      List<MediaType> outputFormats,
-      Map<String, Map<String, Range<Integer>>> tmsRanges,
-      Map<String, Optional<BoundingBox>> boundingBoxes,
-      TaskContext taskContext,
-      TileVisitor tileWalker)
-      throws IOException;
-
-  void walkTilesetsAndLimits(
-      Set<String> tilesets,
-      Map<String, Map<String, Range<Integer>>> tmsRanges,
-      LimitsVisitor limitsVisitor)
-      throws IOException;
-
   void walkTilesetsAndLimits(
       Set<String> tilesets,
       Map<String, Map<String, Range<Integer>>> tmsRanges,
       Map<String, Optional<BoundingBox>> boundingBoxes,
       LimitsVisitor limitsVisitor)
+      throws IOException;
+
+  void walkTileSeedingJob(
+      TileSeedingJob job,
+      Map<String, Map<String, Range<Integer>>> tmsRanges,
+      TileVisitor tileVisitor)
       throws IOException;
 }

@@ -25,6 +25,7 @@ import de.ii.xtraplatform.entities.domain.PersistentEntity;
 import de.ii.xtraplatform.features.domain.FeatureProvider;
 import de.ii.xtraplatform.features.domain.FeatureProviderEntity;
 import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
+import de.ii.xtraplatform.jobs.domain.JobQueue;
 import de.ii.xtraplatform.tiles.domain.ImmutableMinMax;
 import de.ii.xtraplatform.tiles.domain.ImmutableTileProviderFeaturesData;
 import de.ii.xtraplatform.tiles.domain.ImmutableTilesetFeatures.Builder;
@@ -62,6 +63,7 @@ public class TileProviderFeaturesFactory
       ResourceStore blobStore,
       TileWalker tileWalker,
       VolatileRegistry volatileRegistry,
+      JobQueue jobQueue,
       TileProviderFeaturesFactoryAssisted factoryAssisted) {
     super(factoryAssisted);
     this.entityRegistry = entityRegistry;

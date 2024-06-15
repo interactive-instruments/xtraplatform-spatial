@@ -7,11 +7,9 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
-import de.ii.xtraplatform.services.domain.TaskContext;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
-import javax.ws.rs.core.MediaType;
+import java.util.Set;
 
 public interface TileSeeding {
 
@@ -19,12 +17,14 @@ public interface TileSeeding {
 
   SeedingOptions getOptions();
 
-  void seed(
-      Map<String, TileGenerationParameters> tilesets,
-      List<MediaType> mediaTypes,
-      boolean reseed,
-      TaskContext taskContext)
-      throws IOException;
+  Map<String, Map<String, Set<TileMatrixSetLimits>>> getCoverage(
+      Map<String, TileGenerationParameters> tilesets) throws IOException;
+
+  void setupSeeding(TileSeedingJobSet jobSet) throws IOException;
+
+  void cleanupSeeding(TileSeedingJobSet jobSet) throws IOException;
+
+  void runSeeding(TileSeedingJob job) throws IOException;
 
   default void deleteFromCache(
       String tileset, TileMatrixSetBase tileMatrixSet, TileMatrixSetLimits limits) {}

@@ -31,7 +31,7 @@ layer {
 }
 
 dependencies {
-    layers group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '6.1.0-SNAPSHOT'
+    layers group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '6.1.0-jobs-SNAPSHOT'
     layers group: 'de.interactive_instruments', name: 'xtraplatform-native', version: "2.4.0-${platform}"
 
     modules subprojects

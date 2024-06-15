@@ -20,6 +20,8 @@ import de.ii.xtraplatform.tiles.domain.TileResult;
 import de.ii.xtraplatform.tiles.domain.TileStore;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
@@ -128,6 +130,10 @@ class TileStorePlain implements TileStore {
       try {
         matchingFiles.forEach(consumerMayThrow(blobStore::delete));
       } catch (RuntimeException e) {
+        if (e instanceof UncheckedIOException && e.getCause() instanceof NoSuchFileException) {
+          // ignore
+          return;
+        }
         if (e.getCause() instanceof IOException) {
           throw (IOException) e.getCause();
         }

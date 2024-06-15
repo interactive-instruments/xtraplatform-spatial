@@ -9,15 +9,15 @@ package de.ii.xtraplatform.tiles.domain;
 
 import com.google.common.collect.Range;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
-import de.ii.xtraplatform.services.domain.TaskContext;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
-import javax.ws.rs.core.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,99 +25,113 @@ public interface TileCache {
 
   Logger LOGGER = LoggerFactory.getLogger(TileCache.class);
 
-  void seed(
-      Map<String, TileGenerationParameters> tilesets,
-      List<MediaType> mediaTypes,
-      boolean reseed,
-      String tileSource,
-      TaskContext taskContext)
-      throws IOException;
+  Map<String, Map<String, Range<Integer>>> getTmsRanges();
 
-  default boolean doSeed(
-      Map<String, TileGenerationParameters> tilesets,
-      List<MediaType> mediaTypes,
-      boolean reseed,
+  default boolean canProcess(TileSeedingJob job) {
+    return getTmsRanges().containsKey(job.getTileSet())
+        && getTmsRanges().get(job.getTileSet()).containsKey(job.getTileMatrixSet())
+        && job.getSubMatrices().stream()
+            .anyMatch(
+                sub ->
+                    getTmsRanges()
+                        .get(job.getTileSet())
+                        .get(job.getTileMatrixSet())
+                        .contains(sub.getLevel()));
+  }
+
+  default boolean canProcess(TileSeedingJobSet jobSet) {
+    return jobSet.getTileSets().keySet().stream().allMatch(getTmsRanges()::containsKey);
+  }
+
+  void setupSeeding(TileSeedingJobSet jobSet, String tileSourceLabel) throws IOException;
+
+  void cleanupSeeding(TileSeedingJobSet jobSet, String tileSourceLabel) throws IOException;
+
+  void seed(TileSeedingJob job, String tileSourceLabel) throws IOException;
+
+  default void doSeed(
+      TileSeedingJob job,
       String tileSourceLabel,
-      TaskContext taskContext,
       TileStore tileStore,
       ChainedTileProvider delegate,
-      TileWalker tileWalker,
-      Map<String, Map<String, Range<Integer>>> tmsRanges)
+      TileWalker tileWalker)
       throws IOException {
-    Map<String, Optional<BoundingBox>> boundingBoxes = getBoundingBoxes(tilesets);
+    tileWalker.walkTileSeedingJob(
+        job,
+        getTmsRanges(),
+        (tileset, encoding, tms, level, row, col) -> {
+          if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace(
+                String.format(
+                    "currently processing -> %s, %s/%s/%s/%s, %s",
+                    job.getTileSet(), job.getTileMatrixSet(), level, row, col, encoding));
+          }
 
-    long numberOfTiles =
-        tileWalker.getNumberOfTiles(
-            tilesets.keySet(), mediaTypes, tmsRanges, boundingBoxes, taskContext);
-    final double[] currentTile = {0.0};
-    final boolean[] isEmpty = {true};
-
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug(
-          taskContext.isPartial()
-              ? "{}: processing {} tiles with {} [{}/{}]"
-              : "{}: processing {} tiles with {}",
-          taskContext.getTaskLabel(),
-          numberOfTiles,
-          tileSourceLabel,
-          taskContext.getCurrentPartial(),
-          taskContext.getMaxPartials());
-    }
-
-    tileWalker.walkTilesetsAndTiles(
-        tilesets.keySet(),
-        mediaTypes,
-        tmsRanges,
-        boundingBoxes,
-        taskContext,
-        (tileset, mediaType, tileMatrixSet, level, row, col) -> {
           TileQuery tile =
               ImmutableTileQuery.builder()
-                  .tileset(tileset)
-                  .mediaType(mediaType)
-                  .tileMatrixSet(tileMatrixSet)
+                  .tileset(job.getTileSet())
+                  .mediaType(encoding)
+                  .tileMatrixSet(tms)
                   .level(level)
                   .row(row)
                   .col(col)
-                  .generationParameters(tilesets.get(tileset))
+                  // TODO .generationParameters(tilesets.get(tileset))
                   .build();
 
-          taskContext.setStatusMessage(
-              String.format(
-                  "currently processing -> %s, %s/%s/%s/%s, %s",
-                  tileset, tileMatrixSet.getId(), level, row, col, mediaType));
-
-          if (reseed || tileStore.isDirty(tile) || !tileStore.has(tile)) {
+          if (job.isReseed() || tileStore.isDirty(tile) || !tileStore.has(tile)) {
             TileResult result = delegate.get(tile);
 
             if (shouldCache(tile) && result.isAvailable()) {
               tileStore.put(tile, new ByteArrayInputStream(result.getContent().get()));
-              if (isEmpty[0]) {
+              /*if (isEmpty[0]) {
                 isEmpty[0] = false;
-              }
+              }*/
             }
 
             if (result.isError()) {
               LOGGER.warn(
                   "{}: processing failed -> {}, {}/{}/{}/{}, {} | {}",
-                  taskContext.getTaskLabel(),
-                  tileset,
-                  tileMatrixSet.getId(),
+                  tileSourceLabel,
+                  job.getTileSet(),
+                  tms.getId(),
                   level,
                   row,
                   col,
-                  mediaType,
+                  encoding,
                   result.getError().get());
             }
           }
+        });
+  }
 
-          currentTile[0] += 1;
-          taskContext.setCompleteness(currentTile[0] / numberOfTiles);
+  default void purge(TileSeedingJob job, String tileSourceLabel) throws IOException {}
 
-          return !taskContext.isStopped();
+  Map<String, Map<String, Set<TileMatrixSetLimits>>> getCoverage(
+      Map<String, TileGenerationParameters> tilesets) throws IOException;
+
+  default Map<String, Map<String, Set<TileMatrixSetLimits>>> getCoverage(
+      Map<String, TileGenerationParameters> tilesets,
+      TileWalker tileWalker,
+      Map<String, Map<String, Range<Integer>>> tmsRanges)
+      throws IOException {
+    Map<String, Optional<BoundingBox>> boundingBoxes = getBoundingBoxes(tilesets);
+    Map<String, Map<String, Set<TileMatrixSetLimits>>> coverage = new LinkedHashMap<>();
+
+    tileWalker.walkTilesetsAndLimits(
+        tilesets.keySet(),
+        tmsRanges,
+        boundingBoxes,
+        (tileset, tms, limits) -> {
+          if (!coverage.containsKey(tileset)) {
+            coverage.put(tileset, new LinkedHashMap<>());
+          }
+          if (!coverage.get(tileset).containsKey(tms.getId())) {
+            coverage.get(tileset).put(tms.getId(), new LinkedHashSet<>());
+          }
+          coverage.get(tileset).get(tms.getId()).add(limits);
         });
 
-    return isEmpty[0];
+    return coverage;
   }
 
   default Map<String, Optional<BoundingBox>> getBoundingBoxes(
@@ -132,12 +146,4 @@ public interface TileCache {
   default boolean shouldCache(TileQuery tileQuery) {
     return !tileQuery.isTransient();
   }
-
-  default void purge(
-      Map<String, TileGenerationParameters> tilesets,
-      List<MediaType> mediaTypes,
-      boolean reseed,
-      String tileSourceLabel,
-      TaskContext taskContext)
-      throws IOException {}
 }
