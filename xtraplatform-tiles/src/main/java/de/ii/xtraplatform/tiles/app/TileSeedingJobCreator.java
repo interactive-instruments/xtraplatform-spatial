@@ -40,12 +40,10 @@ public class TileSeedingJobCreator implements JobProcessor<Boolean, TileSeedingJ
   private static final Logger LOGGER = LoggerFactory.getLogger(TileSeedingJobCreator.class);
 
   private final EntityRegistry entityRegistry;
-  private final TileStorePartitions tileStorePartitions;
 
   @Inject
   TileSeedingJobCreator(EntityRegistry entityRegistry) {
     this.entityRegistry = entityRegistry;
-    this.tileStorePartitions = new TileStorePartitions(3);
   }
 
   @Override
@@ -110,6 +108,9 @@ public class TileSeedingJobCreator implements JobProcessor<Boolean, TileSeedingJ
                 jobSet.getStartedAt().set(Instant.now().toEpochMilli());
                 Map<String, Map<String, Set<TileMatrixSetLimits>>> coverage =
                     tileProvider.seeding().get().getCoverage(seedingJobSet.getTileSets());
+                TileStorePartitions tileStorePartitions =
+                    new TileStorePartitions(
+                        tileProvider.seeding().get().getOptions().getEffectiveJobSize());
 
                 tileProvider.seeding().get().setupSeeding(seedingJobSet);
 

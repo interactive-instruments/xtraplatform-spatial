@@ -14,14 +14,14 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class TileStorePartitions {
-  private final int maxTilesPerPartition;
-  private final int singlePartitionLevel;
-  private final int singleRowCol;
+  final int maxTilesPerPartition;
+  final int singlePartitionLevel;
+  final int singleRowCol;
 
-  public TileStorePartitions(int singlePartitionLevel) {
-    this.maxTilesPerPartition = 256;
-    this.singlePartitionLevel = singlePartitionLevel;
-    this.singleRowCol = (int) Math.pow(2, singlePartitionLevel);
+  public TileStorePartitions(int maxTilesPerPartition) {
+    this.maxTilesPerPartition = maxTilesPerPartition;
+    this.singleRowCol = (int) Math.sqrt(maxTilesPerPartition);
+    this.singlePartitionLevel = (int) (Math.log(singleRowCol) / Math.log(2));
   }
 
   // 10/645/322
@@ -78,44 +78,30 @@ public class TileStorePartitions {
 
     for (int row = limits.getMinTileRow(); row <= limits.getMaxTileRow(); row++) {
       for (int col = limits.getMinTileCol(); col <= limits.getMaxTileCol(); col++) {
-        subMatrices.add(getSubMatrix(level, row, col));
+        subMatrices.add(getSubMatrix(level, row, col, limits));
       }
     }
 
     return subMatrices;
   }
 
-  public TileSubMatrix getSubMatrix(int level, int row, int col) {
-    if (level < singlePartitionLevel) {
-      return new ImmutableTileSubMatrix.Builder()
-          .level(singlePartitionLevel - 1)
-          .rowMin(0)
-          .rowMax(-1)
-          .colMin(0)
-          .colMax(-1)
-          .build();
-    }
-    if (level == singlePartitionLevel) {
-      return new ImmutableTileSubMatrix.Builder()
-          .level(singlePartitionLevel)
-          .rowMin(0)
-          .rowMax(-1)
-          .colMin(0)
-          .colMax(-1)
-          .build();
-    }
-
+  public TileSubMatrix getSubMatrix(int level, int row, int col, TileMatrixSetLimits limits) {
     // 645 / 256 = 2
     int rowPartition = row / singleRowCol;
     // 322 / 256 = 1
     int colPartition = col / singleRowCol;
 
+    int rowMin = rowPartition * singleRowCol;
+    int rowMax = ((rowPartition + 1) * singleRowCol) - 1;
+    int colMin = colPartition * singleRowCol;
+    int colMax = ((colPartition + 1) * singleRowCol) - 1;
+
     return new ImmutableTileSubMatrix.Builder()
         .level(level)
-        .rowMin(rowPartition * singleRowCol)
-        .rowMax(((rowPartition + 1) * singleRowCol) - 1)
-        .colMin(colPartition * singleRowCol)
-        .colMax(((colPartition + 1) * singleRowCol) - 1)
+        .rowMin(Math.max(rowMin, limits.getMinTileRow()))
+        .rowMax(Math.min(rowMax, limits.getMaxTileRow()))
+        .colMin(Math.max(colMin, limits.getMinTileCol()))
+        .colMax(Math.min(colMax, limits.getMaxTileCol()))
         .build();
   }
 }

@@ -634,7 +634,10 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   }
 
   private static String pretty(long milliseconds) {
-    Duration d = Duration.ofSeconds(milliseconds / 1000);
+    Duration d =
+        milliseconds > 999
+            ? Duration.ofSeconds(milliseconds / 1000)
+            : Duration.ofMillis(milliseconds);
     return AmountFormats.wordBased(d, Locale.ENGLISH);
   }
 
