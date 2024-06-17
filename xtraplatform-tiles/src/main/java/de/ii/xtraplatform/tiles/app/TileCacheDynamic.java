@@ -86,6 +86,11 @@ public class TileCacheDynamic implements ChainedTileProvider, TileCache {
   }
 
   @Override
+  public boolean isSeeded() {
+    return isSeeded;
+  }
+
+  @Override
   public void setupSeeding(TileSeedingJobSet jobSet, String tileSourceLabel) throws IOException {}
 
   @Override

@@ -513,12 +513,16 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
 
     if (!sourcedTilesets.isEmpty()) {
       for (TileCache cache : generatorCaches) {
-        mergeCoverageInto(cache.getCoverage(sourcedTilesets), coverage);
+        if (cache.isSeeded()) {
+          mergeCoverageInto(cache.getCoverage(sourcedTilesets), coverage);
+        }
       }
     }
     if (!combinedTilesets.isEmpty()) {
       for (TileCache cache : combinerCaches) {
-        mergeCoverageInto(cache.getCoverage(combinedTilesets), coverage);
+        if (cache.isSeeded()) {
+          mergeCoverageInto(cache.getCoverage(combinedTilesets), coverage);
+        }
       }
     }
 
@@ -691,17 +695,26 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   private void loadMetadata() {
     getData().getTilesets().forEach((key, tileset) -> metadata.put(key, loadMetadata(tileset)));
 
-    getData()
-        .getRasterTilesets()
-        .forEach(
-            (key, tileset) ->
-                tileset
-                    .getStyles()
-                    .forEach(
-                        style ->
-                            metadata.put(
-                                getRasterTilesetId(tileset.getPrefix().orElse(key), style),
-                                loadMetadata(tileset.getPrefix().orElse(key), style, tileset))));
+    Optional<Cache> rasterCache =
+        getData().getCaches().stream().filter(Cache::getSeeded).findFirst();
+
+    if (rasterCache.isPresent()) {
+      getData()
+          .getRasterTilesets()
+          .forEach(
+              (key, tileset) ->
+                  tileset
+                      .getStyles()
+                      .forEach(
+                          style ->
+                              metadata.put(
+                                  getRasterTilesetId(tileset.getPrefix().orElse(key), style),
+                                  loadMetadata(
+                                      tileset.getPrefix().orElse(key),
+                                      style,
+                                      tileset,
+                                      rasterCache.get()))));
+    }
   }
 
   private static String getRasterTilesetId(String vectorTilesetId, String style) {
@@ -752,12 +765,10 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   }
 
   private TilesetMetadata loadMetadata(
-      String vectorTilesetId, String style, TilesetRaster tileset) {
+      String vectorTilesetId, String style, TilesetRaster tileset, Cache cache) {
     Optional<BoundingBox> bounds = tileGenerator.getBounds(vectorTilesetId);
 
-    Optional<Cache> cache = getData().getCaches().stream().filter(Cache::getSeeded).findFirst();
-
-    Map<String, Map<String, Range<Integer>>> cacheRanges = getCacheRanges(cache.get(), 1);
+    Map<String, Map<String, Range<Integer>>> cacheRanges = getCacheRanges(cache, 1);
 
     Map<String, Integer> defaults =
         getMetadata(vectorTilesetId)

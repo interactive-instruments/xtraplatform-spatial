@@ -70,6 +70,11 @@ public class TileCacheImmutable implements ChainedTileProvider, TileCache {
   }
 
   @Override
+  public boolean isSeeded() {
+    return true;
+  }
+
+  @Override
   public void setupSeeding(TileSeedingJobSet jobSet, String tileSourceLabel) throws IOException {
     tileStore.staging().init();
   }

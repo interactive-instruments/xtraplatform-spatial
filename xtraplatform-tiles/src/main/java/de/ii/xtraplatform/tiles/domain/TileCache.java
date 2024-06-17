@@ -43,6 +43,8 @@ public interface TileCache {
     return jobSet.getTileSets().keySet().stream().allMatch(getTmsRanges()::containsKey);
   }
 
+  boolean isSeeded();
+
   void setupSeeding(TileSeedingJobSet jobSet, String tileSourceLabel) throws IOException;
 
   void cleanupSeeding(TileSeedingJobSet jobSet, String tileSourceLabel) throws IOException;

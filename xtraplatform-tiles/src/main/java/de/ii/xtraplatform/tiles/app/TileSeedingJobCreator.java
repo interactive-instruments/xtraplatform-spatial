@@ -141,6 +141,11 @@ public class TileSeedingJobCreator implements JobProcessor<Boolean, TileSeedingJ
                           });
                     });
 
+                if (jobSet.isDone()) {
+                  jobSet.getCleanup().ifPresent(pushJob);
+                  return; // early return
+                }
+
                 if (LOGGER.isDebugEnabled() || LOGGER.isDebugEnabled(MARKER.JOBS)) {
                   LOGGER.debug(
                       MARKER.JOBS,

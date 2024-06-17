@@ -272,16 +272,17 @@ public class MbtilesTileset {
   private Connection getConnection(
       int level, int row, int col, boolean acquireMutexOnCreate, boolean readOnly)
       throws IOException {
+    Path path = getTilesetPath(level, row, col);
+
     // ensure that the file exists
-    if (!Files.exists(getTilesetPath(level, row, col))) {
-      createMbtilesFile(level, row, col, acquireMutexOnCreate);
+    if (!Files.exists(path)) {
+      createMbtilesFile(path, acquireMutexOnCreate);
     }
 
-    return SqlHelper.getConnection(getTilesetPath(level, row, col), readOnly);
+    return SqlHelper.getConnection(path, readOnly);
   }
 
-  private void createMbtilesFile(int level, int row, int col, boolean acquireMutexOnCreate)
-      throws IOException {
+  private void createMbtilesFile(Path path, boolean acquireMutexOnCreate) throws IOException {
     // acquire the mutex, if necessary (for write operations we already have it)
     boolean acquired = false;
     Connection connection = null;
@@ -293,25 +294,21 @@ public class MbtilesTileset {
         }
       if (acquireMutexOnCreate && !acquired)
         throw new IllegalStateException(
-            String.format(
-                "Could not acquire mutex to create MBTiles file: %s",
-                getTilesetPath(level, row, col)));
+            String.format("Could not acquire mutex to create MBTiles file: %s", path));
       // now that we have the mutex, check again, if the file exists, it may have been
       // created by a parallel request
-      if (!Files.exists(getTilesetPath(level, row, col))) {
+      if (!Files.exists(path)) {
         // recreate an empty MBTiles container
         if (LOGGER.isTraceEnabled()) {
-          LOGGER.trace("Creating MBTiles file '{}'.", getTilesetPath(level, row, col));
+          LOGGER.trace("Creating MBTiles file '{}'.", path);
         }
-        Files.createDirectories(getTilesetPath(level, row, col).getParent());
-        connection = SqlHelper.getConnection(getTilesetPath(level, row, col), false);
+        Files.createDirectories(path.getParent());
+        connection = SqlHelper.getConnection(path, false);
         try {
           initMbtilesDb(metadata, connection);
         } catch (SQLException | IOException e) {
           throw new IllegalStateException(
-              String.format(
-                  "Could not create new Mbtiles file: %s", getTilesetPath(level, row, col)),
-              e);
+              String.format("Could not create new Mbtiles file: %s", path), e);
         }
       }
     } catch (InterruptedException e) {
@@ -341,7 +338,7 @@ public class MbtilesTileset {
   public MbtilesMetadata getMetadata() throws SQLException, IOException {
     ImmutableMbtilesMetadata.Builder builder = ImmutableMbtilesMetadata.builder();
     String sql = "SELECT name, value FROM metadata";
-    try (Connection connection = getConnection(null, true, true);
+    try (Connection connection = getConnection(0, 0, 0, true, true);
         Statement statement = connection.createStatement();
         ResultSet rs = statement.executeQuery(sql)) {
       while (rs.next()) {
