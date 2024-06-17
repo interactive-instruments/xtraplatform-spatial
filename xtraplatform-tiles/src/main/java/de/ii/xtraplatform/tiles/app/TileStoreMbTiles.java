@@ -353,10 +353,12 @@ public class TileStoreMbTiles implements TileStore {
     tileSets.forEach(
         (key, mbtiles) -> {
           String[] fromKey = fromKey(key);
-          try {
-            mbtiles.cleanup();
-          } catch (SQLException | IOException e) {
-            // ignore
+          if (tileSchemas.containsKey(fromKey[0]) && !tileSchemas.get(fromKey[0]).isEmpty()) {
+            try {
+              mbtiles.cleanup();
+            } catch (SQLException | IOException e) {
+              // ignore
+            }
           }
         });
   }
