@@ -7,6 +7,8 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
+import static de.ii.xtraplatform.tiles.app.TileStoreMbTiles.MBTILES_SUFFIX;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.tiles.app.FeatureEncoderMVT;
 import de.ii.xtraplatform.tiles.app.SqlHelper;
+import de.ii.xtraplatform.tiles.app.TileStorePartitions;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,6 +43,7 @@ import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import javax.annotation.Nullable;
@@ -48,12 +52,47 @@ import org.slf4j.LoggerFactory;
 
 public class MbtilesTileset {
 
+  interface Mutex {
+    boolean tryAcquire(long timeout, TimeUnit unit) throws InterruptedException;
+
+    void release();
+
+    static Mutex create() {
+      Semaphore semaphore = new Semaphore(1);
+
+      return new Mutex() {
+        @Override
+        public boolean tryAcquire(long timeout, TimeUnit unit) throws InterruptedException {
+          return semaphore.tryAcquire(timeout, unit);
+        }
+
+        @Override
+        public void release() {
+          semaphore.release();
+        }
+      };
+    }
+
+    static Mutex createNoOp() {
+      return new Mutex() {
+        @Override
+        public boolean tryAcquire(long timeout, TimeUnit unit) {
+          return true;
+        }
+
+        @Override
+        public void release() {}
+      };
+    }
+  }
+
   private static final Logger LOGGER = LoggerFactory.getLogger(MbtilesTileset.class);
   private static final int EMPTY_TILE_ID = 1;
   private static final int IDS_CHUCK_SIZE = 10000;
   private final Path tilesetPath;
-  private final Semaphore mutex = new Semaphore(1);
+  private final Mutex mutex;
   private final MbtilesMetadata metadata;
+  private final Optional<TileStorePartitions> partitions;
 
   public MbtilesTileset(Path tilesetPath) {
     if (!Files.exists(tilesetPath)) {
@@ -61,6 +100,8 @@ public class MbtilesTileset {
           String.format("Mbtiles file does not exist: %s", tilesetPath));
     }
     this.tilesetPath = tilesetPath;
+    this.partitions = Optional.empty();
+    this.mutex = Mutex.create();
     try {
       this.metadata = getMetadata();
     } catch (SQLException | IOException e) {
@@ -69,23 +110,67 @@ public class MbtilesTileset {
     }
   }
 
-  public MbtilesTileset(Path tilesetPath, MbtilesMetadata metadata) throws IOException {
-    if (Files.exists(tilesetPath)) {
+  public MbtilesTileset(
+      Path tilesetPath, MbtilesMetadata metadata, Optional<TileStorePartitions> partitions)
+      throws IOException {
+    if (partitions.isEmpty() && Files.exists(tilesetPath)) {
       throw new FileAlreadyExistsException(tilesetPath.toString());
     }
     this.tilesetPath = tilesetPath;
+    this.partitions = partitions;
+    this.mutex = partitions.isPresent() ? Mutex.createNoOp() : Mutex.create();
     this.metadata = metadata;
 
-    // create and init MBTiles DB
-    try {
-      releaseConnection(getConnection(true, false));
-    } catch (SQLException e) {
-      throw new IllegalStateException(
-          String.format("Could not create Mbtiles file: %s", tilesetPath), e);
+    if (partitions.isEmpty()) {
+      // create and init MBTiles DB
+      try {
+        releaseConnection(getConnection(null, true, false));
+      } catch (SQLException e) {
+        throw new IllegalStateException(
+            String.format("Could not create Mbtiles file: %s", tilesetPath), e);
+      }
     }
   }
 
-  private void initMbtilesDb(MbtilesMetadata metadata, Connection connection) {
+  private Path getTilesetPath(TileCoordinates tile) {
+    if (partitions.isPresent()) {
+      return getTilesetPath(tile.getLevel(), tile.getRow(), tile.getCol());
+    }
+
+    return tilesetPath;
+  }
+
+  private Path getTilesetPath(int level, int row, int col) {
+    if (partitions.isPresent()) {
+      String partition = partitions.get().getPartitionName(level, row, col);
+      return tilesetPath.resolve(partition + MBTILES_SUFFIX);
+    }
+
+    return tilesetPath;
+  }
+
+  private List<Path> getTilesetPaths() {
+    if (partitions.isEmpty()) {
+      return List.of(tilesetPath);
+    }
+
+    try (Stream<Path> files =
+        Files.find(
+            tilesetPath,
+            1,
+            ((path1, basicFileAttributes) ->
+                basicFileAttributes.isRegularFile()
+                    && path1.getFileName().toString().endsWith(MBTILES_SUFFIX)))) {
+      return files.collect(Collectors.toList());
+    } catch (IOException e) {
+      LogContext.errorAsDebug(
+          LOGGER, e, "Could not list MBTiles files in directory: {}", tilesetPath);
+      return List.of();
+    }
+  }
+
+  private void initMbtilesDb(MbtilesMetadata metadata, Connection connection)
+      throws SQLException, IOException {
     try {
       // change settings to reduce overheads at the cost of protection against corrupt databases
       // in case of an error
@@ -174,22 +259,29 @@ public class MbtilesTileset {
         SqlHelper.execute(connection, "ROLLBACK");
       } catch (SQLException ignore) {
       }
-      throw new IllegalStateException(
-          String.format("Could not create new Mbtiles file: %s", tilesetPath), e);
+      throw e;
     }
   }
 
-  private Connection getConnection(boolean acquireMutexOnCreate, boolean readOnly)
+  private Connection getConnection(
+      TileCoordinates tile, boolean acquireMutexOnCreate, boolean readOnly) throws IOException {
+    return getConnection(
+        tile.getLevel(), tile.getRow(), tile.getCol(), acquireMutexOnCreate, readOnly);
+  }
+
+  private Connection getConnection(
+      int level, int row, int col, boolean acquireMutexOnCreate, boolean readOnly)
       throws IOException {
     // ensure that the file exists
-    if (!Files.exists(tilesetPath)) {
-      createMbtilesFile(acquireMutexOnCreate);
+    if (!Files.exists(getTilesetPath(level, row, col))) {
+      createMbtilesFile(level, row, col, acquireMutexOnCreate);
     }
 
-    return SqlHelper.getConnection(tilesetPath, readOnly);
+    return SqlHelper.getConnection(getTilesetPath(level, row, col), readOnly);
   }
 
-  private void createMbtilesFile(boolean acquireMutexOnCreate) throws IOException {
+  private void createMbtilesFile(int level, int row, int col, boolean acquireMutexOnCreate)
+      throws IOException {
     // acquire the mutex, if necessary (for write operations we already have it)
     boolean acquired = false;
     Connection connection = null;
@@ -201,17 +293,26 @@ public class MbtilesTileset {
         }
       if (acquireMutexOnCreate && !acquired)
         throw new IllegalStateException(
-            String.format("Could not acquire mutex to create MBTiles file: %s", tilesetPath));
+            String.format(
+                "Could not acquire mutex to create MBTiles file: %s",
+                getTilesetPath(level, row, col)));
       // now that we have the mutex, check again, if the file exists, it may have been
       // created by a parallel request
-      if (!Files.exists(tilesetPath)) {
+      if (!Files.exists(getTilesetPath(level, row, col))) {
         // recreate an empty MBTiles container
         if (LOGGER.isTraceEnabled()) {
-          LOGGER.trace("Creating MBTiles file '{}'.", tilesetPath);
+          LOGGER.trace("Creating MBTiles file '{}'.", getTilesetPath(level, row, col));
         }
-        Files.createDirectories(tilesetPath.getParent());
-        connection = SqlHelper.getConnection(tilesetPath, false);
-        initMbtilesDb(metadata, connection);
+        Files.createDirectories(getTilesetPath(level, row, col).getParent());
+        connection = SqlHelper.getConnection(getTilesetPath(level, row, col), false);
+        try {
+          initMbtilesDb(metadata, connection);
+        } catch (SQLException | IOException e) {
+          throw new IllegalStateException(
+              String.format(
+                  "Could not create new Mbtiles file: %s", getTilesetPath(level, row, col)),
+              e);
+        }
       }
     } catch (InterruptedException e) {
       if (LOGGER.isDebugEnabled()) {
@@ -240,7 +341,7 @@ public class MbtilesTileset {
   public MbtilesMetadata getMetadata() throws SQLException, IOException {
     ImmutableMbtilesMetadata.Builder builder = ImmutableMbtilesMetadata.builder();
     String sql = "SELECT name, value FROM metadata";
-    try (Connection connection = getConnection(true, true);
+    try (Connection connection = getConnection(null, true, true);
         Statement statement = connection.createStatement();
         ResultSet rs = statement.executeQuery(sql)) {
       while (rs.next()) {
@@ -372,7 +473,7 @@ public class MbtilesTileset {
         String.format(
             "SELECT tile_data FROM tiles WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
             level, row, col);
-    try (Connection connection = getConnection(true, true);
+    try (Connection connection = getConnection(tile, true, true);
         Statement statement = connection.createStatement();
         ResultSet rs = statement.executeQuery(sql)) {
       if (rs.next()) {
@@ -395,7 +496,7 @@ public class MbtilesTileset {
         String.format(
             "SELECT tile_id FROM tile_map WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
             level, row, col);
-    try (Connection connection = getConnection(true, true);
+    try (Connection connection = getConnection(tile, true, true);
         Statement statement = connection.createStatement();
         ResultSet rs = statement.executeQuery(sql)) {
       if (rs.next()) {
@@ -411,12 +512,28 @@ public class MbtilesTileset {
   }
 
   public void walk(Walker walker) throws SQLException, IOException {
+    if (partitions.isEmpty()) {
+      walk(0, 0, 0, walker);
+      return;
+    }
+
+    for (Path path : getTilesetPaths()) {
+      int[] partitionScope =
+          partitions
+              .get()
+              .getPartitionScope(path.getFileName().toString().replace(MBTILES_SUFFIX, ""));
+
+      walk(partitionScope[0], partitionScope[1], partitionScope[3], walker);
+    }
+  }
+
+  private void walk(int level, int row, int col, Walker walker) throws SQLException, IOException {
     // we need to close this result set, before we start to walk;
     // first determine the number of tiles to process and store the tile coordinates in an array
     String sql = "SELECT COUNT(zoom_level) FROM tile_map";
     int[][] tiles = new int[0][3];
     int numTiles = 0;
-    try (Connection connection = getConnection(true, false)) {
+    try (Connection connection = getConnection(level, row, col, true, false)) {
       try (Statement statement = connection.createStatement();
           ResultSet rs = statement.executeQuery(sql)) {
         if (rs.next()) {
@@ -464,7 +581,7 @@ public class MbtilesTileset {
             "SELECT tile_data FROM tiles WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
             level, row, col);
     boolean exists;
-    try (Connection connection = getConnection(true, true);
+    try (Connection connection = getConnection(level, row, col, true, true);
         Statement statement = connection.createStatement();
         ResultSet rs = statement.executeQuery(sql)) {
       exists = rs.next();
@@ -483,9 +600,27 @@ public class MbtilesTileset {
   }
 
   public boolean hasAnyTiles() throws SQLException, IOException {
+    if (partitions.isEmpty()) {
+      return hasAnyTiles(0, 0, 0);
+    }
+
+    boolean hasAnyTiles = false;
+
+    for (Path path : getTilesetPaths()) {
+      int[] partitionScope =
+          partitions
+              .get()
+              .getPartitionScope(path.getFileName().toString().replace(MBTILES_SUFFIX, ""));
+      hasAnyTiles |= hasAnyTiles(partitionScope[0], partitionScope[1], partitionScope[3]);
+    }
+
+    return hasAnyTiles;
+  }
+
+  private boolean hasAnyTiles(int level, int row, int col) throws SQLException, IOException {
     String sql = "SELECT COUNT(*) FROM tile_blobs";
     long count;
-    try (Connection connection = getConnection(true, true);
+    try (Connection connection = getConnection(level, row, col, true, true);
         Statement statement = connection.createStatement();
         ResultSet rs = statement.executeQuery(sql)) {
       count = rs.getLong(1);
@@ -506,7 +641,7 @@ public class MbtilesTileset {
           level,
           tile.getRow(),
           col,
-          tilesetPath);
+          getTilesetPath(tile));
     }
     Connection connection = null;
     boolean acquired = false;
@@ -516,7 +651,7 @@ public class MbtilesTileset {
       }
       acquired = mutex.tryAcquire(5, TimeUnit.SECONDS);
       if (acquired) {
-        connection = getConnection(false, false);
+        connection = getConnection(tile, false, false);
         SqlHelper.execute(connection, "BEGIN IMMEDIATE");
         // do we have an old blob?
         boolean exists = false;
@@ -611,7 +746,7 @@ public class MbtilesTileset {
           level,
           tile.getRow(),
           col,
-          tilesetPath);
+          getTilesetPath(tile));
     }
 
     deleteTile(level, row, col, supportsEmtpyTile);
@@ -627,7 +762,7 @@ public class MbtilesTileset {
       }
       acquired = mutex.tryAcquire(5, TimeUnit.SECONDS);
       if (acquired) {
-        connection = getConnection(false, false);
+        connection = getConnection(level, row, col, false, false);
         String sql =
             String.format(
                 "SELECT tile_id FROM tile_map WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
@@ -673,12 +808,38 @@ public class MbtilesTileset {
   public void deleteTiles(TileMatrixSetBase tileMatrixSet, TileMatrixSetLimits limits)
       throws SQLException, IOException {
     int level = Integer.parseInt(limits.getTileMatrix());
+
+    if (partitions.isEmpty()) {
+      deleteTiles(
+          tileMatrixSet,
+          level,
+          limits.getMinTileRow(),
+          limits.getMaxTileRow(),
+          limits.getMinTileCol(),
+          limits.getMaxTileCol());
+      return;
+    }
+
+    for (TileSubMatrix subMatrix : partitions.get().getSubMatrices(limits)) {
+      deleteTiles(
+          tileMatrixSet,
+          level,
+          subMatrix.getRowMin(),
+          subMatrix.getRowMax(),
+          subMatrix.getColMin(),
+          subMatrix.getColMax());
+    }
+  }
+
+  public void deleteTiles(
+      TileMatrixSetBase tileMatrixSet, int level, int minRow, int maxRow, int minCol, int maxCol)
+      throws SQLException, IOException {
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace(
           "Delete tiles {}/{}/*/* from MBTiles cache {}.",
           tileMatrixSet.getId(),
           level,
-          tilesetPath);
+          getTilesetPath(level, minRow, minCol));
     }
     Connection connection = null;
     boolean acquired = false;
@@ -690,16 +851,17 @@ public class MbtilesTileset {
       if (!acquired)
         throw new IllegalStateException(
             String.format(
-                "Could not acquire mutex to delete tiles in MBTiles file: %s", tilesetPath));
-      connection = getConnection(false, false);
+                "Could not acquire mutex to delete tiles in MBTiles file: %s",
+                getTilesetPath(null)));
+      connection = getConnection(level, minRow, minCol, false, false);
       String sqlFrom =
           String.format(
               "FROM tile_map WHERE zoom_level=%d AND tile_row>=%d AND tile_column>=%d AND tile_row<=%d AND tile_column<=%d",
               level,
-              tileMatrixSet.getTmsRow(level, limits.getMaxTileRow()),
-              limits.getMinTileCol(),
-              tileMatrixSet.getTmsRow(level, limits.getMinTileRow()),
-              limits.getMaxTileCol());
+              tileMatrixSet.getTmsRow(level, maxRow),
+              minCol,
+              tileMatrixSet.getTmsRow(level, minRow),
+              maxCol);
       String sql = String.format("SELECT DISTINCT tile_id %s", sqlFrom);
       ArrayList<Integer> tile_ids = new ArrayList<>();
       try (Statement statement = connection.createStatement();
@@ -757,6 +919,22 @@ public class MbtilesTileset {
   }
 
   public void cleanup() throws SQLException, IOException {
+    if (partitions.isEmpty()) {
+      cleanup(0, 0, 0);
+      return;
+    }
+
+    for (Path path : getTilesetPaths()) {
+      int[] partitionScope =
+          partitions
+              .get()
+              .getPartitionScope(path.getFileName().toString().replace(MBTILES_SUFFIX, ""));
+
+      cleanup(partitionScope[0], partitionScope[1], partitionScope[3]);
+    }
+  }
+
+  private void cleanup(int level, int row, int col) throws SQLException, IOException {
     Connection connection = null;
     boolean acquired = false;
     try {
@@ -765,7 +943,7 @@ public class MbtilesTileset {
       }
       acquired = mutex.tryAcquire(5, TimeUnit.SECONDS);
       if (acquired) {
-        connection = getConnection(false, false);
+        connection = getConnection(level, row, col, false, false);
         SqlHelper.execute(connection, "VACUUM");
       }
     } catch (InterruptedException e) {

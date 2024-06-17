@@ -24,28 +24,11 @@ public class TileStorePartitions {
     this.singlePartitionLevel = (int) (Math.log(singleRowCol) / Math.log(2));
   }
 
-  // 10/645/322
-  public String getPartition(String tms, int level, int row, int col) {
-    if (level < singlePartitionLevel) {
-      return String.format("0-%d", singlePartitionLevel - 1);
-    }
-    if (level == singlePartitionLevel) {
-      return String.format("%d", singlePartitionLevel);
+  public String getPartitionName(int level, int row, int col) {
+    if (level <= singlePartitionLevel) {
+      return String.format("%d", level);
     }
 
-    int levelRowCol = (int) Math.pow(2, level);
-    int levelTiles = (int) Math.pow(levelRowCol, 2);
-
-    // 645 / 256 = 2
-    int rowPartition = row / singleRowCol;
-    // 322 / 256 = 1
-    int colPartition = col / singleRowCol;
-
-    return String.format(
-        "%s/%d/%d/%d", tms, level, row / maxTilesPerPartition, col / maxTilesPerPartition);
-  }
-
-  private String getPartitionName(int level, int row, int col) {
     // 645 / 256 = 2
     int rowPartition = row / singleRowCol;
     // 322 / 256 = 1
@@ -55,9 +38,27 @@ public class TileStorePartitions {
         "%d_%d-%d_%d-%d",
         level,
         rowPartition * singleRowCol,
-        (rowPartition + 1) * singleRowCol,
+        ((rowPartition + 1) * singleRowCol) - 1,
         colPartition * singleRowCol,
-        (colPartition + 1) * singleRowCol);
+        ((colPartition + 1) * singleRowCol) - 1);
+  }
+
+  public int[] getPartitionScope(String partitionName) {
+    String[] parts = partitionName.split("_|-");
+
+    if (parts.length == 1) {
+      int level = Integer.parseInt(parts[0]);
+      int max = (int) Math.pow(2, level);
+      return new int[] {level, 0, max, 0, max};
+    }
+
+    return new int[] {
+      Integer.parseInt(parts[0]),
+      Integer.parseInt(parts[1]),
+      Integer.parseInt(parts[2]),
+      Integer.parseInt(parts[3]),
+      Integer.parseInt(parts[4])
+    };
   }
 
   public Set<TileSubMatrix> getSubMatrices(TileMatrixSetLimits limits) {

@@ -34,15 +34,15 @@ public interface SeedingOptions {
     public int getNumberOfTiles() {
       switch (this) {
         case S:
-          return 64;
-        case M:
           return 256;
-        case L:
+        case M:
           return 1024;
+        case L:
+          return 16384;
         case XL:
-          return 8192;
+          return 65536;
         default:
-          return 64;
+          return 1024;
       }
     }
   }
@@ -124,10 +124,11 @@ public interface SeedingOptions {
   }
 
   /**
-   * @langEn The maximum number of tiles in a seeding job (S=64, M=256, L=1024, XL=8192). The tile
-   *     seeding is split into multiple jobs to distribute the work across threads and nodes.
-   * @langDe Die maximale Anzahl an Tiles in einem Seeding-Job (S=64, M=256, L=1024, XL=8192). Das
-   *     Seeding wird in mehrere Jobs aufgeteilt, um die Arbeit auf Threads und Knoten zu verteilen.
+   * @langEn The maximum number of tiles in a seeding job (S=256, M=1024, L=16384, XL=65536). The
+   *     tile seeding is split into multiple jobs to distribute the work across threads and nodes.
+   * @langDe Die maximale Anzahl an Tiles in einem Seeding-Job (S=256, M=1024, L=16384, XL=65536).
+   *     Das Seeding wird in mehrere Jobs aufgeteilt, um die Arbeit auf Threads und Knoten zu
+   *     verteilen.
    * @default M
    */
   @Nullable

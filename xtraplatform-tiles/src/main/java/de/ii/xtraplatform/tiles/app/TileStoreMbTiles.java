@@ -10,6 +10,7 @@ package de.ii.xtraplatform.tiles.app;
 import static de.ii.xtraplatform.base.domain.util.LambdaWithException.consumerMayThrow;
 
 import de.ii.xtraplatform.base.domain.LogContext;
+import de.ii.xtraplatform.blobs.domain.BlobReader.PathAttributes;
 import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import de.ii.xtraplatform.tiles.domain.ImmutableMbtilesMetadata;
@@ -36,6 +37,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -44,7 +46,7 @@ import org.slf4j.LoggerFactory;
 public class TileStoreMbTiles implements TileStore {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileStoreMbTiles.class);
-  private static final String MBTILES_SUFFIX = ".mbtiles";
+  public static final String MBTILES_SUFFIX = ".mbtiles";
 
   static TileStoreReadOnly readOnly(Map<String, Path> tileSetSources) {
     Map<String, MbtilesTileset> tileSets =
@@ -55,21 +57,22 @@ public class TileStoreMbTiles implements TileStore {
                         entry.getKey(), new MbtilesTileset(entry.getValue())))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-    return new TileStoreMbTiles("", null, tileSets, Map.of());
+    return new TileStoreMbTiles("", null, tileSets, Map.of(), Optional.empty());
   }
 
   static TileStore readWrite(
       ResourceStore rootStore,
       String providerId,
-      Map<String, Map<String, TileGenerationSchema>> tileSchemas) {
+      Map<String, Map<String, TileGenerationSchema>> tileSchemas,
+      Optional<TileStorePartitions> partitions) {
 
     Map<String, MbtilesTileset> tileSets = new ConcurrentHashMap<>();
+    BiPredicate<Path, PathAttributes> matcher =
+        partitions.isPresent()
+            ? (p, a) -> !a.isValue()
+            : (p, a) -> a.isValue() && p.getFileName().toString().endsWith(MBTILES_SUFFIX);
 
-    try (Stream<Path> files =
-        rootStore.walk(
-            Path.of(""),
-            2,
-            (p, a) -> a.isValue() && p.getFileName().toString().endsWith(MBTILES_SUFFIX))) {
+    try (Stream<Path> files = rootStore.walk(Path.of(""), 2, matcher)) {
       files
           .filter(path -> path.getNameCount() == 2)
           .forEach(
@@ -85,7 +88,8 @@ public class TileStoreMbTiles implements TileStore {
                               providerId,
                               tileset,
                               tms,
-                              getVectorLayers(tileSchemas, tileset)));
+                              getVectorLayers(tileSchemas, tileset),
+                              partitions));
                     }
                   }));
     } catch (IOException e) {
@@ -96,23 +100,26 @@ public class TileStoreMbTiles implements TileStore {
       }
       throw e;
     }
-    return new TileStoreMbTiles(providerId, rootStore, tileSets, tileSchemas);
+    return new TileStoreMbTiles(providerId, rootStore, tileSets, tileSchemas, partitions);
   }
 
   private final String providerId;
   private final ResourceStore rootStore;
   private final Map<String, Map<String, TileGenerationSchema>> tileSchemas;
   private final Map<String, MbtilesTileset> tileSets;
+  private final Optional<TileStorePartitions> partitions;
 
   private TileStoreMbTiles(
       String providerId,
       ResourceStore rootStore,
       Map<String, MbtilesTileset> tileSets,
-      Map<String, Map<String, TileGenerationSchema>> tileSchemas) {
+      Map<String, Map<String, TileGenerationSchema>> tileSchemas,
+      Optional<TileStorePartitions> partitions) {
     this.providerId = providerId;
     this.rootStore = rootStore;
     this.tileSchemas = tileSchemas;
     this.tileSets = tileSets;
+    this.partitions = partitions;
   }
 
   @Override
@@ -208,7 +215,8 @@ public class TileStoreMbTiles implements TileStore {
                 providerId,
                 tile.getTileset(),
                 tile.getTileMatrixSet().getId(),
-                getVectorLayers(tileSchemas, tile.getTileset())));
+                getVectorLayers(tileSchemas, tile.getTileset()),
+                partitions));
       }
     }
     MbtilesTileset tileset = tileSets.get(key(tile));
@@ -382,9 +390,11 @@ public class TileStoreMbTiles implements TileStore {
       String name,
       String tileset,
       String tileMatrixSet,
-      List<VectorLayer> vectorLayers)
+      List<VectorLayer> vectorLayers,
+      Optional<TileStorePartitions> partitions)
       throws IOException {
-    Path relPath = Path.of(tileset).resolve(tileMatrixSet + MBTILES_SUFFIX);
+    Path relPath =
+        Path.of(tileset).resolve(tileMatrixSet + (partitions.isEmpty() ? MBTILES_SUFFIX : ""));
     Optional<Path> filePath;
 
     try {
@@ -398,18 +408,23 @@ public class TileStoreMbTiles implements TileStore {
           "Could not create MBTiles file. Make sure you have a writable localizable source defined in cfg.yml.");
     }
 
-    if (rootStore.has(relPath)) {
-      return new MbtilesTileset(filePath.get());
-    }
-
     MbtilesMetadata md =
         ImmutableMbtilesMetadata.builder()
             .name(name)
             .format(TilesFormat.MVT)
             .vectorLayers(vectorLayers)
             .build();
+
+    if (partitions.isPresent()) {
+      return new MbtilesTileset(filePath.get(), md, partitions);
+    }
+
+    if (rootStore.has(relPath)) {
+      return new MbtilesTileset(filePath.get());
+    }
+
     try {
-      return new MbtilesTileset(filePath.get(), md);
+      return new MbtilesTileset(filePath.get(), md, Optional.empty());
     } catch (FileAlreadyExistsException e) {
       throw new IllegalStateException(
           "A MBTiles file already exists. It must have been created by a parallel thread, which should not occur. MBTiles file creation must be synchronized.");

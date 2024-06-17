@@ -62,7 +62,12 @@ public interface Cache extends WithTmsLevels, WithTilesetTmsLevels {
   }
 
   enum Storage {
+    PER_TILE,
+    PER_JOB,
+    PER_TILESET,
+    @Deprecated(since = "4.1", forRemoval = true)
     PLAIN,
+    @Deprecated(since = "4.1", forRemoval = true)
     MBTILES
   }
 

@@ -257,17 +257,30 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
         .computeIfAbsent(
             cache.getStorage(),
             storage -> {
+              Optional<TileStorePartitions> partitions =
+                  cache.getStorage() == Storage.PER_JOB
+                      ? Optional.of(
+                          new TileStorePartitions(
+                              seeding().get().getOptions().getEffectiveJobSize()))
+                      : Optional.empty();
+
               if (cache.getType() == Type.IMMUTABLE) {
                 return new TileStoreMulti(
                     cacheStore,
                     cache.getStorage(),
                     id,
-                    getTileSchemas(tileGenerator, tilesets, rasterTilesets));
+                    getTileSchemas(tileGenerator, tilesets, rasterTilesets),
+                    partitions);
               }
 
               return storage == Storage.MBTILES
+                      || storage == Storage.PER_TILESET
+                      || storage == Storage.PER_JOB
                   ? TileStoreMbTiles.readWrite(
-                      cacheStore, id, getTileSchemas(tileGenerator, tilesets, rasterTilesets))
+                      cacheStore,
+                      id,
+                      getTileSchemas(tileGenerator, tilesets, rasterTilesets),
+                      partitions)
                   : new TileStorePlain(cacheStore);
             });
   }

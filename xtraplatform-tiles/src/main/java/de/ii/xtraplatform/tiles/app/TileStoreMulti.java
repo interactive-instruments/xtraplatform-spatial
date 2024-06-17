@@ -50,13 +50,15 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
   private final Map<String, Map<String, TileGenerationSchema>> tileSchemas;
   private final List<Tuple<TileStore, ResourceStore>> active;
   private final Map<String, Map<String, List<TileMatrixSetLimits>>> dirty;
+  private final Optional<TileStorePartitions> partitions;
   private Tuple<TileStore, ResourceStore> staging;
 
   public TileStoreMulti(
       ResourceStore cacheStore,
       Storage storage,
       String tileSetName,
-      Map<String, Map<String, TileGenerationSchema>> tileSchemas) {
+      Map<String, Map<String, TileGenerationSchema>> tileSchemas,
+      Optional<TileStorePartitions> partitions) {
     this.cacheStore = cacheStore;
     this.storage = storage;
     this.tileSetName = tileSetName;
@@ -64,6 +66,7 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
     this.staging = null;
     this.active = getActive();
     this.dirty = new ConcurrentHashMap<>();
+    this.partitions = partitions;
     tileSchemas.keySet().forEach(tileset -> dirty.put(tileset, new ConcurrentHashMap<>()));
   }
 
@@ -233,9 +236,12 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
     return true;
   }
 
+  // TODO
   private TileStore getTileStore(ResourceStore blobStore) {
     return storage == Storage.MBTILES
-        ? TileStoreMbTiles.readWrite(blobStore, tileSetName, tileSchemas)
+            || storage == Storage.PER_TILESET
+            || storage == Storage.PER_JOB
+        ? TileStoreMbTiles.readWrite(blobStore, tileSetName, tileSchemas, partitions)
         : new TileStorePlain(blobStore);
   }
 
