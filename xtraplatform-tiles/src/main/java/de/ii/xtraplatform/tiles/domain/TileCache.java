@@ -111,6 +111,9 @@ public interface TileCache {
   Map<String, Map<String, Set<TileMatrixSetLimits>>> getCoverage(
       Map<String, TileGenerationParameters> tilesets) throws IOException;
 
+  Map<String, Map<String, Set<TileMatrixSetLimits>>> getRasterCoverage(
+      Map<String, TileGenerationParameters> tilesets) throws IOException;
+
   default Map<String, Map<String, Set<TileMatrixSetLimits>>> getCoverage(
       Map<String, TileGenerationParameters> tilesets,
       TileWalker tileWalker,

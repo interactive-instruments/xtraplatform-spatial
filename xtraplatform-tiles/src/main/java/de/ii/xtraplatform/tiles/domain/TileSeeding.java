@@ -20,6 +20,9 @@ public interface TileSeeding {
   Map<String, Map<String, Set<TileMatrixSetLimits>>> getCoverage(
       Map<String, TileGenerationParameters> tilesets) throws IOException;
 
+  Map<String, Map<String, Set<TileMatrixSetLimits>>> getRasterCoverage(
+      Map<String, TileGenerationParameters> tilesets) throws IOException;
+
   void setupSeeding(TileSeedingJobSet jobSet) throws IOException;
 
   void cleanupSeeding(TileSeedingJobSet jobSet) throws IOException;

@@ -185,10 +185,17 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
       if (cache.getType() == Type.DYNAMIC) {
         current =
             new TileCacheDynamic(
-                tileWalker, tileStore, current, getCacheRanges(cache), cache.getSeeded());
+                tileWalker,
+                tileStore,
+                current,
+                getCacheRanges(cache),
+                getCacheRanges(cache, 1),
+                cache.getSeeded());
         generatorCaches.add((TileCache) current);
       } else if (cache.getType() == Type.IMMUTABLE) {
-        current = new TileCacheImmutable(tileWalker, tileStore, current, getCacheRanges(cache));
+        current =
+            new TileCacheImmutable(
+                tileWalker, tileStore, current, getCacheRanges(cache), getCacheRanges(cache, 1));
         generatorCaches.add((TileCache) current);
       }
     }
@@ -208,10 +215,17 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
       if (cache.getType() == Type.DYNAMIC) {
         current =
             new TileCacheDynamic(
-                tileWalker, tileStore, current, getCacheRanges(cache), cache.getSeeded());
+                tileWalker,
+                tileStore,
+                current,
+                getCacheRanges(cache),
+                getCacheRanges(cache, 1),
+                cache.getSeeded());
         combinerCaches.add((TileCache) current);
       } else if (cache.getType() == Type.IMMUTABLE) {
-        current = new TileCacheImmutable(tileWalker, tileStore, current, getCacheRanges(cache));
+        current =
+            new TileCacheImmutable(
+                tileWalker, tileStore, current, getCacheRanges(cache), getCacheRanges(cache, 1));
         combinerCaches.add((TileCache) current);
       }
     }
@@ -235,9 +249,16 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
       if (cache.getType() == Type.DYNAMIC) {
         current =
             new TileCacheDynamic(
-                tileWalker, tileStore, current, getCacheRanges(cache, 1), cache.getSeeded());
+                tileWalker,
+                tileStore,
+                current,
+                getCacheRanges(cache, 1),
+                getCacheRanges(cache, 1),
+                cache.getSeeded());
       } else if (cache.getType() == Type.IMMUTABLE) {
-        current = new TileCacheImmutable(tileWalker, tileStore, current, getCacheRanges(cache, 1));
+        current =
+            new TileCacheImmutable(
+                tileWalker, tileStore, current, getCacheRanges(cache, 1), getCacheRanges(cache, 1));
       }
     }
 
@@ -529,6 +550,27 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     return coverage;
   }
 
+  @Override
+  public Map<String, Map<String, Set<TileMatrixSetLimits>>> getRasterCoverage(
+      Map<String, TileGenerationParameters> tilesets) throws IOException {
+    Map<String, TileGenerationParameters> validTilesets = rasterTilesets(tilesets);
+
+    Map<String, Map<String, Set<TileMatrixSetLimits>>> coverage = new LinkedHashMap<>();
+
+    for (TileCache cache : generatorCaches) {
+      if (cache.isSeeded()) {
+        mergeCoverageInto(cache.getRasterCoverage(validTilesets), coverage);
+      }
+    }
+    for (TileCache cache : combinerCaches) {
+      if (cache.isSeeded()) {
+        mergeCoverageInto(cache.getRasterCoverage(validTilesets), coverage);
+      }
+    }
+
+    return coverage;
+  }
+
   private static void mergeCoverageInto(
       Map<String, Map<String, Set<TileMatrixSetLimits>>> source,
       Map<String, Map<String, Set<TileMatrixSetLimits>>> target) {
@@ -579,7 +621,9 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
                 return;
               }
 
-              boolean isCombined = getData().getTilesets().get(tileSet).isCombined();
+              boolean isCombined =
+                  getData().getTilesets().containsKey(tileSet)
+                      && getData().getTilesets().get(tileSet).isCombined();
               List<TileCache> caches = isCombined ? combinerCaches : generatorCaches;
               String label = isCombined ? "tile combiner" : "tile generator";
 
@@ -663,6 +707,9 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     return tilesets.entrySet().stream()
         .filter(
             entry -> {
+              if (getRasterTilesets().contains(entry.getKey())) {
+                return false;
+              }
               if (!getData().getTilesets().containsKey(entry.getKey())) {
                 LOGGER.warn("Tileset with name '{}' not found", entry.getKey());
                 return false;
@@ -689,6 +736,13 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
             entry ->
                 getData().getTilesets().containsKey(entry.getKey())
                     && getData().getTilesets().get(entry.getKey()).isCombined())
+        .collect(MapStreams.toMap());
+  }
+
+  private Map<String, TileGenerationParameters> rasterTilesets(
+      Map<String, TileGenerationParameters> tilesets) {
+    return tilesets.entrySet().stream()
+        .filter(entry -> getRasterTilesets().contains(entry.getKey()))
         .collect(MapStreams.toMap());
   }
 

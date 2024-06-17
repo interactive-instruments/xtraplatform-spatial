@@ -34,6 +34,7 @@ public class TileCacheDynamic implements ChainedTileProvider, TileCache {
   private final TileStore tileStore;
   private final ChainedTileProvider delegate;
   private final Map<String, Map<String, Range<Integer>>> tmsRanges;
+  private final Map<String, Map<String, Range<Integer>>> rasterTmsRanges;
   private final boolean isSeeded;
 
   public TileCacheDynamic(
@@ -41,11 +42,13 @@ public class TileCacheDynamic implements ChainedTileProvider, TileCache {
       TileStore tileStore,
       ChainedTileProvider delegate,
       Map<String, Map<String, Range<Integer>>> tmsRanges,
+      Map<String, Map<String, Range<Integer>>> rasterTmsRanges,
       boolean seeded) {
     this.tileWalker = tileWalker;
     this.tileStore = tileStore;
     this.delegate = delegate;
     this.tmsRanges = tmsRanges;
+    this.rasterTmsRanges = rasterTmsRanges;
     this.isSeeded = seeded;
   }
 
@@ -83,6 +86,12 @@ public class TileCacheDynamic implements ChainedTileProvider, TileCache {
   public Map<String, Map<String, Set<TileMatrixSetLimits>>> getCoverage(
       Map<String, TileGenerationParameters> tilesets) throws IOException {
     return getCoverage(tilesets, tileWalker, getTmsRanges());
+  }
+
+  @Override
+  public Map<String, Map<String, Set<TileMatrixSetLimits>>> getRasterCoverage(
+      Map<String, TileGenerationParameters> tilesets) throws IOException {
+    return getCoverage(tilesets, tileWalker, rasterTmsRanges);
   }
 
   @Override

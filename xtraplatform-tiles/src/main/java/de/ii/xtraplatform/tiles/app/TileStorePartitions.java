@@ -43,6 +43,13 @@ public class TileStorePartitions {
         ((colPartition + 1) * singleRowCol) - 1);
   }
 
+  public String getPartitionName(TileSubMatrix subMatrix) {
+    TileSubMatrix subMatrixNoLimits =
+        getSubMatrix(subMatrix.getLevel(), subMatrix.getRowMin(), subMatrix.getColMin());
+    return getPartitionName(
+        subMatrixNoLimits.getLevel(), subMatrixNoLimits.getRowMin(), subMatrixNoLimits.getColMin());
+  }
+
   public int[] getPartitionScope(String partitionName) {
     String[] parts = partitionName.split("_|-");
 
@@ -103,6 +110,26 @@ public class TileStorePartitions {
         .rowMax(Math.min(rowMax, limits.getMaxTileRow()))
         .colMin(Math.max(colMin, limits.getMinTileCol()))
         .colMax(Math.min(colMax, limits.getMaxTileCol()))
+        .build();
+  }
+
+  private TileSubMatrix getSubMatrix(int level, int row, int col) {
+    // 645 / 256 = 2
+    int rowPartition = row / singleRowCol;
+    // 322 / 256 = 1
+    int colPartition = col / singleRowCol;
+
+    int rowMin = rowPartition * singleRowCol;
+    int rowMax = ((rowPartition + 1) * singleRowCol) - 1;
+    int colMin = colPartition * singleRowCol;
+    int colMax = ((colPartition + 1) * singleRowCol) - 1;
+
+    return new ImmutableTileSubMatrix.Builder()
+        .level(level)
+        .rowMin(rowMin)
+        .rowMax(rowMax)
+        .colMin(colMin)
+        .colMax(colMax)
         .build();
   }
 }

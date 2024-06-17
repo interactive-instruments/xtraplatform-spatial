@@ -20,6 +20,7 @@ import org.immutables.value.Value;
 public interface TileSeedingJob {
 
   String TYPE_MVT = TileSeedingJobSet.type("vector", "mvt");
+  String TYPE_PNG = TileSeedingJobSet.type("raster", "png");
 
   static Job of(
       String tileProvider,
@@ -37,6 +38,28 @@ public interface TileSeedingJob {
             .encoding(FeatureEncoderMVT.FORMAT)
             .isReseed(isReseed)
             .addAllSubMatrices(subMatrices)
+            .build(),
+        jobSetId);
+  }
+
+  static Job raster(
+      String tileProvider,
+      String tileSet,
+      String tileMatrixSet,
+      boolean isReseed,
+      Set<TileSubMatrix> subMatrices,
+      String jobSetId,
+      String storageHint) {
+    return Job.of(
+        TYPE_PNG,
+        new ImmutableTileSeedingJob.Builder()
+            .tileProvider(tileProvider)
+            .tileSet(tileSet)
+            .tileMatrixSet(tileMatrixSet)
+            .encoding(MediaType.valueOf("image/png"))
+            .isReseed(isReseed)
+            .addAllSubMatrices(subMatrices)
+            .storageHint(storageHint)
             .build(),
         jobSetId);
   }

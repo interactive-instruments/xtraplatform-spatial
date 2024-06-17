@@ -124,7 +124,7 @@ public class MbtilesTileset {
     if (partitions.isEmpty()) {
       // create and init MBTiles DB
       try {
-        releaseConnection(getConnection(null, true, false));
+        releaseConnection(getConnection(0, 0, 0, true, false));
       } catch (SQLException e) {
         throw new IllegalStateException(
             String.format("Could not create Mbtiles file: %s", tilesetPath), e);

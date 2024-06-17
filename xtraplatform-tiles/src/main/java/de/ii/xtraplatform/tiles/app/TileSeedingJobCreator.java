@@ -13,8 +13,11 @@ import de.ii.xtraplatform.entities.domain.EntityRegistry;
 import de.ii.xtraplatform.jobs.domain.Job;
 import de.ii.xtraplatform.jobs.domain.JobProcessor;
 import de.ii.xtraplatform.jobs.domain.JobSet;
+import de.ii.xtraplatform.tiles.domain.Cache.Storage;
+import de.ii.xtraplatform.tiles.domain.TileGenerationParameters;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetLimits;
 import de.ii.xtraplatform.tiles.domain.TileProvider;
+import de.ii.xtraplatform.tiles.domain.TileProviderFeaturesData;
 import de.ii.xtraplatform.tiles.domain.TileSeedingJob;
 import de.ii.xtraplatform.tiles.domain.TileSeedingJobSet;
 import de.ii.xtraplatform.tiles.domain.TileSubMatrix;
@@ -22,11 +25,15 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -108,38 +115,156 @@ public class TileSeedingJobCreator implements JobProcessor<Boolean, TileSeedingJ
                 jobSet.getStartedAt().set(Instant.now().toEpochMilli());
                 Map<String, Map<String, Set<TileMatrixSetLimits>>> coverage =
                     tileProvider.seeding().get().getCoverage(seedingJobSet.getTileSets());
+                Map<String, Map<String, Set<TileMatrixSetLimits>>> rasterCoverage =
+                    tileProvider.seeding().get().getRasterCoverage(seedingJobSet.getTileSets());
                 TileStorePartitions tileStorePartitions =
                     new TileStorePartitions(
                         tileProvider.seeding().get().getOptions().getEffectiveJobSize());
+                boolean perJob =
+                    ((TileProviderFeaturesData) tileProvider.getData())
+                        .getCaches().stream()
+                            .anyMatch(
+                                cache ->
+                                    cache.getSeeded() && cache.getStorage() == Storage.PER_JOB);
+
+                Map<String, List<String>> rasterForVector =
+                    seedingJobSet.getTileSets().entrySet().stream()
+                        .map(
+                            entry ->
+                                Map.entry(
+                                    entry.getKey(),
+                                    tileProvider
+                                        .access()
+                                        .get()
+                                        .getMapStyles(entry.getKey())
+                                        .stream()
+                                        .map(
+                                            style ->
+                                                tileProvider
+                                                    .access()
+                                                    .get()
+                                                    .getMapStyleTileset(entry.getKey(), style))
+                                        .collect(Collectors.toList())))
+                        .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+
+                Map<String, TileGenerationParameters> rasterForVectorTilesets =
+                    seedingJobSet.getTileSets().entrySet().stream()
+                        .flatMap(
+                            entry ->
+                                rasterForVector.get(entry.getKey()).stream()
+                                    .map(
+                                        rasterTileset ->
+                                            Map.entry(rasterTileset, entry.getValue())))
+                        .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+                Map<String, Map<String, Set<TileMatrixSetLimits>>> rasterForVectorCoverage =
+                    tileProvider.seeding().get().getRasterCoverage(rasterForVectorTilesets);
 
                 tileProvider.seeding().get().setupSeeding(seedingJobSet);
 
-                coverage.forEach(
-                    (tileSet, tileMatrixSets) -> {
-                      tileMatrixSets.forEach(
-                          (tileMatrixSet, limits) -> {
-                            Set<TileSubMatrix> subMatrices = new LinkedHashSet<>();
+                seedingJobSet
+                    .getTileSets()
+                    .keySet()
+                    .forEach(
+                        (tileSet) -> {
+                          Map<String, Set<TileMatrixSetLimits>> tileMatrixSets =
+                              coverage.containsKey(tileSet)
+                                  ? coverage.get(tileSet)
+                                  : rasterCoverage.containsKey(tileSet)
+                                      ? rasterCoverage.get(tileSet)
+                                      : Map.of();
+                          boolean isRaster = rasterCoverage.containsKey(tileSet);
 
-                            limits.forEach(
-                                (limit) -> {
-                                  subMatrices.addAll(tileStorePartitions.getSubMatrices(limit));
-                                });
+                          tileMatrixSets.forEach(
+                              (tileMatrixSet, limits) -> {
+                                Set<TileSubMatrix> subMatrices = new LinkedHashSet<>();
 
-                            for (TileSubMatrix subMatrix : subMatrices) {
-                              Job job2 =
-                                  TileSeedingJob.of(
-                                      tileProvider.getId(),
-                                      tileSet,
-                                      tileMatrixSet,
-                                      seedingJobSet.isReseed(),
-                                      Set.of(subMatrix),
-                                      jobSet.getId());
+                                limits.forEach(
+                                    (limit) -> {
+                                      subMatrices.addAll(tileStorePartitions.getSubMatrices(limit));
+                                    });
 
-                              pushJob.accept(job2);
-                              jobSet.getTotal().incrementAndGet();
-                            }
-                          });
-                    });
+                                for (TileSubMatrix subMatrix : subMatrices) {
+                                  Job job2 =
+                                      isRaster
+                                          ? TileSeedingJob.raster(
+                                              tileProvider.getId(),
+                                              tileSet,
+                                              tileMatrixSet,
+                                              seedingJobSet.isReseed(),
+                                              Set.of(subMatrix),
+                                              jobSet.getId(),
+                                              tileSet)
+                                          : TileSeedingJob.of(
+                                              tileProvider.getId(),
+                                              tileSet,
+                                              tileMatrixSet,
+                                              seedingJobSet.isReseed(),
+                                              Set.of(subMatrix),
+                                              jobSet.getId());
+
+                                  if (perJob) {
+                                    List<Job> followUps =
+                                        rasterForVector.get(tileSet).stream()
+                                            .flatMap(
+                                                rasterTileset -> {
+                                                  if (!rasterForVectorCoverage.containsKey(
+                                                          rasterTileset)
+                                                      || !rasterForVectorCoverage
+                                                          .get(rasterTileset)
+                                                          .containsKey(tileMatrixSet)) {
+                                                    return Stream.empty();
+                                                  }
+
+                                                  Set<TileMatrixSetLimits> rasterLimits =
+                                                      rasterForVectorCoverage
+                                                          .get(rasterTileset)
+                                                          .get(tileMatrixSet)
+                                                          .stream()
+                                                          .filter(
+                                                              limit ->
+                                                                  Integer.parseInt(
+                                                                          limit.getTileMatrix())
+                                                                      == subMatrix.getLevel() + 1)
+                                                          .collect(Collectors.toSet());
+                                                  Set<TileSubMatrix> rasterSubMatrices =
+                                                      new LinkedHashSet<>();
+
+                                                  rasterLimits.forEach(
+                                                      (limit) -> {
+                                                        rasterSubMatrices.addAll(
+                                                            tileStorePartitions.getSubMatrices(
+                                                                limit));
+                                                      });
+
+                                                  String storageHint =
+                                                      rasterSubMatrices.stream()
+                                                          .map(
+                                                              tileStorePartitions::getPartitionName)
+                                                          .collect(Collectors.joining(","));
+
+                                                  return Stream.of(
+                                                      TileSeedingJob.raster(
+                                                          tileProvider.getId(),
+                                                          rasterTileset,
+                                                          tileMatrixSet,
+                                                          seedingJobSet.isReseed(),
+                                                          rasterSubMatrices,
+                                                          jobSet.getId(),
+                                                          storageHint));
+                                                })
+                                            .collect(Collectors.toList());
+
+                                    if (!followUps.isEmpty()) {
+                                      job2 = job2.with(followUps);
+                                      jobSet.getTotal().addAndGet(followUps.size());
+                                    }
+                                  }
+
+                                  pushJob.accept(job2);
+                                  jobSet.getTotal().incrementAndGet();
+                                }
+                              });
+                        });
 
                 if (jobSet.isDone()) {
                   jobSet.getCleanup().ifPresent(pushJob);
