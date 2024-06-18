@@ -267,12 +267,35 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     loadMetadata();
   }
 
+  private Set<String> getTileMatrixSets(String tileset) {
+    if (!getData().getTilesets().containsKey(tileset) && !getRasterTilesets().contains(tileset)) {
+      return Set.of();
+    }
+
+    String vectorTileset =
+        getData().getTilesets().containsKey(tileset)
+            ? tileset
+            : getRasterToVectorTilesets().get(tileset);
+
+    return getData()
+        .getTilesets()
+        .get(vectorTileset)
+        .mergeDefaults(getData().getTilesetDefaults())
+        .getTmsRanges()
+        .keySet();
+  }
+
   private TileStore getTileStore(
       Cache cache,
       ResourceStore cacheStore,
       String id,
       Map<String, TilesetFeatures> tilesets,
       List<String> rasterTilesets) {
+    Map<String, Set<String>> tileMatrixSets =
+        Stream.concat(tilesets.keySet().stream(), rasterTilesets.stream())
+            .map(tileset -> Map.entry(tileset, getTileMatrixSets(tileset)))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
     return tileStores
         .get(cache.getType())
         .computeIfAbsent(
@@ -291,6 +314,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
                     cache.getStorage(),
                     id,
                     getTileSchemas(tileGenerator, tilesets, rasterTilesets),
+                    tileMatrixSets,
                     partitions);
               }
 
@@ -301,6 +325,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
                       cacheStore,
                       id,
                       getTileSchemas(tileGenerator, tilesets, rasterTilesets),
+                      tileMatrixSets,
                       partitions)
                   : new TileStorePlain(cacheStore);
             });
@@ -316,6 +341,20 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
                             getRasterTilesetId(
                                 entry.getValue().getPrefix().orElse(entry.getKey()), style)))
         .collect(Collectors.toList());
+  }
+
+  private Map<String, String> getRasterToVectorTilesets() {
+    return getData().getRasterTilesets().entrySet().stream()
+        .flatMap(
+            entry ->
+                entry.getValue().getStyles().stream()
+                    .map(
+                        style ->
+                            Map.entry(
+                                getRasterTilesetId(
+                                    entry.getValue().getPrefix().orElse(entry.getKey()), style),
+                                entry.getKey())))
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   private Map<String, Map<String, Range<Integer>>> getCacheRanges(Cache cache) {

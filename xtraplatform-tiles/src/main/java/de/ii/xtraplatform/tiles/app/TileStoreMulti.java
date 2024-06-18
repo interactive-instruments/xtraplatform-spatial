@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
@@ -50,6 +51,7 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
   private final Map<String, Map<String, TileGenerationSchema>> tileSchemas;
   private final List<Tuple<TileStore, ResourceStore>> active;
   private final Map<String, Map<String, List<TileMatrixSetLimits>>> dirty;
+  private final Map<String, Set<String>> tileMatrixSets;
   private final Optional<TileStorePartitions> partitions;
   private Tuple<TileStore, ResourceStore> staging;
 
@@ -58,6 +60,7 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
       Storage storage,
       String tileSetName,
       Map<String, Map<String, TileGenerationSchema>> tileSchemas,
+      Map<String, Set<String>> tileMatrixSets,
       Optional<TileStorePartitions> partitions) {
     this.cacheStore = cacheStore;
     this.storage = storage;
@@ -66,6 +69,7 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
     this.staging = null;
     this.active = getActive();
     this.dirty = new ConcurrentHashMap<>();
+    this.tileMatrixSets = tileMatrixSets;
     this.partitions = partitions;
     tileSchemas.keySet().forEach(tileset -> dirty.put(tileset, new ConcurrentHashMap<>()));
   }
@@ -241,7 +245,8 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
     return storage == Storage.MBTILES
             || storage == Storage.PER_TILESET
             || storage == Storage.PER_JOB
-        ? TileStoreMbTiles.readWrite(blobStore, tileSetName, tileSchemas, partitions)
+        ? TileStoreMbTiles.readWrite(
+            blobStore, tileSetName, tileSchemas, tileMatrixSets, partitions)
         : new TileStorePlain(blobStore);
   }
 

@@ -113,6 +113,10 @@ public interface TilesetFeatures
   abstract class Builder implements BuildableBuilder<TilesetFeatures> {}
 
   default TilesetFeatures mergeDefaults(TilesetFeaturesDefaults defaults) {
+    if (Objects.isNull(defaults)) {
+      return this;
+    }
+
     ImmutableTilesetFeatures.Builder withDefaults = getBuilder();
 
     if (this.getFeatureProvider().isEmpty() && defaults.getFeatureProvider().isPresent()) {

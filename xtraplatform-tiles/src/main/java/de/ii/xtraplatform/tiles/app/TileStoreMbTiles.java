@@ -7,10 +7,7 @@
  */
 package de.ii.xtraplatform.tiles.app;
 
-import static de.ii.xtraplatform.base.domain.util.LambdaWithException.consumerMayThrow;
-
 import de.ii.xtraplatform.base.domain.LogContext;
-import de.ii.xtraplatform.blobs.domain.BlobReader.PathAttributes;
 import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import de.ii.xtraplatform.tiles.domain.ImmutableMbtilesMetadata;
@@ -36,10 +33,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,34 +60,23 @@ public class TileStoreMbTiles implements TileStore {
       ResourceStore rootStore,
       String providerId,
       Map<String, Map<String, TileGenerationSchema>> tileSchemas,
+      Map<String, Set<String>> tileMatrixSets,
       Optional<TileStorePartitions> partitions) {
-
     Map<String, MbtilesTileset> tileSets = new ConcurrentHashMap<>();
-    BiPredicate<Path, PathAttributes> matcher =
-        partitions.isPresent()
-            ? (p, a) -> !a.isValue()
-            : (p, a) -> a.isValue() && p.getFileName().toString().endsWith(MBTILES_SUFFIX);
-
-    try (Stream<Path> files = rootStore.walk(Path.of(""), 2, matcher)) {
-      files
-          .filter(path -> path.getNameCount() == 2)
-          .forEach(
-              consumerMayThrow(
-                  path -> {
-                    String tileset = path.getName(0).toString();
-                    if (tileSchemas.containsKey(tileset)) {
-                      String tms = path.getName(1).toString().replace(MBTILES_SUFFIX, "");
-                      tileSets.put(
-                          key(tileset, tms),
-                          createTileSet(
-                              rootStore,
-                              providerId,
-                              tileset,
-                              tms,
-                              getVectorLayers(tileSchemas, tileset),
-                              partitions));
-                    }
-                  }));
+    try {
+      for (String tileset : tileSchemas.keySet()) {
+        for (String tms : tileMatrixSets.get(tileset)) {
+          tileSets.put(
+              key(tileset, tms),
+              createTileSet(
+                  rootStore,
+                  providerId,
+                  tileset,
+                  tms,
+                  getVectorLayers(tileSchemas, tileset),
+                  partitions));
+        }
+      }
     } catch (IOException e) {
       LogContext.errorAsWarn(LOGGER, e, "Error when loading tile caches");
     } catch (RuntimeException e) {
