@@ -66,12 +66,12 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
     this.storage = storage;
     this.tileSetName = tileSetName;
     this.tileSchemas = tileSchemas;
-    this.staging = null;
-    this.active = getActive();
-    this.dirty = new ConcurrentHashMap<>();
     this.tileMatrixSets = tileMatrixSets;
     this.partitions = partitions;
+    this.staging = null;
+    this.dirty = new ConcurrentHashMap<>();
     tileSchemas.keySet().forEach(tileset -> dirty.put(tileset, new ConcurrentHashMap<>()));
+    this.active = getActive();
   }
 
   private List<Tuple<TileStore, ResourceStore>> getActive() {
