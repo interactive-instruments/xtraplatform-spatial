@@ -473,13 +473,13 @@ public class MbtilesTileset {
 
     Optional<InputStream> result = Optional.empty();
     int level = tile.getLevel();
-    int row = tile.getTileMatrixSet().getTmsRow(level, tile.getRow());
+    int tmsRow = tile.getTileMatrixSet().getTmsRow(level, tile.getRow());
     int col = tile.getCol();
     boolean gzip = Objects.equals(tile.getMediaType(), FeatureEncoderMVT.FORMAT);
     String sql =
         String.format(
             "SELECT tile_data FROM tiles WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
-            level, row, col);
+            level, tmsRow, col);
     try (Connection connection = optionalConnection.get();
         Statement statement = connection.createStatement();
         ResultSet rs = statement.executeQuery(sql)) {
@@ -503,12 +503,12 @@ public class MbtilesTileset {
 
     Optional<Boolean> result = Optional.empty();
     int level = tile.getLevel();
-    int row = tile.getTileMatrixSet().getTmsRow(level, tile.getRow());
+    int tmsRow = tile.getTileMatrixSet().getTmsRow(level, tile.getRow());
     int col = tile.getCol();
     String sql =
         String.format(
             "SELECT tile_id FROM tile_map WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
-            level, row, col);
+            level, tmsRow, col);
     try (Connection connection = optionalConnection.get();
         Statement statement = connection.createStatement();
         ResultSet rs = statement.executeQuery(sql)) {
@@ -588,13 +588,15 @@ public class MbtilesTileset {
 
   public boolean tileExists(TileCoordinates tile) throws SQLException, IOException {
     int level = tile.getLevel();
-    int row = tile.getTileMatrixSet().getTmsRow(level, tile.getRow());
+    int row = tile.getRow();
+    int tmsRow = tile.getTileMatrixSet().getTmsRow(level, tile.getRow());
     int col = tile.getCol();
 
-    return tileExists(level, row, col);
+    return tileExists(level, row, tmsRow, col);
   }
 
-  public boolean tileExists(int level, int row, int col) throws SQLException, IOException {
+  public boolean tileExists(int level, int row, int tmsRow, int col)
+      throws SQLException, IOException {
     Optional<Connection> optionalConnection = getConnectionIfExists(level, row, col, true);
 
     if (optionalConnection.isEmpty()) {
@@ -604,7 +606,7 @@ public class MbtilesTileset {
     String sql =
         String.format(
             "SELECT tile_data FROM tiles WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
-            level, row, col);
+            level, tmsRow, col);
     boolean exists;
     try (Connection connection = optionalConnection.get();
         Statement statement = connection.createStatement();
@@ -613,9 +615,9 @@ public class MbtilesTileset {
     } catch (SQLException e) {
       if (LOGGER.isWarnEnabled()) {
         LOGGER.warn(
-            "Could not determine existence of MBTiles tile {}/{}/{}. Query: {}.",
+            "Could not determine existence of TMS tile {}/{}/{}. Query: {}.",
             level,
-            row,
+            tmsRow,
             col,
             sql);
       }
@@ -661,7 +663,7 @@ public class MbtilesTileset {
 
   public void writeTile(TileQuery tile, byte[] content) throws SQLException, IOException {
     int level = tile.getLevel();
-    int row = tile.getTileMatrixSet().getTmsRow(level, tile.getRow());
+    int tmsRow = tile.getTileMatrixSet().getTmsRow(level, tile.getRow());
     int col = tile.getCol();
     boolean gzip = Objects.equals(tile.getMediaType(), FeatureEncoderMVT.FORMAT);
     boolean supportsEmptyTile = Objects.equals(tile.getMediaType(), FeatureEncoderMVT.FORMAT);
@@ -690,7 +692,7 @@ public class MbtilesTileset {
         String sql =
             String.format(
                 "SELECT tile_id FROM tile_map WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
-                level, row, col);
+                level, tmsRow, col);
         try (Statement statement = connection.createStatement();
             ResultSet rs = statement.executeQuery(sql)) {
           if (rs.next()) {
@@ -727,7 +729,7 @@ public class MbtilesTileset {
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
           statement.setInt(1, tile_id);
           statement.setInt(2, level);
-          statement.setInt(3, row);
+          statement.setInt(3, tmsRow);
           statement.setInt(4, col);
           statement.executeUpdate();
         }
@@ -766,7 +768,8 @@ public class MbtilesTileset {
 
   public void deleteTile(TileQuery tile) throws SQLException, IOException {
     int level = tile.getLevel();
-    int row = tile.getTileMatrixSet().getTmsRow(level, tile.getRow());
+    int row = tile.getRow();
+    int tmsRow = tile.getTileMatrixSet().getTmsRow(level, tile.getRow());
     int col = tile.getCol();
     boolean supportsEmtpyTile = Objects.equals(tile.getMediaType(), FeatureEncoderMVT.FORMAT);
 
@@ -775,15 +778,15 @@ public class MbtilesTileset {
           "Delete tile {}/{}/{}/{} from MBTiles cache {}.",
           tile.getTileMatrixSet().getId(),
           level,
-          tile.getRow(),
+          row,
           col,
           getTilesetPath(tile));
     }
 
-    deleteTile(level, row, col, supportsEmtpyTile);
+    deleteTile(level, row, tmsRow, col, supportsEmtpyTile);
   }
 
-  public void deleteTile(int level, int row, int col, boolean supportsEmptyTile)
+  public void deleteTile(int level, int row, int tmsRow, int col, boolean supportsEmptyTile)
       throws SQLException, IOException {
     Connection connection = null;
     boolean acquired = false;
@@ -803,7 +806,7 @@ public class MbtilesTileset {
         String sql =
             String.format(
                 "SELECT tile_id FROM tile_map WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
-                level, row, col);
+                level, tmsRow, col);
         int tile_id = Integer.MIN_VALUE;
         try (Statement statement = connection.createStatement();
             ResultSet rs = statement.executeQuery(sql)) {
@@ -814,7 +817,7 @@ public class MbtilesTileset {
         sql =
             String.format(
                 "DELETE FROM tile_map WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
-                level, row, col);
+                level, tmsRow, col);
         SqlHelper.execute(connection, sql);
         if (tile_id != Integer.MIN_VALUE && (tile_id != EMPTY_TILE_ID || !supportsEmptyTile)) {
           sql = String.format("DELETE FROM tile_blobs WHERE tile_id=%d", tile_id);
@@ -871,6 +874,7 @@ public class MbtilesTileset {
   public void deleteTiles(
       TileMatrixSetBase tileMatrixSet, int level, int minRow, int maxRow, int minCol, int maxCol)
       throws SQLException, IOException {
+
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace(
           "Delete tiles {}/{}/*/* from MBTiles cache {}.",

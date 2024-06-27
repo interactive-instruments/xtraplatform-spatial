@@ -18,6 +18,7 @@ import de.ii.xtraplatform.tiles.domain.Cache.Storage;
 import de.ii.xtraplatform.tiles.domain.TileGenerationSchema;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetBase;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetLimits;
+import de.ii.xtraplatform.tiles.domain.TileMatrixSetRepository;
 import de.ii.xtraplatform.tiles.domain.TileQuery;
 import de.ii.xtraplatform.tiles.domain.TileResult;
 import de.ii.xtraplatform.tiles.domain.TileStore;
@@ -52,6 +53,7 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
   private final List<Tuple<TileStore, ResourceStore>> active;
   private final Map<String, Map<String, List<TileMatrixSetLimits>>> dirty;
   private final Map<String, Set<String>> tileMatrixSets;
+  private final Optional<TileMatrixSetRepository> tileMatrixSetRepository;
   private final Optional<TileStorePartitions> partitions;
   private Tuple<TileStore, ResourceStore> staging;
 
@@ -61,12 +63,14 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
       String tileSetName,
       Map<String, Map<String, TileGenerationSchema>> tileSchemas,
       Map<String, Set<String>> tileMatrixSets,
+      Optional<TileMatrixSetRepository> tileMatrixSetRepository,
       Optional<TileStorePartitions> partitions) {
     this.cacheStore = cacheStore;
     this.storage = storage;
     this.tileSetName = tileSetName;
     this.tileSchemas = tileSchemas;
     this.tileMatrixSets = tileMatrixSets;
+    this.tileMatrixSetRepository = tileMatrixSetRepository;
     this.partitions = partitions;
     this.staging = null;
     this.dirty = new ConcurrentHashMap<>();
@@ -246,7 +250,12 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
             || storage == Storage.PER_TILESET
             || storage == Storage.PER_JOB
         ? TileStoreMbTiles.readWrite(
-            blobStore, tileSetName, tileSchemas, tileMatrixSets, partitions)
+            blobStore,
+            tileSetName,
+            tileSchemas,
+            tileMatrixSets,
+            tileMatrixSetRepository,
+            partitions)
         : new TileStorePlain(blobStore);
   }
 

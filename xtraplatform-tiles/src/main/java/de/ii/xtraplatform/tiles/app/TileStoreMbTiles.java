@@ -17,6 +17,7 @@ import de.ii.xtraplatform.tiles.domain.MbtilesTileset;
 import de.ii.xtraplatform.tiles.domain.TileGenerationSchema;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetBase;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetLimits;
+import de.ii.xtraplatform.tiles.domain.TileMatrixSetRepository;
 import de.ii.xtraplatform.tiles.domain.TileQuery;
 import de.ii.xtraplatform.tiles.domain.TileResult;
 import de.ii.xtraplatform.tiles.domain.TileStore;
@@ -53,7 +54,7 @@ public class TileStoreMbTiles implements TileStore {
                         entry.getKey(), new MbtilesTileset(entry.getValue())))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-    return new TileStoreMbTiles("", null, tileSets, Map.of(), Optional.empty());
+    return new TileStoreMbTiles("", null, tileSets, Map.of(), Optional.empty(), Optional.empty());
   }
 
   static TileStore readWrite(
@@ -61,6 +62,7 @@ public class TileStoreMbTiles implements TileStore {
       String providerId,
       Map<String, Map<String, TileGenerationSchema>> tileSchemas,
       Map<String, Set<String>> tileMatrixSets,
+      Optional<TileMatrixSetRepository> tileMatrixSetRepository,
       Optional<TileStorePartitions> partitions) {
     Map<String, MbtilesTileset> tileSets = new ConcurrentHashMap<>();
     try {
@@ -85,7 +87,8 @@ public class TileStoreMbTiles implements TileStore {
       }
       throw e;
     }
-    return new TileStoreMbTiles(providerId, rootStore, tileSets, tileSchemas, partitions);
+    return new TileStoreMbTiles(
+        providerId, rootStore, tileSets, tileSchemas, partitions, tileMatrixSetRepository);
   }
 
   private final String providerId;
@@ -93,18 +96,23 @@ public class TileStoreMbTiles implements TileStore {
   private final Map<String, Map<String, TileGenerationSchema>> tileSchemas;
   private final Map<String, MbtilesTileset> tileSets;
   private final Optional<TileStorePartitions> partitions;
+  // the tile matrix set is only necessary for writable MBTiles files,
+  // i.e., caches that are used for seeding
+  private final Optional<TileMatrixSetRepository> tileMatrixSetRepository;
 
   private TileStoreMbTiles(
       String providerId,
       ResourceStore rootStore,
       Map<String, MbtilesTileset> tileSets,
       Map<String, Map<String, TileGenerationSchema>> tileSchemas,
-      Optional<TileStorePartitions> partitions) {
+      Optional<TileStorePartitions> partitions,
+      Optional<TileMatrixSetRepository> tileMatrixSetRepository) {
     this.providerId = providerId;
     this.rootStore = rootStore;
     this.tileSchemas = tileSchemas;
     this.tileSets = tileSets;
     this.partitions = partitions;
+    this.tileMatrixSetRepository = tileMatrixSetRepository;
   }
 
   @Override
@@ -316,7 +324,9 @@ public class TileStoreMbTiles implements TileStore {
   public boolean has(String tileset, String tms, int level, int row, int col) throws IOException {
     try {
       return tileSets.containsKey(key(tileset, tms))
-          && tileSets.get(key(tileset, tms)).tileExists(level, row, col);
+          && tileSets
+              .get(key(tileset, tms))
+              .tileExists(level, row, getTmsRow(tms, level, row), col);
     } catch (SQLException | IOException e) {
       // ignore
     }
@@ -327,7 +337,9 @@ public class TileStoreMbTiles implements TileStore {
   public void delete(String tileset, String tms, int level, int row, int col) throws IOException {
     try {
       if (tileSets.containsKey(key(tileset, tms)))
-        tileSets.get(key(tileset, tms)).deleteTile(level, row, col, false);
+        tileSets
+            .get(key(tileset, tms))
+            .deleteTile(level, row, getTmsRow(tms, level, row), col, false);
     } catch (SQLException | IOException e) {
       // ignore
     }
@@ -346,6 +358,13 @@ public class TileStoreMbTiles implements TileStore {
             }
           }
         });
+  }
+
+  private int getTmsRow(String tmsId, int level, int row) {
+    return tileMatrixSetRepository
+        .flatMap(r -> r.get(tmsId))
+        .map(tms -> tms.getTmsRow(level, row))
+        .orElse((int) Math.pow(2, level) - row - 1);
   }
 
   private static List<VectorLayer> getVectorLayers(

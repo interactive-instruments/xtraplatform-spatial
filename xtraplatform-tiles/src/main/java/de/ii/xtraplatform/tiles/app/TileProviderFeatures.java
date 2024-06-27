@@ -46,6 +46,7 @@ import de.ii.xtraplatform.tiles.domain.TileGenerationSchema;
 import de.ii.xtraplatform.tiles.domain.TileGenerator;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetBase;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetLimits;
+import de.ii.xtraplatform.tiles.domain.TileMatrixSetRepository;
 import de.ii.xtraplatform.tiles.domain.TileProvider;
 import de.ii.xtraplatform.tiles.domain.TileProviderData;
 import de.ii.xtraplatform.tiles.domain.TileProviderFeaturesData;
@@ -106,6 +107,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   private final ResourceStore tilesStore;
   private final TileWalker tileWalker;
   private final boolean asyncStartup;
+  private final Optional<TileMatrixSetRepository> tileMatrixSetRepository;
   private TileEncoders tileEncoders;
   private ChainedTileProvider generatorProviderChain;
   private ChainedTileProvider combinerProviderChain;
@@ -122,10 +124,12 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
       TileWalker tileWalker,
       VolatileRegistry volatileRegistry,
       JobQueue jobQueue,
+      TileMatrixSetRepository tileMatrixSetRepository,
       @Assisted TileProviderFeaturesData data) {
     super(volatileRegistry, data, "access", "generation", "seeding");
 
     this.asyncStartup = appContext.getConfiguration().getModules().isStartupAsync();
+    this.tileMatrixSetRepository = Optional.of(tileMatrixSetRepository);
     this.tileGenerator =
         new TileGeneratorFeatures(
             data,
@@ -315,6 +319,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
                     id,
                     getTileSchemas(tileGenerator, tilesets, rasterTilesets),
                     tileMatrixSets,
+                    tileMatrixSetRepository,
                     partitions);
               }
 
@@ -326,6 +331,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
                       id,
                       getTileSchemas(tileGenerator, tilesets, rasterTilesets),
                       tileMatrixSets,
+                      tileMatrixSetRepository,
                       partitions)
                   : new TileStorePlain(cacheStore);
             });
