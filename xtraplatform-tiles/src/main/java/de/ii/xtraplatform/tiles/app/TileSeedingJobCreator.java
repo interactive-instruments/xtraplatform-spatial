@@ -242,21 +242,23 @@ public class TileSeedingJobCreator implements JobProcessor<Boolean, TileSeedingJ
                                                                 limit));
                                                       });
 
-                                                  String storageHint =
-                                                      rasterSubMatrices.stream()
-                                                          .map(
-                                                              tileStorePartitions::getPartitionName)
-                                                          .collect(Collectors.joining(","));
-
-                                                  return Stream.of(
-                                                      TileSeedingJob.raster(
-                                                          tileProvider.getId(),
-                                                          rasterTileset,
-                                                          tileMatrixSet,
-                                                          seedingJobSet.isReseed(),
-                                                          rasterSubMatrices,
-                                                          jobSet.getId(),
-                                                          storageHint));
+                                                  return rasterSubMatrices.stream()
+                                                      .filter(
+                                                          subMatrix2 ->
+                                                              tileStorePartitions.contains(
+                                                                  subMatrix, subMatrix2))
+                                                      .map(
+                                                          subMatrix2 ->
+                                                              TileSeedingJob.raster(
+                                                                  tileProvider.getId(),
+                                                                  rasterTileset,
+                                                                  tileMatrixSet,
+                                                                  seedingJobSet.isReseed(),
+                                                                  Set.of(subMatrix2),
+                                                                  jobSet.getId(),
+                                                                  tileStorePartitions
+                                                                      .getPartitionName(
+                                                                          subMatrix2)));
                                                 })
                                             .collect(Collectors.toList());
 

@@ -44,10 +44,9 @@ public class TileStorePartitions {
   }
 
   public String getPartitionName(TileSubMatrix subMatrix) {
-    TileSubMatrix subMatrixNoLimits =
-        getSubMatrix(subMatrix.getLevel(), subMatrix.getRowMin(), subMatrix.getColMin());
+    TileSubMatrix fullPartition = getFullPartitionSubMatrix(subMatrix);
     return getPartitionName(
-        subMatrixNoLimits.getLevel(), subMatrixNoLimits.getRowMin(), subMatrixNoLimits.getColMin());
+        fullPartition.getLevel(), fullPartition.getRowMin(), fullPartition.getColMin());
   }
 
   public int[] getPartitionScope(String partitionName) {
@@ -113,7 +112,34 @@ public class TileStorePartitions {
         .build();
   }
 
-  private TileSubMatrix getSubMatrix(int level, int row, int col) {
+  public boolean contains(TileSubMatrix container, TileSubMatrix contained) {
+    if (container.getLevel() >= contained.getLevel()) {
+      return false;
+    }
+
+    TileSubMatrix fullPartition =
+        getHigherLevelSubMatrix(
+            getFullPartitionSubMatrix(container), contained.getLevel() - container.getLevel());
+
+    return fullPartition.contains(contained);
+  }
+
+  private TileSubMatrix getFullPartitionSubMatrix(TileSubMatrix subMatrix) {
+    return getFullPartitionSubMatrix(
+        subMatrix.getLevel(), subMatrix.getRowMin(), subMatrix.getColMin());
+  }
+
+  private TileSubMatrix getHigherLevelSubMatrix(TileSubMatrix subMatrix, int levelDelta) {
+    return new ImmutableTileSubMatrix.Builder()
+        .level(subMatrix.getLevel() + levelDelta)
+        .rowMin(subMatrix.getRowMin() * (2 * levelDelta))
+        .rowMax((subMatrix.getRowMax() * (2 * levelDelta)) + 1)
+        .colMin(subMatrix.getColMin() * (2 * levelDelta))
+        .colMax((subMatrix.getColMax() * (2 * levelDelta)) + 1)
+        .build();
+  }
+
+  private TileSubMatrix getFullPartitionSubMatrix(int level, int row, int col) {
     // 645 / 256 = 2
     int rowPartition = row / singleRowCol;
     // 322 / 256 = 1

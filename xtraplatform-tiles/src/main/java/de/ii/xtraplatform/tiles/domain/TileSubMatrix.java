@@ -54,4 +54,12 @@ public interface TileSubMatrix {
     return String.format(
         "%d/%d-%d/%d-%d", getLevel(), getRowMin(), getRowMax(), getColMin(), getColMax());
   }
+
+  default boolean contains(TileSubMatrix other) {
+    return getLevel() == other.getLevel()
+        && getRowMin() <= other.getRowMin()
+        && getRowMax() >= other.getRowMax()
+        && getColMin() <= other.getColMin()
+        && getColMax() >= other.getColMax();
+  }
 }
