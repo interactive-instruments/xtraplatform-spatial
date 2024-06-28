@@ -174,6 +174,12 @@ public class TileSeedingJobCreator implements JobProcessor<Boolean, TileSeedingJ
                                       : Map.of();
                           boolean isRaster = rasterCoverage.containsKey(tileSet);
 
+                          if (isRaster && perJob) {
+                            // ignore top level raster tilesets, they are handled as follow-ups by
+                            // the vector tilesets
+                            return;
+                          }
+
                           tileMatrixSets.forEach(
                               (tileMatrixSet, limits) -> {
                                 Set<TileSubMatrix> subMatrices = new LinkedHashSet<>();

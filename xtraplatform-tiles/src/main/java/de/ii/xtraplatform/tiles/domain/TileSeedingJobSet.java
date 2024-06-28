@@ -42,6 +42,15 @@ public interface TileSeedingJobSet {
         .with(Job.of(TYPE_SETUP, false), Job.of(TYPE_SETUP, true));
   }
 
+  static JobSet with(JobSet jobSet, Map<String, TileGenerationParameters> tileSets) {
+    TileSeedingJobSet details =
+        new ImmutableTileSeedingJobSet.Builder()
+            .from((TileSeedingJobSet) jobSet.getDetails())
+            .putAllTileSets(tileSets)
+            .build();
+    return jobSet.with(String.format(" (Tilesets: %s)", details.getTileSets().keySet()), details);
+  }
+
   String getTileProvider();
 
   Map<String, TileGenerationParameters> getTileSets();
