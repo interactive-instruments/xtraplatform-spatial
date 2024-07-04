@@ -52,8 +52,10 @@ public interface ConnectionInfoSql extends ConnectionInfo {
   }
 
   /**
-   * @langEn `PGIS` for PostgreSQL/PostGIS, `GPKG` for GeoPackage or SQLite/SpatiaLite.
-   * @langDe `PGIS` für PostgreSQL/PostGIS, `GPKG` für GeoPackage oder SQLite/SpatiaLite.
+   * @langEn `PGIS` for PostgreSQL/PostGIS, `GPKG` for GeoPackage or SQLite/SpatiaLite, `ORACLE` for
+   *     Oracle.
+   * @langDe `PGIS` für PostgreSQL/PostGIS, `GPKG` für GeoPackage oder SQLite/SpatiaLite, `ORACLE`
+   *     für Oracle.
    * @default PGIS
    */
   @Value.Default

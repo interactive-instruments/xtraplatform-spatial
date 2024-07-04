@@ -42,6 +42,57 @@ import org.immutables.value.Value;
  * @langEn The specifics of the SQL feature provider.
  * @langDe Hier werden die Besonderheiten des SQL-Feature-Providers beschrieben.
  * @langAll {@docTable:properties}
+ * @langEn ## Limitations
+ *     <p>All identifiers must be unquoted identifiers; that is, in `PGIS` and `GPKG` the
+ *     identifiers will be all lowercase and in `ORACLE` they will be all uppercase.
+ *     <p>For `PGIS` the following known limitations exist:
+ *     <p><code>
+ * - Not all CQL2 expressions are supported in JSON columns.
+ *     </code>
+ *     <p>For `GPKG` the following known limitations exist:
+ *     <p><code>
+ * - The option `linearizeCurves` is not supported. All geometries must conform to the OGC Simple
+ *   Feature Access standard.
+ * - The CQL2 functions `DIAMETER2D()` and `DIAMETER3D()` are not supported.
+ * - Arrays as queryables are not supported for GeoPackage feature providers.
+ * - Queryables that are values in an array are not supported for GeoPackage feature providers.
+ *     </code>
+ *     <p>For `ORACLE` the following known limitations exist:
+ *     <p><code>
+ * - Only Oracle 19c has been tested.
+ * - Only geometries in a 2D coordinate reference system are supported.
+ * - The option `linearizeCurves` is not supported. All geometries must conform to the OGC Simple
+ *   Feature Access standard.
+ * - The spatial operator `S_CROSSES` is not supported.
+ * - The CQL2 functions `DIAMETER2D()` and `DIAMETER3D()` are not supported.
+ * - Columns with JSON content are not supported.
+ *     </code>
+ * @langEn ## Limitierungen
+ *     <p>Alle Bezeichner müssen nicht in Anführungszeichen gesetzt werden, d.h. in `PGIS` und
+ *     `GPKG` werden die Bezeichner klein geschrieben und in `ORACLE` werden sie groß geschrieben.
+ *     <p>Für `PGIS` gibt es die folgenden bekannten Einschränkungen:
+ *     <p><code>
+ * - Nicht alle CQL2-Ausdrücke werden in JSON-Spalten unterstützt.
+ *     </code>
+ *     <p>Für `GPKG` gibt es die folgenden bekannten Einschränkungen:
+ *     <p><code>
+ * - Die Option `linearizeCurves` wird nicht unterstützt. Alle Geometrien müssen Geometrien gemäß
+ *   dem Standard OGC Simple Feature Access sein.
+ * - Die CQL2-Funktionen `DIAMETER2D()` und `DIAMETER3D()` werden nicht unterstützt.
+ * - Arrays als Queryables werden für GeoPackage Feature Provider nicht unterstützt.
+ * - Queryables, die Werte in einem Array sind, werden für GeoPackage Feature-Anbieter nicht
+ *   unterstützt.
+ *     </code>
+ *     <p>Für `ORACLE` gibt es die folgenden bekannten Einschränkungen:
+ *     <p><code>
+ * - Es wurde nur Oracle 19c getestet.
+ * - Es werden nur Geometrien in einem 2D-Koordinatenreferenzsystem unterstützt.
+ * - Die Option `linearizeCurves` wird nicht unterstützt. Alle Geometrien müssen Geometrien gemäß
+ *   dem Standard OGC Simple Feature Access sein.
+ * - Der räumliche Operator `S_CROSSES` wird nicht unterstützt.
+ * - Die CQL2-Funktionen `DIAMETER2D()` und `DIAMETER3D()` werden nicht unterstützt.
+ * - Spalten mit JSON-Inhalt werden nicht unterstützt.
+ *     </code>
  * @langAll ## Connection Info
  * @langEn The connection info object for SQL databases has the following properties:
  * @langDe Das Connection-Info-Objekt für SQL-Datenbanken wird wie folgt beschrieben:
