@@ -509,7 +509,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
 
   @Override
   public String getMapStyleTileset(String vectorTilesetId, String mapStyleId) {
-    return getRasterTilesetId(vectorTilesetId, mapStyleId);
+    return String.format("%s_%s", vectorTilesetId, mapStyleId);
   }
 
   @Override
@@ -817,7 +817,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   }
 
   private static String getRasterTilesetId(String vectorTilesetId, String style) {
-    return String.format("%s__%s", vectorTilesetId, getStyleId(style));
+    return String.format("%s_%s", vectorTilesetId, getStyleId(style));
   }
 
   private static String getStyleId(String style) {
@@ -825,8 +825,8 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   }
 
   private static Optional<String> getStyleId(String vectorTilesetId, String key) {
-    if (key.startsWith(String.format("%s__", vectorTilesetId))) {
-      return Optional.of(key.substring(vectorTilesetId.length() + 2));
+    if (key.startsWith(String.format("%s_", vectorTilesetId))) {
+      return Optional.of(key.substring(vectorTilesetId.length() + 1));
     }
     return Optional.empty();
   }
