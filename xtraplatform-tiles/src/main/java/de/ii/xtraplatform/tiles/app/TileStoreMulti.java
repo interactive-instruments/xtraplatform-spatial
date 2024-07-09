@@ -208,6 +208,22 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
   }
 
   @Override
+  public Storage getStorageType() {
+    return storage == Storage.MBTILES
+        ? Storage.PER_TILESET
+        : storage == Storage.PLAIN ? Storage.PER_TILE : storage;
+  }
+
+  @Override
+  public Optional<String> getStorageInfo(
+      String tileset, String tileMatrixSet, TileMatrixSetLimits limits) {
+    if (inProgress()) {
+      return staging.first().getStorageInfo(tileset, tileMatrixSet, limits);
+    }
+    return Optional.empty();
+  }
+
+  @Override
   public boolean isDirty(TileQuery tile) {
     return dirty.containsKey(tile.getTileset())
         && dirty.get(tile.getTileset()).containsKey(tile.getTileMatrixSet().getId())

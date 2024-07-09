@@ -10,6 +10,7 @@ package de.ii.xtraplatform.tiles.app;
 import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
+import de.ii.xtraplatform.tiles.domain.Cache.Storage;
 import de.ii.xtraplatform.tiles.domain.ImmutableMbtilesMetadata;
 import de.ii.xtraplatform.tiles.domain.ImmutableVectorLayer;
 import de.ii.xtraplatform.tiles.domain.MbtilesMetadata;
@@ -343,6 +344,27 @@ public class TileStoreMbTiles implements TileStore {
     } catch (SQLException | IOException e) {
       // ignore
     }
+  }
+
+  @Override
+  public Storage getStorageType() {
+    return partitions.isEmpty() ? Storage.PER_TILESET : Storage.PER_JOB;
+  }
+
+  @Override
+  public Optional<String> getStorageInfo(
+      String tileset, String tileMatrixSet, TileMatrixSetLimits limits) {
+    if (tileSets.containsKey(key(tileset, tileMatrixSet))) {
+      return Optional.of(
+          tileSets
+              .get(key(tileset, tileMatrixSet))
+              .getStorageInfo(
+                  Integer.parseInt(limits.getTileMatrix()),
+                  limits.getMinTileRow(),
+                  limits.getMinTileCol()));
+    }
+
+    return Optional.empty();
   }
 
   @Override

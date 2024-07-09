@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.ii.xtraplatform.jobs.domain.Job;
 import de.ii.xtraplatform.tiles.app.FeatureEncoderMVT;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.Set;
 import javax.ws.rs.core.MediaType;
 import org.immutables.value.Value;
@@ -49,7 +49,7 @@ public interface TileSeedingJob {
       boolean isReseed,
       Set<TileSubMatrix> subMatrices,
       String jobSetId,
-      String storageHint) {
+      Map<String, String> storageInfo) {
     return Job.of(
         TYPE_PNG,
         new ImmutableTileSeedingJob.Builder()
@@ -59,7 +59,7 @@ public interface TileSeedingJob {
             .encoding(MediaType.valueOf("image/png"))
             .isReseed(isReseed)
             .addAllSubMatrices(subMatrices)
-            .storageHint(storageHint)
+            .storage(storageInfo)
             .build(),
         jobSetId);
   }
@@ -74,7 +74,7 @@ public interface TileSeedingJob {
 
   boolean isReseed();
 
-  Optional<String> getStorageHint();
+  Map<String, String> getStorage();
 
   List<TileSubMatrix> getSubMatrices();
 

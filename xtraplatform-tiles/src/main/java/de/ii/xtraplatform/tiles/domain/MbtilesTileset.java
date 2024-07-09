@@ -280,6 +280,10 @@ public class MbtilesTileset {
     return Optional.of(SqlHelper.getConnection(path, readOnly));
   }
 
+  public String getStorageInfo(int level, int row, int col) {
+    return getTilesetPath(level, row, col).toString();
+  }
+
   private void createMbtilesFile(Path path, boolean acquireMutexOnCreate) throws IOException {
     // acquire the mutex, if necessary (for write operations we already have it)
     boolean acquired = false;

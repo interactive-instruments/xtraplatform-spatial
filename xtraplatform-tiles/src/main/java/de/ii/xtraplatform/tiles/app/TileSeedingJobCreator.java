@@ -190,6 +190,16 @@ public class TileSeedingJobCreator implements JobProcessor<Boolean, TileSeedingJ
                                     });
 
                                 for (TileSubMatrix subMatrix : subMatrices) {
+                                  if (isRaster) {
+                                    LOGGER.debug(
+                                        "STORAGE {}",
+                                        tileProvider
+                                            .seeding()
+                                            .get()
+                                            .getRasterStorageInfo(
+                                                tileSet, tileMatrixSet, subMatrix));
+                                  }
+
                                   Job job2 =
                                       isRaster
                                           ? TileSeedingJob.raster(
@@ -199,7 +209,11 @@ public class TileSeedingJobCreator implements JobProcessor<Boolean, TileSeedingJ
                                               seedingJobSet.isReseed(),
                                               Set.of(subMatrix),
                                               jobSet.getId(),
-                                              tileSet)
+                                              tileProvider
+                                                  .seeding()
+                                                  .get()
+                                                  .getRasterStorageInfo(
+                                                      tileSet, tileMatrixSet, subMatrix))
                                           : TileSeedingJob.of(
                                               tileProvider.getId(),
                                               tileSet,
@@ -256,9 +270,15 @@ public class TileSeedingJobCreator implements JobProcessor<Boolean, TileSeedingJ
                                                                   seedingJobSet.isReseed(),
                                                                   Set.of(subMatrix2),
                                                                   jobSet.getId(),
-                                                                  tileStorePartitions
-                                                                      .getPartitionName(
-                                                                          subMatrix2)));
+                                                                  tileProvider
+                                                                      .seeding()
+                                                                      .get()
+                                                                      .getRasterStorageInfo(
+                                                                          rasterTileset,
+                                                                          tileMatrixSet,
+                                                                          subMatrix2,
+                                                                          tileSet,
+                                                                          subMatrix)));
                                                 })
                                             .collect(Collectors.toList());
 

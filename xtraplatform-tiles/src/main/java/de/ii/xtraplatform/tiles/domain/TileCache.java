@@ -9,6 +9,7 @@ package de.ii.xtraplatform.tiles.domain;
 
 import com.google.common.collect.Range;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
+import de.ii.xtraplatform.tiles.domain.Cache.Storage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.AbstractMap.SimpleImmutableEntry;
@@ -113,6 +114,10 @@ public interface TileCache {
 
   Map<String, Map<String, Set<TileMatrixSetLimits>>> getRasterCoverage(
       Map<String, TileGenerationParameters> tilesets) throws IOException;
+
+  Storage getStorageType();
+
+  Optional<String> getStorageInfo(String tileset, String tileMatrixSet, TileMatrixSetLimits limits);
 
   default Map<String, Map<String, Set<TileMatrixSetLimits>>> getCoverage(
       Map<String, TileGenerationParameters> tilesets,

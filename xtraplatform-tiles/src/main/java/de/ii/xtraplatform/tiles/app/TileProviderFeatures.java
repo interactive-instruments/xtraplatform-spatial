@@ -18,6 +18,7 @@ import de.ii.xtraplatform.base.domain.LogContext.MARKER;
 import de.ii.xtraplatform.base.domain.resiliency.OptionalVolatileCapability;
 import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.base.domain.util.Tuple;
+import de.ii.xtraplatform.blobs.domain.BlobStore;
 import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
@@ -56,11 +57,13 @@ import de.ii.xtraplatform.tiles.domain.TileSeeding;
 import de.ii.xtraplatform.tiles.domain.TileSeedingJob;
 import de.ii.xtraplatform.tiles.domain.TileSeedingJobSet;
 import de.ii.xtraplatform.tiles.domain.TileStore;
+import de.ii.xtraplatform.tiles.domain.TileSubMatrix;
 import de.ii.xtraplatform.tiles.domain.TileWalker;
 import de.ii.xtraplatform.tiles.domain.TilesFormat;
 import de.ii.xtraplatform.tiles.domain.TilesetFeatures;
 import de.ii.xtraplatform.tiles.domain.TilesetMetadata;
 import de.ii.xtraplatform.tiles.domain.TilesetRaster;
+import de.ii.xtraplatform.values.domain.ValueStore;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -105,6 +108,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   private final List<TileCache> combinerCaches;
   private final Map<String, TilesetMetadata> metadata;
   private final ResourceStore tilesStore;
+  private final BlobStore stylesStore;
   private final TileWalker tileWalker;
   private final boolean asyncStartup;
   private final Optional<TileMatrixSetRepository> tileMatrixSetRepository;
@@ -121,6 +125,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
       AppContext appContext,
       Cql cql,
       ResourceStore blobStore,
+      ValueStore valueStore,
       TileWalker tileWalker,
       VolatileRegistry volatileRegistry,
       JobQueue jobQueue,
@@ -150,6 +155,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     this.combinerCaches = new ArrayList<>();
     this.metadata = new LinkedHashMap<>();
     this.tilesStore = blobStore.with(TILES_DIR_NAME, clean(data.getId()));
+    this.stylesStore = valueStore.asBlobStore();
     this.tileWalker = tileWalker;
   }
 
@@ -616,6 +622,102 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     return coverage;
   }
 
+  @Override
+  public Map<String, String> getRasterStorageInfo(
+      String rasterTileset, String tileMatrixSet, TileSubMatrix subMatrix) {
+    Optional<String> vectorTilesetId = getVectorTilesetId(rasterTileset);
+
+    if (vectorTilesetId.isEmpty()) {
+      return Map.of();
+    }
+
+    return getRasterStorageInfo(
+        rasterTileset, tileMatrixSet, subMatrix, vectorTilesetId.get(), subMatrix);
+  }
+
+  @Override
+  public Map<String, String> getRasterStorageInfo(
+      String rasterTileset,
+      String tileMatrixSet,
+      TileSubMatrix subMatrix,
+      String vectorTileset,
+      TileSubMatrix vectorSubMatrix) {
+    Map<String, String> result = new LinkedHashMap<>();
+
+    for (TileCache cache : generatorCaches) {
+      if (cache.isSeeded()) {
+        Optional<String> vectorStorage =
+            cache
+                .getStorageInfo(vectorTileset, tileMatrixSet, vectorSubMatrix.toLimits())
+                .map(
+                    path -> {
+                      if (cache.getStorageType() == Storage.PER_JOB) {
+                        String partition =
+                            Files.getNameWithoutExtension(Path.of(path).getFileName().toString());
+                        return path.replace(partition, "{partition}");
+                      }
+                      return path;
+                    });
+        Optional<String> rasterStorage =
+            cache.getStorageInfo(rasterTileset, tileMatrixSet, subMatrix.toLimits());
+
+        result.put("type", cache.getStorageType().name());
+        result.put("jobSize", String.valueOf(getOptions().getEffectiveJobSize()));
+        vectorStorage.ifPresent(s -> result.put("vector", s));
+        rasterStorage.ifPresent(s -> result.put("raster", s));
+        break;
+      }
+    }
+    if (result.isEmpty()) {
+      for (TileCache cache : combinerCaches) {
+        if (cache.isSeeded()) {
+          Optional<String> vectorStorage =
+              cache
+                  .getStorageInfo(vectorTileset, tileMatrixSet, vectorSubMatrix.toLimits())
+                  .map(
+                      path -> {
+                        if (cache.getStorageType() == Storage.PER_JOB) {
+                          String partition =
+                              Files.getNameWithoutExtension(Path.of(path).getFileName().toString());
+                          return path.replace(partition, "{partition}");
+                        }
+                        return path;
+                      });
+          Optional<String> rasterStorage =
+              cache.getStorageInfo(rasterTileset, tileMatrixSet, subMatrix.toLimits());
+
+          result.put("type", cache.getStorageType().name());
+          result.put("jobSize", String.valueOf(getOptions().getEffectiveJobSize()));
+          vectorStorage.ifPresent(s -> result.put("vector", s));
+          rasterStorage.ifPresent(s -> result.put("raster", s));
+          break;
+        }
+      }
+    }
+
+    // TODO: get style from api/values
+    getStyleId(vectorTileset, rasterTileset)
+        .ifPresent(
+            style -> {
+              try {
+                stylesStore
+                    .asLocalPath(Path.of("maplibre-styles", clean(getId()), style + ".mbs"), false)
+                    .ifPresent(path -> result.put("style", path.toString()));
+
+                if (!result.containsKey("style")) {
+                  stylesStore
+                      .asLocalPath(
+                          Path.of("maplibre-styles", clean(getId()), style + ".json"), false)
+                      .ifPresent(path -> result.put("style", path.toString()));
+                }
+              } catch (IOException e) {
+                // ignore
+              }
+            });
+
+    return result;
+  }
+
   private static void mergeCoverageInto(
       Map<String, Map<String, Set<TileMatrixSetLimits>>> source,
       Map<String, Map<String, Set<TileMatrixSetLimits>>> target) {
@@ -820,13 +922,22 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     return String.format("%s_%s", vectorTilesetId, getStyleId(style));
   }
 
+  private Optional<String> getVectorTilesetId(String rasterTilesetId) {
+    for (String vectorTilesetId : getData().getTilesets().keySet()) {
+      if (rasterTilesetId.startsWith(String.format("%s_", vectorTilesetId))) {
+        return Optional.of(vectorTilesetId);
+      }
+    }
+    return Optional.empty();
+  }
+
   private static String getStyleId(String style) {
     return Files.getNameWithoutExtension(Path.of(style).getFileName().toString());
   }
 
-  private static Optional<String> getStyleId(String vectorTilesetId, String key) {
-    if (key.startsWith(String.format("%s_", vectorTilesetId))) {
-      return Optional.of(key.substring(vectorTilesetId.length() + 1));
+  private static Optional<String> getStyleId(String vectorTilesetId, String rasterTilesetId) {
+    if (rasterTilesetId.startsWith(String.format("%s_", vectorTilesetId))) {
+      return Optional.of(rasterTilesetId.substring(vectorTilesetId.length() + 1));
     }
     return Optional.empty();
   }

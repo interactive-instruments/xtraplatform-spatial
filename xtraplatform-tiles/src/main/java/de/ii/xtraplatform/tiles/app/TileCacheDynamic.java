@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.tiles.app;
 
 import com.google.common.collect.Range;
+import de.ii.xtraplatform.tiles.domain.Cache.Storage;
 import de.ii.xtraplatform.tiles.domain.ChainedTileProvider;
 import de.ii.xtraplatform.tiles.domain.TileCache;
 import de.ii.xtraplatform.tiles.domain.TileGenerationParameters;
@@ -92,6 +93,17 @@ public class TileCacheDynamic implements ChainedTileProvider, TileCache {
   public Map<String, Map<String, Set<TileMatrixSetLimits>>> getRasterCoverage(
       Map<String, TileGenerationParameters> tilesets) throws IOException {
     return getCoverage(tilesets, tileWalker, rasterTmsRanges);
+  }
+
+  @Override
+  public Storage getStorageType() {
+    return tileStore.getStorageType();
+  }
+
+  @Override
+  public Optional<String> getStorageInfo(
+      String tileset, String tileMatrixSet, TileMatrixSetLimits limits) {
+    return tileStore.getStorageInfo(tileset, tileMatrixSet, limits);
   }
 
   @Override
