@@ -13,11 +13,9 @@ import de.ii.xtraplatform.entities.domain.EntityRegistry;
 import de.ii.xtraplatform.jobs.domain.Job;
 import de.ii.xtraplatform.jobs.domain.JobProcessor;
 import de.ii.xtraplatform.jobs.domain.JobSet;
-import de.ii.xtraplatform.tiles.domain.Cache.Storage;
 import de.ii.xtraplatform.tiles.domain.TileGenerationParameters;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetLimits;
 import de.ii.xtraplatform.tiles.domain.TileProvider;
-import de.ii.xtraplatform.tiles.domain.TileProviderFeaturesData;
 import de.ii.xtraplatform.tiles.domain.TileSeedingJob;
 import de.ii.xtraplatform.tiles.domain.TileSeedingJobSet;
 import de.ii.xtraplatform.tiles.domain.TileSubMatrix;
@@ -33,7 +31,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -120,12 +117,6 @@ public class TileSeedingJobCreator implements JobProcessor<Boolean, TileSeedingJ
                 TileStorePartitions tileStorePartitions =
                     new TileStorePartitions(
                         tileProvider.seeding().get().getOptions().getEffectiveJobSize());
-                boolean perJob =
-                    ((TileProviderFeaturesData) tileProvider.getData())
-                        .getCaches().stream()
-                            .anyMatch(
-                                cache ->
-                                    cache.getSeeded() && cache.getStorage() == Storage.PER_JOB);
 
                 Map<String, List<String>> rasterForVector =
                     seedingJobSet.getTileSets().entrySet().stream()
@@ -174,12 +165,6 @@ public class TileSeedingJobCreator implements JobProcessor<Boolean, TileSeedingJ
                                       : Map.of();
                           boolean isRaster = rasterCoverage.containsKey(tileSet);
 
-                          if (isRaster && perJob) {
-                            // ignore top level raster tilesets, they are handled as follow-ups by
-                            // the vector tilesets
-                            return;
-                          }
-
                           tileMatrixSets.forEach(
                               (tileMatrixSet, limits) -> {
                                 Set<TileSubMatrix> subMatrices = new LinkedHashSet<>();
@@ -221,72 +206,6 @@ public class TileSeedingJobCreator implements JobProcessor<Boolean, TileSeedingJ
                                               seedingJobSet.isReseed(),
                                               Set.of(subMatrix),
                                               jobSet.getId());
-
-                                  if (perJob) {
-                                    List<Job> followUps =
-                                        rasterForVector.get(tileSet).stream()
-                                            .flatMap(
-                                                rasterTileset -> {
-                                                  if (!rasterForVectorCoverage.containsKey(
-                                                          rasterTileset)
-                                                      || !rasterForVectorCoverage
-                                                          .get(rasterTileset)
-                                                          .containsKey(tileMatrixSet)) {
-                                                    return Stream.empty();
-                                                  }
-
-                                                  Set<TileMatrixSetLimits> rasterLimits =
-                                                      rasterForVectorCoverage
-                                                          .get(rasterTileset)
-                                                          .get(tileMatrixSet)
-                                                          .stream()
-                                                          .filter(
-                                                              limit ->
-                                                                  Integer.parseInt(
-                                                                          limit.getTileMatrix())
-                                                                      == subMatrix.getLevel() + 1)
-                                                          .collect(Collectors.toSet());
-                                                  Set<TileSubMatrix> rasterSubMatrices =
-                                                      new LinkedHashSet<>();
-
-                                                  rasterLimits.forEach(
-                                                      (limit) -> {
-                                                        rasterSubMatrices.addAll(
-                                                            tileStorePartitions.getSubMatrices(
-                                                                limit));
-                                                      });
-
-                                                  return rasterSubMatrices.stream()
-                                                      .filter(
-                                                          subMatrix2 ->
-                                                              tileStorePartitions.contains(
-                                                                  subMatrix, subMatrix2))
-                                                      .map(
-                                                          subMatrix2 ->
-                                                              TileSeedingJob.raster(
-                                                                  tileProvider.getId(),
-                                                                  rasterTileset,
-                                                                  tileMatrixSet,
-                                                                  seedingJobSet.isReseed(),
-                                                                  Set.of(subMatrix2),
-                                                                  jobSet.getId(),
-                                                                  tileProvider
-                                                                      .seeding()
-                                                                      .get()
-                                                                      .getRasterStorageInfo(
-                                                                          rasterTileset,
-                                                                          tileMatrixSet,
-                                                                          subMatrix2,
-                                                                          tileSet,
-                                                                          subMatrix)));
-                                                })
-                                            .collect(Collectors.toList());
-
-                                    if (!followUps.isEmpty()) {
-                                      job2 = job2.with(followUps);
-                                      jobSet.getTotal().addAndGet(followUps.size());
-                                    }
-                                  }
 
                                   pushJob.accept(job2);
                                   jobSet.getTotal().incrementAndGet();
