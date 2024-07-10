@@ -12,6 +12,7 @@ import de.ii.xtraplatform.base.domain.LogContext.MARKER;
 import de.ii.xtraplatform.entities.domain.EntityRegistry;
 import de.ii.xtraplatform.jobs.domain.Job;
 import de.ii.xtraplatform.jobs.domain.JobProcessor;
+import de.ii.xtraplatform.jobs.domain.JobResult;
 import de.ii.xtraplatform.jobs.domain.JobSet;
 import de.ii.xtraplatform.tiles.domain.TileGenerationParameters;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetLimits;
@@ -69,167 +70,153 @@ public class TileSeedingJobCreator implements JobProcessor<Boolean, TileSeedingJ
   }
 
   @Override
-  public void process(Job job, JobSet jobSet, Consumer<Job> pushJob) {
+  public JobResult process(Job job, JobSet jobSet, Consumer<Job> pushJob) {
 
     TileSeedingJobSet seedingJobSet = getSetDetails(jobSet);
     boolean isCleanup = getDetails(job);
 
-    getTileProvider(seedingJobSet.getTileProvider())
-        .ifPresent(
-            tileProvider -> {
-              if (!tileProvider.seeding().isSupported()) {
-                LOGGER.error("Tile provider does not support seeding: {}", tileProvider.getId());
-                return; // early return
-              }
+    Optional<TileProvider> optionalTileProvider = getTileProvider(seedingJobSet.getTileProvider());
+    if (optionalTileProvider.isPresent()) {
+      TileProvider tileProvider = optionalTileProvider.get();
 
-              try {
+      if (!tileProvider.seeding().isSupported()) {
+        LOGGER.error("Tile provider does not support seeding: {}", tileProvider.getId());
+        return JobResult.error("Tile provider does not support seeding"); // early return
+      }
 
-                if (isCleanup) {
-                  tileProvider.seeding().get().cleanupSeeding(seedingJobSet);
+      try {
 
-                  long duration = Instant.now().toEpochMilli() - jobSet.getStartedAt().get();
+        if (isCleanup) {
+          tileProvider.seeding().get().cleanupSeeding(seedingJobSet);
 
-                  if (LOGGER.isInfoEnabled() || LOGGER.isInfoEnabled(MARKER.JOBS)) {
-                    LOGGER.info(
-                        MARKER.JOBS,
-                        "{} finished in {}{}",
-                        jobSet.getLabel(),
-                        pretty(duration),
-                        jobSet.getDescription().orElse(""));
-                  }
+          long duration = Instant.now().toEpochMilli() - jobSet.getStartedAt().get();
 
-                  return; // early return
-                }
+          if (LOGGER.isInfoEnabled() || LOGGER.isInfoEnabled(MARKER.JOBS)) {
+            LOGGER.info(
+                MARKER.JOBS,
+                "{} finished in {}{}",
+                jobSet.getLabel(),
+                pretty(duration),
+                jobSet.getDescription().orElse(""));
+          }
 
-                if (LOGGER.isInfoEnabled() || LOGGER.isInfoEnabled(MARKER.JOBS)) {
-                  LOGGER.info(
-                      MARKER.JOBS,
-                      "{} started (Tilesets: {})",
-                      jobSet.getLabel(),
-                      seedingJobSet.getTileSets().keySet());
-                }
+          return JobResult.success(); // early return
+        }
 
-                jobSet.getStartedAt().set(Instant.now().toEpochMilli());
-                Map<String, Map<String, Set<TileMatrixSetLimits>>> coverage =
-                    tileProvider.seeding().get().getCoverage(seedingJobSet.getTileSets());
-                Map<String, Map<String, Set<TileMatrixSetLimits>>> rasterCoverage =
-                    tileProvider.seeding().get().getRasterCoverage(seedingJobSet.getTileSets());
-                TileStorePartitions tileStorePartitions =
-                    new TileStorePartitions(
-                        tileProvider.seeding().get().getOptions().getEffectiveJobSize());
+        if (LOGGER.isInfoEnabled() || LOGGER.isInfoEnabled(MARKER.JOBS)) {
+          LOGGER.info(
+              MARKER.JOBS,
+              "{} started (Tilesets: {})",
+              jobSet.getLabel(),
+              seedingJobSet.getTileSets().keySet());
+        }
 
-                Map<String, List<String>> rasterForVector =
-                    seedingJobSet.getTileSets().entrySet().stream()
-                        .map(
-                            entry ->
-                                Map.entry(
-                                    entry.getKey(),
-                                    tileProvider
-                                        .access()
-                                        .get()
-                                        .getMapStyles(entry.getKey())
-                                        .stream()
-                                        .map(
-                                            style ->
-                                                tileProvider
-                                                    .access()
-                                                    .get()
-                                                    .getMapStyleTileset(entry.getKey(), style))
-                                        .collect(Collectors.toList())))
-                        .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+        jobSet.getStartedAt().set(Instant.now().toEpochMilli());
+        Map<String, Map<String, Set<TileMatrixSetLimits>>> coverage =
+            tileProvider.seeding().get().getCoverage(seedingJobSet.getTileSets());
+        Map<String, Map<String, Set<TileMatrixSetLimits>>> rasterCoverage =
+            tileProvider.seeding().get().getRasterCoverage(seedingJobSet.getTileSets());
+        TileStorePartitions tileStorePartitions =
+            new TileStorePartitions(
+                tileProvider.seeding().get().getOptions().getEffectiveJobSize());
 
-                Map<String, TileGenerationParameters> rasterForVectorTilesets =
-                    seedingJobSet.getTileSets().entrySet().stream()
-                        .flatMap(
-                            entry ->
-                                rasterForVector.get(entry.getKey()).stream()
-                                    .map(
-                                        rasterTileset ->
-                                            Map.entry(rasterTileset, entry.getValue())))
-                        .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
-                Map<String, Map<String, Set<TileMatrixSetLimits>>> rasterForVectorCoverage =
-                    tileProvider.seeding().get().getRasterCoverage(rasterForVectorTilesets);
-
-                tileProvider.seeding().get().setupSeeding(seedingJobSet);
-
-                seedingJobSet
-                    .getTileSets()
-                    .keySet()
-                    .forEach(
-                        (tileSet) -> {
-                          Map<String, Set<TileMatrixSetLimits>> tileMatrixSets =
-                              coverage.containsKey(tileSet)
-                                  ? coverage.get(tileSet)
-                                  : rasterCoverage.containsKey(tileSet)
-                                      ? rasterCoverage.get(tileSet)
-                                      : Map.of();
-                          boolean isRaster = rasterCoverage.containsKey(tileSet);
-
-                          tileMatrixSets.forEach(
-                              (tileMatrixSet, limits) -> {
-                                Set<TileSubMatrix> subMatrices = new LinkedHashSet<>();
-
-                                limits.forEach(
-                                    (limit) -> {
-                                      subMatrices.addAll(tileStorePartitions.getSubMatrices(limit));
-                                    });
-
-                                for (TileSubMatrix subMatrix : subMatrices) {
-                                  if (isRaster) {
-                                    LOGGER.debug(
-                                        "STORAGE {}",
+        Map<String, List<String>> rasterForVector =
+            seedingJobSet.getTileSets().entrySet().stream()
+                .map(
+                    entry ->
+                        Map.entry(
+                            entry.getKey(),
+                            tileProvider.access().get().getMapStyles(entry.getKey()).stream()
+                                .map(
+                                    style ->
                                         tileProvider
-                                            .seeding()
+                                            .access()
                                             .get()
-                                            .getRasterStorageInfo(
-                                                tileSet, tileMatrixSet, subMatrix));
-                                  }
+                                            .getMapStyleTileset(entry.getKey(), style))
+                                .collect(Collectors.toList())))
+                .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 
-                                  Job job2 =
-                                      isRaster
-                                          ? TileSeedingJob.raster(
-                                              tileProvider.getId(),
-                                              tileSet,
-                                              tileMatrixSet,
-                                              seedingJobSet.isReseed(),
-                                              Set.of(subMatrix),
-                                              jobSet.getId(),
-                                              tileProvider
-                                                  .seeding()
-                                                  .get()
-                                                  .getRasterStorageInfo(
-                                                      tileSet, tileMatrixSet, subMatrix))
-                                          : TileSeedingJob.of(
-                                              tileProvider.getId(),
-                                              tileSet,
-                                              tileMatrixSet,
-                                              seedingJobSet.isReseed(),
-                                              Set.of(subMatrix),
-                                              jobSet.getId());
+        Map<String, TileGenerationParameters> rasterForVectorTilesets =
+            seedingJobSet.getTileSets().entrySet().stream()
+                .flatMap(
+                    entry ->
+                        rasterForVector.get(entry.getKey()).stream()
+                            .map(rasterTileset -> Map.entry(rasterTileset, entry.getValue())))
+                .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+        Map<String, Map<String, Set<TileMatrixSetLimits>>> rasterForVectorCoverage =
+            tileProvider.seeding().get().getRasterCoverage(rasterForVectorTilesets);
 
-                                  pushJob.accept(job2);
-                                  jobSet.getTotal().incrementAndGet();
-                                }
-                              });
-                        });
+        tileProvider.seeding().get().setupSeeding(seedingJobSet);
 
-                if (jobSet.isDone()) {
-                  jobSet.getCleanup().ifPresent(pushJob);
-                  return; // early return
-                }
+        seedingJobSet
+            .getTileSets()
+            .keySet()
+            .forEach(
+                (tileSet) -> {
+                  Map<String, Set<TileMatrixSetLimits>> tileMatrixSets =
+                      coverage.containsKey(tileSet)
+                          ? coverage.get(tileSet)
+                          : rasterCoverage.containsKey(tileSet)
+                              ? rasterCoverage.get(tileSet)
+                              : Map.of();
+                  boolean isRaster = rasterCoverage.containsKey(tileSet);
 
-                if (LOGGER.isDebugEnabled() || LOGGER.isDebugEnabled(MARKER.JOBS)) {
-                  LOGGER.debug(
-                      MARKER.JOBS,
-                      "{}: processing {} jobs with {} local processors",
-                      jobSet.getLabel(),
-                      jobSet.getTotal().get(),
-                      getConcurrency(jobSet));
-                }
-              } catch (IOException e) {
-                throw new RuntimeException(e);
-              }
-            });
+                  tileMatrixSets.forEach(
+                      (tileMatrixSet, limits) -> {
+                        Set<TileSubMatrix> subMatrices = new LinkedHashSet<>();
+
+                        limits.forEach(
+                            (limit) -> {
+                              subMatrices.addAll(tileStorePartitions.getSubMatrices(limit));
+                            });
+
+                        for (TileSubMatrix subMatrix : subMatrices) {
+                          Job job2 =
+                              isRaster
+                                  ? TileSeedingJob.raster(
+                                      tileProvider.getId(),
+                                      tileSet,
+                                      tileMatrixSet,
+                                      seedingJobSet.isReseed(),
+                                      Set.of(subMatrix),
+                                      jobSet.getId(),
+                                      tileProvider
+                                          .seeding()
+                                          .get()
+                                          .getRasterStorageInfo(tileSet, tileMatrixSet, subMatrix))
+                                  : TileSeedingJob.of(
+                                      tileProvider.getId(),
+                                      tileSet,
+                                      tileMatrixSet,
+                                      seedingJobSet.isReseed(),
+                                      Set.of(subMatrix),
+                                      jobSet.getId());
+
+                          pushJob.accept(job2);
+                          jobSet.getTotal().incrementAndGet();
+                        }
+                      });
+                });
+
+        if (jobSet.isDone()) {
+          jobSet.getCleanup().ifPresent(pushJob);
+          return JobResult.success(); // early return
+        }
+
+        if (LOGGER.isDebugEnabled() || LOGGER.isDebugEnabled(MARKER.JOBS)) {
+          LOGGER.debug(
+              MARKER.JOBS,
+              "{}: processing {} jobs with {} local processors",
+              jobSet.getLabel(),
+              jobSet.getTotal().get(),
+              getConcurrency(jobSet));
+        }
+      } catch (IOException e) {
+        return JobResult.error(e.getMessage());
+      }
+    }
+
+    return JobResult.success();
   }
 
   @Override

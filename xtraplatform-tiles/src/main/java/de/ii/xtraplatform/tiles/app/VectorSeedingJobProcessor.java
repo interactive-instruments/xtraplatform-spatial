@@ -8,9 +8,12 @@
 package de.ii.xtraplatform.tiles.app;
 
 import com.github.azahnen.dagger.annotations.AutoBind;
+import de.ii.xtraplatform.base.domain.LogContext.MARKER;
+import de.ii.xtraplatform.base.domain.resiliency.Volatile2.State;
 import de.ii.xtraplatform.entities.domain.EntityRegistry;
 import de.ii.xtraplatform.jobs.domain.Job;
 import de.ii.xtraplatform.jobs.domain.JobProcessor;
+import de.ii.xtraplatform.jobs.domain.JobResult;
 import de.ii.xtraplatform.jobs.domain.JobSet;
 import de.ii.xtraplatform.tiles.domain.TileProvider;
 import de.ii.xtraplatform.tiles.domain.TileSeedingJob;
@@ -55,26 +58,52 @@ public class VectorSeedingJobProcessor implements JobProcessor<TileSeedingJob, T
   }
 
   @Override
-  public void process(Job job, JobSet jobSet, Consumer<Job> pushJob) {
+  public JobResult process(Job job, JobSet jobSet, Consumer<Job> pushJob) {
     TileSeedingJob seedingJob = getDetails(job);
 
-    getTileProvider(seedingJob.getTileProvider())
-        .ifPresent(
-            tileProvider -> {
-              if (!tileProvider.seeding().isSupported()) {
-                LOGGER.error("Tile provider does not support seeding: {}", tileProvider.getId());
-                return; // early return
-              }
-              if (!tileProvider.seeding().isAvailable()) {
-                return; // early return
-              }
+    Optional<TileProvider> optionalTileProvider = getTileProvider(seedingJob.getTileProvider());
+    if (optionalTileProvider.isPresent()) {
+      TileProvider tileProvider = optionalTileProvider.get();
 
-              try {
-                tileProvider.seeding().get().runSeeding(seedingJob);
-              } catch (IOException e) {
-                throw new RuntimeException(e.getMessage(), e);
-              }
-            });
+      if (!tileProvider.seeding().isSupported()) {
+        LOGGER.error("Tile provider does not support seeding: {}", tileProvider.getId());
+        return JobResult.error("Tile provider does not support seeding"); // early return
+      }
+      if (!tileProvider.seeding().isAvailable()) {
+        if (LOGGER.isDebugEnabled(MARKER.JOBS) || LOGGER.isTraceEnabled()) {
+          LOGGER.trace(
+              MARKER.JOBS,
+              "Tile provider '{}' not available, suspending job ({})",
+              tileProvider.getId(),
+              job.getId());
+        }
+        tileProvider
+            .seeding()
+            .onStateChange(
+                (oldState, newState) -> {
+                  if (newState == State.AVAILABLE) {
+                    if (LOGGER.isDebugEnabled(MARKER.JOBS) || LOGGER.isTraceEnabled()) {
+                      LOGGER.trace(
+                          MARKER.JOBS,
+                          "Tile provider '{}' became available, resuming job ({})",
+                          tileProvider.getId(),
+                          job.getId());
+                    }
+                    pushJob.accept(job);
+                  }
+                },
+                true);
+        return JobResult.onHold(); // early return
+      }
+
+      try {
+        tileProvider.seeding().get().runSeeding(seedingJob);
+      } catch (IOException e) {
+        return JobResult.retry(e.getMessage());
+      }
+    }
+
+    return JobResult.success();
   }
 
   @Override
