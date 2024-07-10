@@ -693,9 +693,9 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
                 .map(
                     path -> {
                       if (cache.getStorageType() == Storage.PER_JOB) {
-                        String partition =
-                            Files.getNameWithoutExtension(Path.of(path).getFileName().toString());
-                        return path.replace(partition, "{partition}");
+                        String fileName = Path.of(path).getFileName().toString();
+                        String ext = Files.getFileExtension(fileName);
+                        return path.replace(fileName, "{partition}." + ext);
                       }
                       return path;
                     });
@@ -718,9 +718,9 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
                   .map(
                       path -> {
                         if (cache.getStorageType() == Storage.PER_JOB) {
-                          String partition =
-                              Files.getNameWithoutExtension(Path.of(path).getFileName().toString());
-                          return path.replace(partition, "{partition}");
+                          String fileName = Path.of(path).getFileName().toString();
+                          String ext = Files.getFileExtension(fileName);
+                          return path.replace(fileName, "{partition}." + ext);
                         }
                         return path;
                       });
