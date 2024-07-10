@@ -60,6 +60,7 @@ import de.ii.xtraplatform.tiles.domain.TileStore;
 import de.ii.xtraplatform.tiles.domain.TileSubMatrix;
 import de.ii.xtraplatform.tiles.domain.TileWalker;
 import de.ii.xtraplatform.tiles.domain.TilesFormat;
+import de.ii.xtraplatform.tiles.domain.TilesetCommon;
 import de.ii.xtraplatform.tiles.domain.TilesetFeatures;
 import de.ii.xtraplatform.tiles.domain.TilesetMetadata;
 import de.ii.xtraplatform.tiles.domain.TilesetRaster;
@@ -80,6 +81,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -112,6 +114,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   private final TileWalker tileWalker;
   private final boolean asyncStartup;
   private final Optional<TileMatrixSetRepository> tileMatrixSetRepository;
+  private final String dataDir;
   private TileEncoders tileEncoders;
   private ChainedTileProvider generatorProviderChain;
   private ChainedTileProvider combinerProviderChain;
@@ -135,6 +138,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
 
     this.asyncStartup = appContext.getConfiguration().getModules().isStartupAsync();
     this.tileMatrixSetRepository = Optional.of(tileMatrixSetRepository);
+    this.dataDir = appContext.getDataDir().toString();
     this.tileGenerator =
         new TileGeneratorFeatures(
             data,
@@ -370,26 +374,41 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   }
 
   private Map<String, Map<String, Range<Integer>>> getCacheRanges(Cache cache) {
-    return Stream.concat(getData().getTilesets().keySet().stream(), getRasterTilesets().stream())
-        .map(
-            tileset ->
-                new SimpleImmutableEntry<>(
-                    tileset,
-                    mergeCacheRanges(
-                        cache.getTmsRanges(), cache.getTilesetTmsRanges().get(tileset))))
-        .collect(MapStreams.toMap());
+    return getCacheRanges(cache, (tileset, ranges) -> ranges);
   }
 
   private Map<String, Map<String, Range<Integer>>> getCacheRanges(Cache cache, int delta) {
-    return Stream.concat(getData().getTilesets().keySet().stream(), getRasterTilesets().stream())
-        .map(
-            tileset ->
-                new SimpleImmutableEntry<>(
-                    tileset,
-                    addToCacheRanges(
-                        mergeCacheRanges(
-                            cache.getTmsRanges(), cache.getTilesetTmsRanges().get(tileset)),
-                        delta)))
+    return getCacheRanges(cache, (tileset, ranges) -> addToCacheRanges(ranges, delta));
+  }
+
+  private Map<String, Map<String, Range<Integer>>> getCacheRanges(
+      Cache cache,
+      BiFunction<String, Map<String, Range<Integer>>, Map<String, Range<Integer>>> rangeMapper) {
+    return Stream.concat(
+            getData().getTilesets().keySet().stream()
+                .map(
+                    tileset ->
+                        new SimpleImmutableEntry<>(
+                            tileset,
+                            rangeMapper.apply(
+                                tileset,
+                                capCacheRanges(
+                                    mergeCacheRanges(
+                                        cache.getTmsRanges(),
+                                        cache.getTilesetTmsRanges().get(tileset)),
+                                    getTilesetRanges(tileset))))),
+            getRasterTilesets().stream()
+                .map(
+                    tileset ->
+                        new SimpleImmutableEntry<>(
+                            tileset,
+                            rangeMapper.apply(
+                                tileset,
+                                capCacheRanges(
+                                    mergeCacheRanges(
+                                        cache.getTmsRanges(),
+                                        cache.getTilesetTmsRanges().get(tileset)),
+                                    getTilesetRanges(getVectorTilesetId(tileset).orElseThrow()))))))
         .collect(MapStreams.toMap());
   }
 
@@ -416,6 +435,27 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
                     Range.closed(
                         entry.getValue().lowerEndpoint() + delta,
                         entry.getValue().upperEndpoint() + delta)))
+        .collect(MapStreams.toMap());
+  }
+
+  private Map<String, Range<Integer>> capCacheRanges(
+      Map<String, Range<Integer>> ranges, Map<String, Range<Integer>> capRanges) {
+    return ranges.entrySet().stream()
+        .filter(
+            entry ->
+                capRanges.containsKey(entry.getKey())
+                    && capRanges.get(entry.getKey()).isConnected(entry.getValue()))
+        .map(
+            entry ->
+                new SimpleImmutableEntry<>(
+                    entry.getKey(),
+                    Range.closed(
+                        Math.max(
+                            entry.getValue().lowerEndpoint(),
+                            capRanges.get(entry.getKey()).lowerEndpoint()),
+                        Math.min(
+                            entry.getValue().upperEndpoint(),
+                            capRanges.get(entry.getKey()).upperEndpoint()))))
         .collect(MapStreams.toMap());
   }
 
@@ -506,8 +546,9 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
 
   @Override
   public List<String> getMapStyles(String vectorTilesetId) {
-    return metadata.keySet().stream()
-        .map(key -> getStyleId(vectorTilesetId, key))
+    return metadata.entrySet().stream()
+        .filter(entry -> entry.getValue().isRaster())
+        .map(entry -> getStyleId(vectorTilesetId, entry.getKey()))
         .filter(Optional::isPresent)
         .map(Optional::get)
         .collect(Collectors.toUnmodifiableList());
@@ -663,8 +704,8 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
 
         result.put("type", cache.getStorageType().name());
         result.put("jobSize", String.valueOf(getOptions().getEffectiveJobSize()));
-        vectorStorage.ifPresent(s -> result.put("vector", s));
-        rasterStorage.ifPresent(s -> result.put("raster", s));
+        vectorStorage.ifPresent(s -> result.put("vector", s.replace(dataDir + "/", "")));
+        rasterStorage.ifPresent(s -> result.put("raster", s.replace(dataDir + "/", "")));
         break;
       }
     }
@@ -688,8 +729,8 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
 
           result.put("type", cache.getStorageType().name());
           result.put("jobSize", String.valueOf(getOptions().getEffectiveJobSize()));
-          vectorStorage.ifPresent(s -> result.put("vector", s));
-          rasterStorage.ifPresent(s -> result.put("raster", s));
+          vectorStorage.ifPresent(s -> result.put("vector", s.replace(dataDir + "/", "")));
+          rasterStorage.ifPresent(s -> result.put("raster", s.replace(dataDir + "/", "")));
           break;
         }
       }
@@ -702,13 +743,15 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
               try {
                 stylesStore
                     .asLocalPath(Path.of("maplibre-styles", clean(getId()), style + ".mbs"), false)
-                    .ifPresent(path -> result.put("style", path.toString()));
+                    .ifPresent(
+                        path -> result.put("style", path.toString().replace(dataDir + "/", "")));
 
                 if (!result.containsKey("style")) {
                   stylesStore
                       .asLocalPath(
                           Path.of("maplibre-styles", clean(getId()), style + ".json"), false)
-                      .ifPresent(path -> result.put("style", path.toString()));
+                      .ifPresent(
+                          path -> result.put("style", path.toString().replace(dataDir + "/", "")));
                 }
               } catch (IOException e) {
                 // ignore
@@ -908,13 +951,17 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
                       .getStyles()
                       .forEach(
                           style ->
-                              metadata.put(
-                                  getRasterTilesetId(tileset.getPrefix().orElse(key), style),
-                                  loadMetadata(
+                              loadMetadata(
                                       tileset.getPrefix().orElse(key),
                                       style,
                                       tileset,
-                                      rasterCache.get()))));
+                                      rasterCache.get())
+                                  .ifPresent(
+                                      tilesetMetadata ->
+                                          metadata.put(
+                                              getRasterTilesetId(
+                                                  tileset.getPrefix().orElse(key), style),
+                                              tilesetMetadata))));
     }
   }
 
@@ -964,17 +1011,25 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
 
     return ImmutableTilesetMetadata.builder()
         .addEncodings(TilesFormat.MVT)
-        .levels(
-            tileset.getLevels().isEmpty()
-                ? getData().getTilesetDefaults().getLevels()
-                : tileset.getLevels())
+        .levels(getTilesetLevels(tileset))
         .center(tileset.getCenter().or(() -> getData().getTilesetDefaults().getCenter()))
         .bounds(bounds)
         .vectorSchemas(vectorSchemas)
         .build();
   }
 
-  private TilesetMetadata loadMetadata(
+  private Map<String, MinMax> getTilesetLevels(TilesetCommon tileset) {
+    return tileset.getLevels().isEmpty()
+        ? getData().getTilesetDefaults().getLevels()
+        : tileset.getLevels();
+  }
+
+  private Map<String, Range<Integer>> getTilesetRanges(String tileset) {
+    return getTilesetLevels(getData().getTilesets().get(tileset)).entrySet().stream()
+        .collect(Collectors.toMap(Entry::getKey, entry -> entry.getValue().asRange()));
+  }
+
+  private Optional<TilesetMetadata> loadMetadata(
       String vectorTilesetId, String style, TilesetRaster tileset, Cache cache) {
     Optional<BoundingBox> bounds = tileGenerator.getBounds(vectorTilesetId);
 
@@ -1003,12 +1058,17 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
                             .getDefault(Optional.ofNullable(defaults.get(entry.getKey())))
                             .build()));
 
-    return ImmutableTilesetMetadata.builder()
-        .addEncodings(TilesFormat.PNG)
-        .levels(levels)
-        .center(tileset.getCenter().or(() -> getData().getTilesetDefaults().getCenter()))
-        .bounds(bounds)
-        .styleId(getStyleId(style))
-        .build();
+    if (levels.isEmpty()) {
+      return Optional.empty();
+    }
+
+    return Optional.of(
+        ImmutableTilesetMetadata.builder()
+            .addEncodings(TilesFormat.PNG)
+            .levels(levels)
+            .center(tileset.getCenter().or(() -> getData().getTilesetDefaults().getCenter()))
+            .bounds(bounds)
+            .styleId(getStyleId(style))
+            .build());
   }
 }
