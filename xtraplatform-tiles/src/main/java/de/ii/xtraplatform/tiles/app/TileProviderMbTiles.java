@@ -184,7 +184,7 @@ public class TileProviderMbTiles extends AbstractTileProvider<TileProviderMbtile
 
   private TilesetMetadata loadMetadata(String tms, Path path) {
     try {
-      MbtilesMetadata metadata = new MbtilesTileset(path).getMetadata();
+      MbtilesMetadata metadata = new MbtilesTileset(path, false).getMetadata();
       TileMatrixSet tileMatrixSet =
           tileMatrixSetRepository
               .get(tms)

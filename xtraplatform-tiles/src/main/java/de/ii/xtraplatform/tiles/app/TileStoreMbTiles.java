@@ -52,7 +52,7 @@ public class TileStoreMbTiles implements TileStore {
             .map(
                 entry ->
                     new SimpleImmutableEntry<>(
-                        entry.getKey(), new MbtilesTileset(entry.getValue())))
+                        entry.getKey(), new MbtilesTileset(entry.getValue(), false)))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
     return new TileStoreMbTiles("", null, tileSets, Map.of(), Optional.empty(), Optional.empty());
@@ -77,7 +77,8 @@ public class TileStoreMbTiles implements TileStore {
                   tileset,
                   tms,
                   getVectorLayers(tileSchemas, tileset),
-                  partitions));
+                  partitions,
+                  tileSchemas.get(tileset).isEmpty()));
         }
       }
     } catch (IOException e) {
@@ -210,7 +211,8 @@ public class TileStoreMbTiles implements TileStore {
                 tile.getTileset(),
                 tile.getTileMatrixSet().getId(),
                 getVectorLayers(tileSchemas, tile.getTileset()),
-                partitions));
+                partitions,
+                false));
       }
     }
     MbtilesTileset tileset = tileSets.get(key(tile));
@@ -313,7 +315,8 @@ public class TileStoreMbTiles implements TileStore {
           try {
             mbtiles.walk(
                 (level, row, col) -> {
-                  walker.walk(fromKey[0], fromKey[1], level, row, col);
+                  walker.walk(
+                      fromKey[0], fromKey[1], level, getXyzRow(fromKey[1], level, row), col);
                 });
           } catch (SQLException | IOException e) {
             // ignore
@@ -389,6 +392,13 @@ public class TileStoreMbTiles implements TileStore {
         .orElse((int) Math.pow(2, level) - row - 1);
   }
 
+  private int getXyzRow(String tmsId, int level, int tmsRow) {
+    return tileMatrixSetRepository
+        .flatMap(r -> r.get(tmsId))
+        .map(tms -> tms.getXyzRow(level, tmsRow))
+        .orElse((int) Math.pow(2, level) - tmsRow - 1);
+  }
+
   private static List<VectorLayer> getVectorLayers(
       Map<String, Map<String, TileGenerationSchema>> tileSchemas, String tileset) {
     return tileSchemas.get(tileset).entrySet().stream()
@@ -419,7 +429,8 @@ public class TileStoreMbTiles implements TileStore {
       String tileset,
       String tileMatrixSet,
       List<VectorLayer> vectorLayers,
-      Optional<TileStorePartitions> partitions)
+      Optional<TileStorePartitions> partitions,
+      boolean isXtratiler)
       throws IOException {
     Path relPath =
         Path.of(tileset).resolve(tileMatrixSet + (partitions.isEmpty() ? MBTILES_SUFFIX : ""));
@@ -439,20 +450,20 @@ public class TileStoreMbTiles implements TileStore {
     MbtilesMetadata md =
         ImmutableMbtilesMetadata.builder()
             .name(name)
-            .format(TilesFormat.MVT)
+            .format(isXtratiler ? TilesFormat.PNG : TilesFormat.MVT)
             .vectorLayers(vectorLayers)
             .build();
 
     if (partitions.isPresent()) {
-      return new MbtilesTileset(filePath.get(), md, partitions);
+      return new MbtilesTileset(filePath.get(), md, partitions, isXtratiler);
     }
 
     if (rootStore.has(relPath)) {
-      return new MbtilesTileset(filePath.get());
+      return new MbtilesTileset(filePath.get(), isXtratiler);
     }
 
     try {
-      return new MbtilesTileset(filePath.get(), md, Optional.empty());
+      return new MbtilesTileset(filePath.get(), md, Optional.empty(), isXtratiler);
     } catch (FileAlreadyExistsException e) {
       throw new IllegalStateException(
           "A MBTiles file already exists. It must have been created by a parallel thread, which should not occur. MBTiles file creation must be synchronized.");

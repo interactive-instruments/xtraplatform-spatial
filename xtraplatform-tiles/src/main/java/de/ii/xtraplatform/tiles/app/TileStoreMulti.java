@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -217,10 +218,17 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
   @Override
   public Optional<String> getStorageInfo(
       String tileset, String tileMatrixSet, TileMatrixSetLimits limits) {
+    List<String> paths = new ArrayList<>();
+
     if (inProgress()) {
-      return staging.first().getStorageInfo(tileset, tileMatrixSet, limits);
+      staging.first().getStorageInfo(tileset, tileMatrixSet, limits).ifPresent(paths::add);
     }
-    return Optional.empty();
+
+    for (Tuple<TileStore, ResourceStore> store : active) {
+      store.first().getStorageInfo(tileset, tileMatrixSet, limits).ifPresent(paths::add);
+    }
+
+    return paths.isEmpty() ? Optional.empty() : Optional.of("[" + String.join(",", paths) + "]");
   }
 
   @Override
@@ -278,13 +286,25 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
   @Override
   public synchronized void promote() throws IOException {
     if (inProgress()) {
-      staging.second().delete(Path.of(".staging"));
-
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("Promoting cache level {}", staging.second().getPrefix());
+      boolean empty = false;
+      try (Stream<Path> files = staging.second().walk(Path.of(""), 1, (p, a) -> true)) {
+        // only self and .staging
+        if (files.count() == 2) {
+          empty = true;
+        }
+      } catch (IOException e) {
+        // continue
       }
 
-      this.active.add(0, staging);
+      if (!empty) {
+        if (LOGGER.isDebugEnabled()) {
+          LOGGER.debug("Promoting cache level {}", staging.second().getPrefix());
+        }
+
+        staging.second().delete(Path.of(".staging"));
+        this.active.add(0, staging);
+      }
+
       this.staging = null;
 
       for (String tileset : dirty.keySet()) {

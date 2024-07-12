@@ -92,30 +92,58 @@ public class MbtilesTileset {
   private final Mutex mutex;
   private final MbtilesMetadata metadata;
   private final Optional<TileStorePartitions> partitions;
+  private final boolean numericTileIds;
+  private final String tileMapTable;
+  private final String tileBlobsTable;
 
-  public MbtilesTileset(Path tilesetPath) {
-    if (!Files.exists(tilesetPath)) {
-      throw new IllegalStateException(
-          String.format("Mbtiles file does not exist: %s", tilesetPath));
-    }
-    this.tilesetPath = tilesetPath;
-    this.partitions = Optional.empty();
-    this.mutex = Mutex.create();
-    try {
-      this.metadata = getMetadata();
-    } catch (SQLException | IOException e) {
-      throw new IllegalStateException(
-          String.format("Could not read metadata from Mbtiles file: %s", tilesetPath), e);
-    }
+  public MbtilesTileset(Path tilesetPath, boolean isXtratiler) {
+    this(tilesetPath, null, Optional.empty(), isXtratiler, true, Mutex.create());
   }
 
   public MbtilesTileset(
-      Path tilesetPath, MbtilesMetadata metadata, Optional<TileStorePartitions> partitions)
+      Path tilesetPath,
+      MbtilesMetadata metadata,
+      Optional<TileStorePartitions> partitions,
+      boolean isXtratiler)
       throws IOException {
+    this(
+        tilesetPath,
+        metadata,
+        partitions,
+        isXtratiler,
+        false,
+        partitions.isPresent() ? Mutex.createNoOp() : Mutex.create());
+  }
+
+  private MbtilesTileset(
+      Path tilesetPath,
+      MbtilesMetadata metadata,
+      Optional<TileStorePartitions> partitions,
+      boolean isXtratiler,
+      boolean mustExist,
+      Mutex mutex) {
+    if (mustExist && !Files.exists(tilesetPath)) {
+      throw new IllegalStateException(
+          String.format("Mbtiles file does not exist: %s", tilesetPath));
+    }
+
     this.tilesetPath = tilesetPath;
     this.partitions = partitions;
-    this.mutex = partitions.isPresent() ? Mutex.createNoOp() : Mutex.create();
-    this.metadata = metadata;
+    this.mutex = mutex;
+    this.numericTileIds = !isXtratiler;
+    this.tileMapTable = isXtratiler ? "map" : "tile_map";
+    this.tileBlobsTable = isXtratiler ? "images" : "tile_blobs";
+
+    if (Objects.isNull(metadata)) {
+      try {
+        this.metadata = getMetadata();
+      } catch (SQLException | IOException e) {
+        throw new IllegalStateException(
+            String.format("Could not read metadata from Mbtiles file: %s", tilesetPath), e);
+      }
+    } else {
+      this.metadata = metadata;
+    }
   }
 
   private Path getTilesetPath(TileCoordinates tile) {
@@ -511,7 +539,7 @@ public class MbtilesTileset {
     int col = tile.getCol();
     String sql =
         String.format(
-            "SELECT tile_id FROM tile_map WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
+            "SELECT tile_id FROM tiles WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
             level, tmsRow, col);
     try (Connection connection = optionalConnection.get();
         Statement statement = connection.createStatement();
@@ -553,7 +581,7 @@ public class MbtilesTileset {
 
     // we need to close this result set, before we start to walk;
     // first determine the number of tiles to process and store the tile coordinates in an array
-    String sql = "SELECT COUNT(zoom_level) FROM tile_map";
+    String sql = "SELECT COUNT(zoom_level) FROM tiles";
     int[][] tiles = new int[0][3];
     int numTiles = 0;
     try (Connection connection = optionalConnection.get()) {
@@ -565,7 +593,7 @@ public class MbtilesTileset {
       }
       tiles = new int[numTiles][3];
       int i = 0;
-      sql = "SELECT zoom_level, tile_row, tile_column FROM tile_map";
+      sql = "SELECT zoom_level, tile_row, tile_column FROM tiles";
       try (Statement statement = connection.createStatement();
           ResultSet rs = statement.executeQuery(sql)) {
         while (rs.next()) {
@@ -655,7 +683,7 @@ public class MbtilesTileset {
       return false;
     }
 
-    String sql = "SELECT COUNT(*) FROM tile_blobs";
+    String sql = String.format("SELECT COUNT(*) FROM %s", tileBlobsTable);
     long count;
     try (Connection connection = optionalConnection.get();
         Statement statement = connection.createStatement();
@@ -809,22 +837,38 @@ public class MbtilesTileset {
         connection = optionalConnection.get();
         String sql =
             String.format(
-                "SELECT tile_id FROM tile_map WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
-                level, tmsRow, col);
-        int tile_id = Integer.MIN_VALUE;
-        try (Statement statement = connection.createStatement();
-            ResultSet rs = statement.executeQuery(sql)) {
-          if (rs.next()) {
-            tile_id = rs.getInt(1);
+                "SELECT tile_id FROM %s WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
+                tileMapTable, level, tmsRow, col);
+
+        if (numericTileIds) {
+          int tile_id = Integer.MIN_VALUE;
+          try (Statement statement = connection.createStatement();
+              ResultSet rs = statement.executeQuery(sql)) {
+            if (rs.next()) {
+              tile_id = rs.getInt(1);
+            }
           }
-        }
-        sql =
-            String.format(
-                "DELETE FROM tile_map WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
-                level, tmsRow, col);
-        SqlHelper.execute(connection, sql);
-        if (tile_id != Integer.MIN_VALUE && (tile_id != EMPTY_TILE_ID || !supportsEmptyTile)) {
-          sql = String.format("DELETE FROM tile_blobs WHERE tile_id=%d", tile_id);
+          sql =
+              String.format(
+                  "DELETE FROM %s WHERE zoom_level=%d AND tile_row=%d AND tile_column=%d",
+                  tileMapTable, level, tmsRow, col);
+          SqlHelper.execute(connection, sql);
+          if (tile_id != Integer.MIN_VALUE && (tile_id != EMPTY_TILE_ID || !supportsEmptyTile)) {
+            sql = String.format("DELETE FROM %s WHERE tile_id=%d", tileBlobsTable, tile_id);
+            SqlHelper.execute(connection, sql);
+          }
+        } else {
+          String tile_id = "";
+          try (Statement statement = connection.createStatement();
+              ResultSet rs = statement.executeQuery(sql)) {
+            if (rs.next()) {
+              tile_id = rs.getString(1);
+            }
+          }
+          LOGGER.debug("DELETE Tile id: '{}'", tile_id);
+          sql = String.format("DELETE FROM %s WHERE tile_id='%s'", tileMapTable, tile_id);
+          SqlHelper.execute(connection, sql);
+          sql = String.format("DELETE FROM %s WHERE tile_id='%s'", tileBlobsTable, tile_id);
           SqlHelper.execute(connection, sql);
         }
       }
@@ -908,7 +952,8 @@ public class MbtilesTileset {
       connection = optionalConnection.get();
       String sqlFrom =
           String.format(
-              "FROM tile_map WHERE zoom_level=%d AND tile_row>=%d AND tile_column>=%d AND tile_row<=%d AND tile_column<=%d",
+              "FROM %s WHERE zoom_level=%d AND tile_row>=%d AND tile_column>=%d AND tile_row<=%d AND tile_column<=%d",
+              tileMapTable,
               level,
               tileMatrixSet.getTmsRow(level, maxRow),
               minCol,
@@ -940,7 +985,8 @@ public class MbtilesTileset {
       while (idx < tile_ids.size()) {
         String sqlDeleteBlobs =
             String.format(
-                "DELETE FROM tile_blobs WHERE tile_id IN (%s)",
+                "DELETE FROM %s WHERE tile_id IN (%s)",
+                tileBlobsTable,
                 tile_ids.subList(idx, Math.min(idx + IDS_CHUCK_SIZE, tile_ids.size())).stream()
                     .map(String::valueOf)
                     .collect(Collectors.joining(",")));
