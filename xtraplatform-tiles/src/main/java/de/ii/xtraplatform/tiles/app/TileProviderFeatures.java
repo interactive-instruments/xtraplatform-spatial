@@ -673,7 +673,11 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
     }
 
     return getRasterStorageInfo(
-        rasterTileset, tileMatrixSet, subMatrix, vectorTilesetId.get(), subMatrix);
+        rasterTileset,
+        tileMatrixSet,
+        subMatrix,
+        vectorTilesetId.get(),
+        subMatrix.toLowerLevelSubMatrix());
   }
 
   @Override
@@ -700,7 +704,9 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
                       return path;
                     });
         Optional<String> rasterStorage =
-            cache.getStorageInfo(rasterTileset, tileMatrixSet, subMatrix.toLimits());
+            cache
+                .getStorageInfo(rasterTileset, tileMatrixSet, subMatrix.toLimits())
+                .map(path -> path.replaceAll("\\.mvt", ".png"));
 
         result.put("type", cache.getStorageType().name());
         result.put("jobSize", String.valueOf(getOptions().getEffectiveJobSize()));
@@ -725,7 +731,9 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
                         return path;
                       });
           Optional<String> rasterStorage =
-              cache.getStorageInfo(rasterTileset, tileMatrixSet, subMatrix.toLimits());
+              cache
+                  .getStorageInfo(rasterTileset, tileMatrixSet, subMatrix.toLimits())
+                  .map(path -> path.replaceAll("\\.mvt", ".png"));
 
           result.put("type", cache.getStorageType().name());
           result.put("jobSize", String.valueOf(getOptions().getEffectiveJobSize()));

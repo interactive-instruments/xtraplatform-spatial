@@ -89,7 +89,7 @@ public class TileSeedingJobCreator implements JobProcessor<Boolean, TileSeedingJ
         if (isCleanup) {
           tileProvider.seeding().get().cleanupSeeding(seedingJobSet);
 
-          long duration = Instant.now().toEpochMilli() - jobSet.getStartedAt().get();
+          long duration = Instant.now().getEpochSecond() - jobSet.getStartedAt().get();
 
           if (LOGGER.isInfoEnabled() || LOGGER.isInfoEnabled(MARKER.JOBS)) {
             LOGGER.info(
@@ -111,7 +111,7 @@ public class TileSeedingJobCreator implements JobProcessor<Boolean, TileSeedingJ
               seedingJobSet.getTileSets().keySet());
         }
 
-        jobSet.getStartedAt().set(Instant.now().toEpochMilli());
+        jobSet.getStartedAt().set(Instant.now().getEpochSecond());
         Map<String, Map<String, Set<TileMatrixSetLimits>>> coverage =
             tileProvider.seeding().get().getCoverage(seedingJobSet.getTileSets());
         Map<String, Map<String, Set<TileMatrixSetLimits>>> rasterCoverage =
@@ -242,8 +242,8 @@ public class TileSeedingJobCreator implements JobProcessor<Boolean, TileSeedingJ
     return entityRegistry.getEntity(TileProvider.class, id);
   }
 
-  private static String pretty(long milliseconds) {
-    Duration d = Duration.ofSeconds(milliseconds / 1000);
+  private static String pretty(long seconds) {
+    Duration d = Duration.ofSeconds(seconds);
     return AmountFormats.wordBased(d, Locale.ENGLISH);
   }
 }

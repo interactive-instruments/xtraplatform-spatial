@@ -62,4 +62,18 @@ public interface TileSubMatrix {
         && getColMin() <= other.getColMin()
         && getColMax() >= other.getColMax();
   }
+
+  default TileSubMatrix toLowerLevelSubMatrix() {
+    return getLowerLevelSubMatrix(this, 1);
+  }
+
+  static TileSubMatrix getLowerLevelSubMatrix(TileSubMatrix subMatrix, int levelDelta) {
+    return new ImmutableTileSubMatrix.Builder()
+        .level(subMatrix.getLevel() - levelDelta)
+        .rowMin(subMatrix.getRowMin() / (2 * levelDelta))
+        .rowMax((subMatrix.getRowMax() - 1) / (2 * levelDelta))
+        .colMin(subMatrix.getColMin() / (2 * levelDelta))
+        .colMax((subMatrix.getColMax() - 1) / (2 * levelDelta))
+        .build();
+  }
 }
