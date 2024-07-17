@@ -67,7 +67,7 @@ import org.immutables.value.Value;
  * - The CQL2 functions `DIAMETER2D()` and `DIAMETER3D()` are not supported.
  * - Columns with JSON content are not supported.
  *     </code>
- * @langEn ## Limitierungen
+ * @langDe ## Limitierungen
  *     <p>Alle Bezeichner müssen nicht in Anführungszeichen gesetzt werden, d.h. in `PGIS` und
  *     `GPKG` werden die Bezeichner klein geschrieben und in `ORACLE` werden sie groß geschrieben.
  *     <p>Für `PGIS` gibt es die folgenden bekannten Einschränkungen:
