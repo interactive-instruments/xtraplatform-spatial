@@ -14,6 +14,11 @@ import de.ii.xtraplatform.cache.domain.Cache;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
+import de.ii.xtraplatform.docs.DocDefs;
+import de.ii.xtraplatform.docs.DocStep;
+import de.ii.xtraplatform.docs.DocStep.Step;
+import de.ii.xtraplatform.docs.DocTable;
+import de.ii.xtraplatform.docs.DocTable.ColumnSet;
 import de.ii.xtraplatform.entities.domain.Entity;
 import de.ii.xtraplatform.entities.domain.Entity.SubType;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
@@ -35,6 +40,63 @@ import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @title Oracle
+ * @sortPriority 60
+ * @langEn The features are stored in an Oracle Spatial database.
+ * @langDe Die Features sind in einer Oracle Spatial Datenbank gespeichert
+ * @prerequisitesEn Since the Oracle JDBC driver is not open source, it is not included in the
+ *     distribution. You have to download a recent `ojdbc11.jar` from the [Oracle
+ *     website](https://www.oracle.com/database/technologies/appdev/jdbc-downloads.html) and add it
+ *     to the [Store](../../application/20-configuration/10-store-new.md) as resource with type
+ *     `oracle`.
+ * @prerequisitesDe Da der Oracle JDBC-Treiber nicht Open Source ist, ist er nicht in der
+ *     Distribution enthalten. Sie müssen ein aktuelles `ojdbc11.jar` von der
+ *     [Oracle-Website](https://www.oracle.com/database/technologies/appdev/jdbc-downloads.html)
+ *     herunterladen und es als Ressource mit dem Typ `oracle` im
+ *     [Store](../../application/20-configuration/10-store-new.md) hinzufügen.
+ * @limitationsEn <code>
+ * - Only **Oracle 19c** has been tested.
+ * - Only geometries in a 2D coordinate reference system are supported.
+ * - All identifiers must be unquoted identifiers; that is the identifiers will be all uppercase.
+ * - The option `linearizeCurves` is not supported. All geometries must conform to the OGC Simple
+ *   Feature Access standard.
+ * - The spatial operator `S_CROSSES` is not supported.
+ * - The CQL2 functions `DIAMETER2D()` and `DIAMETER3D()` are not supported.
+ * - CRUD operations are not supported.
+ * - Columns with JSON content are not supported.
+ *     </code>
+ * @limitationsDe <code>
+ * - Es wurde nur **Oracle 19c** getestet.
+ * - Es werden nur Geometrien in einem 2D-Koordinatenreferenzsystem unterstützt.
+ * - Alle Bezeichner müssen nicht in Anführungszeichen gesetzt werden, d.h. die Bezeichner werden groß geschrieben.
+ * - Die Option `linearizeCurves` wird nicht unterstützt. Alle Geometrien müssen Geometrien gemäß
+ *   dem Standard OGC Simple Feature Access sein.
+ * - Der räumliche Operator `S_CROSSES` wird nicht unterstützt.
+ * - Die CQL2-Funktionen `DIAMETER2D()` und `DIAMETER3D()` werden nicht unterstützt.
+ * - CRUD-Operationen werden nicht unterstützt.
+ * - Spalten mit JSON-Inhalt werden nicht unterstützt.
+ *     </code>
+ * @cfgPropertiesAdditionalEn ### Connection Info
+ *     <p>The connection info object for Oracle databases has the following properties:
+ *     <p>{@docTable:connectionInfo}
+ * @cfgPropertiesAdditionalDe ### Connection Info
+ *     <p>Das Connection-Info-Objekt für Oracle-Datenbanken wird wie folgt beschrieben:
+ *     <p>{@docTable:connectionInfo}
+ * @ref:cfgProperties {@link de.ii.xtraplatform.features.sql.domain.ImmutableFeatureProviderSqlData}
+ * @ref:connectionInfo {@link
+ *     de.ii.xtraplatform.features.oracle.domain.ImmutableConnectionInfoOracle}
+ */
+@DocDefs(
+    tables = {
+      @DocTable(
+          name = "connectionInfo",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:connectionInfo}"),
+            @DocStep(type = Step.JSON_PROPERTIES)
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
+    })
 @Entity(
     type = ProviderData.ENTITY_TYPE,
     subTypes = {
