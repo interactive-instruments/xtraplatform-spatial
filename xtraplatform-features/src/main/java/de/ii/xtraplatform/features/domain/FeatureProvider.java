@@ -12,10 +12,188 @@ import de.ii.xtraplatform.base.domain.resiliency.VolatileComposed;
 import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistered;
 import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry.ChangeHandler;
+import de.ii.xtraplatform.docs.DocColumn;
+import de.ii.xtraplatform.docs.DocFile;
+import de.ii.xtraplatform.docs.DocFilesTemplate;
+import de.ii.xtraplatform.docs.DocFilesTemplate.ForEach;
+import de.ii.xtraplatform.docs.DocI18n;
+import de.ii.xtraplatform.docs.DocStep;
+import de.ii.xtraplatform.docs.DocStep.Step;
+import de.ii.xtraplatform.docs.DocTable;
+import de.ii.xtraplatform.docs.DocTable.ColumnSet;
+import de.ii.xtraplatform.docs.DocVar;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+/**
+ * @langEn # Features
+ *     <p>These types of feature providers are supported:
+ *     <p>{@docTable:overview}
+ *     <p>## Configuration
+ *     <p>These are common configuration options for all provider types.
+ *     <p>{@docTable:properties}
+ *     <p>### Schema Definitions
+ *     <p>{@docTable:types}
+ *     <p>
+ * @langDe # Allgemein
+ *     <p>Diese Arten von Feature-Providern werden unterstützt:
+ *     <p>{@docTable:overview}
+ *     <p>## Konfiguration
+ *     <p>Dies sind gemeinsame Konfigurations-Optionen für alle Provider-Typen.
+ *     <p>{@docTable:properties}
+ *     <p>### Schema-Definitionen
+ *     <p>{@docTable:types}
+ *     <p>
+ * @langEn ### Connection Info
+ *     <p>For data source specifics, see [SQL](10-sql.md#connection-info) and
+ *     [WFS](50-wfs.md#connection-info).
+ * @langDe ### Connection Info
+ *     <p>Informationen zu den Datenquellen finden Sie auf separaten Seiten:
+ *     [SQL](10-sql.md#connection-info) und [WFS](50-wfs.md#connection-info).
+ *     <p>
+ * @langEn ### Example Configuration (SQL)
+ *     <p>See the [feature
+ *     provider](https://github.com/interactive-instruments/ldproxy/blob/master/demo/vineyards/store/entities/providers/vineyards.yml)
+ *     of the API [Vineyards in Rhineland-Palatinate, Germany](https://demo.ldproxy.net/vineyards).
+ * @langDe ### Beispiel-Konfiguration (SQL)
+ *     <p>Als Beispiel siehe die
+ *     [Provider-Konfiguration](https://github.com/interactive-instruments/ldproxy/blob/master/demo/vineyards/store/entities/providers/vineyards.yml)
+ *     der API [Weinlagen in Rheinland-Pfalz](https://demo.ldproxy.net/vineyards).
+ * @langEn ### Mapping Operations
+ *     <p>{@docVar:mappingOps}
+ * @langDe ### Mapping Operationen
+ *     <p>{@docVar:mappingOps}
+ * @langEn ### Feature References
+ *     <p>{@docVar:featureRefs}
+ * @langDe ### Objektreferenzen
+ *     <p>{@docVar:featureRefs}
+ * @ref:cfgProperties {@link de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCommonData}
+ * @ref:cfgProperties:types {@link de.ii.xtraplatform.features.domain.ImmutableFeatureSchema}
+ * @ref:mappingOps {@link de.ii.xtraplatform.features.domain.MappingOperationResolver}
+ * @ref:featureRefs {@link de.ii.xtraplatform.features.domain.transform.FeatureRefResolver}
+ */
+@DocFile(
+    path = "providers/feature",
+    name = "README.md",
+    tables = {
+      @DocTable(
+          name = "properties",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:cfgProperties}"),
+            @DocStep(type = Step.JSON_PROPERTIES)
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
+      @DocTable(
+          name = "types",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:cfgProperties:types}"),
+            @DocStep(type = Step.JSON_PROPERTIES)
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
+      @DocTable(
+          name = "overview",
+          rows = {
+            @DocStep(type = Step.IMPLEMENTATIONS),
+            @DocStep(type = Step.SORTED, params = "{@sortPriority}")
+          },
+          columns = {
+            @DocColumn(
+                value = @DocStep(type = Step.TAG, params = "[{@title}]({@docFile:name})"),
+                header = {
+                  @DocI18n(language = "en", value = "Provider Type"),
+                  @DocI18n(language = "de", value = "Provider-Typ")
+                }),
+            @DocColumn(
+                value =
+                    @DocStep(
+                        type = Step.TAG,
+                        params =
+                            "<SplitBadge type=\"{@module.maturity}\" left=\"impl\" right=\"{@module.maturity}\" vertical=\"center\" style=\"margin-bottom: 5px; margin-right: 5px;\" /><span/><SplitBadge type=\"{@module.maintenanceBadge}\" left=\"main\" right=\"{@module.maintenance}\" vertical=\"center\" />"),
+                header = {
+                  @DocI18n(language = "en", value = "Classification"),
+                  @DocI18n(language = "de", value = "Klassifizierung")
+                }),
+            @DocColumn(
+                value = @DocStep(type = Step.TAG, params = "{@body}"),
+                header = {
+                  @DocI18n(language = "en", value = "Description"),
+                  @DocI18n(language = "de", value = "Beschreibung")
+                })
+          })
+    },
+    vars = {
+      @DocVar(
+          name = "mappingOps",
+          value = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:mappingOps}"),
+            @DocStep(type = Step.TAG, params = "{@bodyBlock}")
+          }),
+      @DocVar(
+          name = "featureRefs",
+          value = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:featureRefs}"),
+            @DocStep(type = Step.TAG, params = "{@bodyBlock}")
+          }),
+    })
+@DocFilesTemplate(
+    files = ForEach.IMPLEMENTATION,
+    path = "providers/feature",
+    stripPrefix = "FeatureProvider",
+    template = {
+      @DocI18n(
+          language = "en",
+          value =
+              "# {@title}\n\n"
+                  + "<SplitBadge type=\"{@module.maturity}\" left=\"impl\" right=\"{@module.maturity}\" vertical=\"super\" />"
+                  + "<SplitBadge type=\"{@module.maintenanceBadge}\" left=\"main\" right=\"{@module.maintenance}\" vertical=\"super\" />\n\n"
+                  + "{@body}\n\n"
+                  + "{@prerequisitesEn ## Prerequisites\n\n|||}\n\n"
+                  + "{@limitationsEn ## Limitations\n\n|||}\n\n"
+                  + "## Configuration\n\n"
+                  + "{@docVar:cfgBody |||}\n\n"
+                  + "{@docTable:cfgProperties ### Options\n\n||| This provider has no specific configuration options.}\n\n"
+                  + "{@cfgPropertiesAdditionalEn |||}\n\n"
+                  + "{@docVar:cfgExamples ### Examples\n\n|||}\n"),
+      @DocI18n(
+          language = "de",
+          value =
+              "# {@title}\n\n"
+                  + "<SplitBadge type=\"{@module.maturity}\" left=\"impl\" right=\"{@module.maturity}\" vertical=\"super\" />"
+                  + "<SplitBadge type=\"{@module.maintenanceBadge}\" left=\"main\" right=\"{@module.maintenance}\" vertical=\"super\" />\n\n"
+                  + "{@body}\n\n"
+                  + "{@prerequisitesDe ## Vorraussetzungen\n\n|||}\n\n"
+                  + "{@limitationsDe ## Limitierungen\n\n|||}\n\n"
+                  + "## Konfiguration\n\n"
+                  + "{@docVar:cfgBody |||}\n\n"
+                  + "{@docTable:cfgProperties ### Optionen\n\n||| Dieser Provider hat keine spezifischen Konfigurationsoptionen.}\n\n"
+                  + "{@cfgPropertiesAdditionalDe |||}\n\n"
+                  + "{@docVar:cfgExamples ### Beispiele\n\n|||}\n")
+    },
+    tables = {
+      @DocTable(
+          name = "cfgProperties",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:cfgProperties}"),
+            @DocStep(type = Step.JSON_PROPERTIES),
+            @DocStep(type = Step.MARKED, params = "specific")
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
+    },
+    vars = {
+      @DocVar(
+          name = "cfgBody",
+          value = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:cfg}"),
+            @DocStep(type = Step.TAG, params = "{@bodyBlock}")
+          }),
+      @DocVar(
+          name = "cfgExamples",
+          value = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:cfg}"),
+            @DocStep(type = Step.TAG, params = "{@examples}")
+          }),
+    })
 public interface FeatureProvider extends VolatileComposed {
 
   String PROVIDER_TYPE = "FEATURE";

@@ -20,10 +20,6 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
-/**
- * @author zahnen
- */
-
 /** */
 @Value.Immutable
 @Value.Style(
@@ -52,10 +48,8 @@ public interface ConnectionInfoSql extends ConnectionInfo {
   }
 
   /**
-   * @langEn `PGIS` for PostgreSQL/PostGIS, `GPKG` for GeoPackage or SQLite/SpatiaLite, `ORACLE` for
-   *     Oracle.
-   * @langDe `PGIS` für PostgreSQL/PostGIS, `GPKG` für GeoPackage oder SQLite/SpatiaLite, `ORACLE`
-   *     für Oracle.
+   * @langEn `PGIS` for PostgreSQL/PostGIS, `GPKG` for GeoPackage or SQLite/SpatiaLite.
+   * @langDe `PGIS` für PostgreSQL/PostGIS, `GPKG` für GeoPackage oder SQLite/SpatiaLite.
    * @default PGIS
    */
   @Value.Default
@@ -101,8 +95,8 @@ public interface ConnectionInfoSql extends ConnectionInfo {
   List<String> getSchemas();
 
   /**
-   * @langEn Connection pool settings, for details see [Pool](#connection-pool) below.
-   * @langDe Einstellungen für den Connection-Pool, für Details siehe [Pool](#connection-pool).
+   * @langEn Connection pool settings, for details see [Pool](10-sql.md#pool) below.
+   * @langDe Einstellungen für den Connection-Pool, für Details siehe [Pool](10-sql.md#pool).
    * @default see below
    */
   @Nullable
