@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.features.sql.app;
+package de.ii.xtraplatform.features.oracle.app;
 
 import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableMap;
@@ -38,9 +38,7 @@ import de.ii.xtraplatform.features.domain.SchemaReferenceResolver;
 import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
 import de.ii.xtraplatform.features.domain.transform.FeatureRefResolver;
 import de.ii.xtraplatform.features.domain.transform.ImplicitMappingResolver;
-import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.features.sql.domain.ConstantsResolver;
-import de.ii.xtraplatform.features.sql.domain.FeatureProviderSql;
 import de.ii.xtraplatform.features.sql.domain.FeatureProviderSqlData;
 import de.ii.xtraplatform.features.sql.domain.ImmutableConnectionInfoSql;
 import de.ii.xtraplatform.features.sql.domain.ImmutableFeatureProviderSqlData;
@@ -52,8 +50,6 @@ import de.ii.xtraplatform.features.sql.domain.SqlClientBasicFactory;
 import de.ii.xtraplatform.features.sql.domain.SqlDbmsAdapters;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.values.domain.ValueStore;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -66,20 +62,18 @@ import org.slf4j.LoggerFactory;
 
 @Singleton
 @AutoBind
-public class FeatureProviderSqlFactory
-    extends AbstractEntityFactory<FeatureProviderDataV2, FeatureProviderSql>
+public class FeatureProviderOracleFactory
+    extends AbstractEntityFactory<FeatureProviderDataV2, FeatureProviderOracle>
     implements EntityFactory {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderSqlFactory.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FeatureProviderOracleFactory.class);
 
   private final Lazy<Set<SchemaFragmentResolver>> schemaResolvers;
-  private final SqlDbmsAdapters dbmsAdapters;
-  private final FeatureProviderSqlAuto featureProviderSqlAuto;
   private final boolean skipHydration;
   private final Set<String> connectors;
 
   @Inject
-  public FeatureProviderSqlFactory(
+  public FeatureProviderOracleFactory(
       Lazy<Set<SchemaFragmentResolver>> schemaResolvers,
       // TODO: needed because dagger-auto does not parse FeatureProviderSql
       CrsTransformerFactory crsTransformerFactory,
@@ -93,25 +87,17 @@ public class FeatureProviderSqlFactory
       DecoderFactories decoderFactories,
       VolatileRegistry volatileRegistry,
       Cache cache,
-      ProviderSqlFactoryAssisted providerSqlFactoryAssisted) {
-    super(providerSqlFactoryAssisted);
+      ProviderOracleFactoryAssisted providerOracleFactoryAssisted) {
+    super(providerOracleFactoryAssisted);
     this.schemaResolvers = schemaResolvers;
-    this.dbmsAdapters = dbmsAdapters;
-    this.featureProviderSqlAuto =
-        new FeatureProviderSqlAuto(
-            new SqlClientBasicFactoryDefault(connectorFactory, dbmsAdapters));
     this.skipHydration = false;
-    // TODO
-    this.connectors = Set.of("JSON");
+    this.connectors = Set.of();
   }
 
   // for ldproxy-cfg
-  public FeatureProviderSqlFactory(
-      SqlDbmsAdapters dbmsAdapters, SqlClientBasicFactory sqlClientBasicFactory) {
+  public FeatureProviderOracleFactory(SqlClientBasicFactory sqlClientBasicFactory) {
     super(null);
     this.schemaResolvers = null;
-    this.dbmsAdapters = dbmsAdapters;
-    this.featureProviderSqlAuto = new FeatureProviderSqlAuto(sqlClientBasicFactory);
     this.skipHydration = true;
     this.connectors = Set.of();
   }
@@ -123,12 +109,12 @@ public class FeatureProviderSqlFactory
 
   @Override
   public Optional<String> subType() {
-    return Optional.of(FeatureProviderSql.ENTITY_SUB_TYPE);
+    return Optional.of(FeatureProviderOracle.ENTITY_SUB_TYPE);
   }
 
   @Override
   public Class<? extends PersistentEntity> entityClass() {
-    return FeatureProviderSql.class;
+    return FeatureProviderOracle.class;
   }
 
   @Override
@@ -140,6 +126,7 @@ public class FeatureProviderSqlFactory
         .connectionInfo(
             new ImmutableConnectionInfoSql.Builder()
                 .database("")
+                .dialect(SqlDbmsAdapterOras.ID)
                 .pool(
                     new ImmutablePoolSettings.Builder()
                         .maxConnections(-1)
@@ -172,7 +159,7 @@ public class FeatureProviderSqlFactory
 
   @Override
   public Optional<AutoEntityFactory> auto() {
-    return Optional.of(featureProviderSqlAuto);
+    return Optional.empty();
   }
 
   @Override
@@ -184,31 +171,6 @@ public class FeatureProviderSqlFactory
     }
 
     try {
-      if (data.isAuto()) {
-        LOGGER.info(
-            "Feature provider with id '{}' is in auto mode, generating configuration ...",
-            data.getId());
-
-        ConnectionInfoSql connectionInfo = data.getConnectionInfo();
-
-        List<String> schemas = dbmsAdapters.get(connectionInfo.getDialect()).getDefaultSchemas();
-        Map<String, List<String>> tables = featureProviderSqlAuto.analyze(data);
-
-        if (!schemas.isEmpty()) {
-          Map<String, List<String>> schemaTables = new LinkedHashMap<>();
-
-          for (String schema : schemas) {
-            if (tables.containsKey(schema)) {
-              schemaTables.put(schema, tables.get(schema));
-            }
-          }
-
-          tables = schemaTables;
-        }
-
-        data = featureProviderSqlAuto.generate(data, tables, ignore -> {});
-      }
-
       return normalizeConstants(
           normalizeImplicitMappings(
               normalizeFeatureRefs(
@@ -298,9 +260,9 @@ public class FeatureProviderSqlFactory
   }
 
   @AssistedFactory
-  public interface ProviderSqlFactoryAssisted
-      extends FactoryAssisted<FeatureProviderDataV2, FeatureProviderSql> {
+  public interface ProviderOracleFactoryAssisted
+      extends FactoryAssisted<FeatureProviderDataV2, FeatureProviderOracle> {
     @Override
-    FeatureProviderSql create(FeatureProviderDataV2 data);
+    FeatureProviderOracle create(FeatureProviderDataV2 data);
   }
 }

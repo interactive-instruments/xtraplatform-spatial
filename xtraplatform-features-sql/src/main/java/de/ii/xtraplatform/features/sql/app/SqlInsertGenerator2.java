@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @author zahnen
  */
-class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
+public class SqlInsertGenerator2 implements FeatureStoreInsertGenerator {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SqlInsertGenerator2.class);
 

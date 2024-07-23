@@ -11,7 +11,6 @@ import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.base.domain.resiliency.Volatile2;
 import de.ii.xtraplatform.base.domain.util.Tuple;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
-import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlRowMeta.Builder;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.Source;
@@ -39,7 +38,7 @@ public interface SqlConnector
 
   int getQueueSize();
 
-  Dialect getDialect();
+  String getDialect();
 
   SqlClient getSqlClient();
 

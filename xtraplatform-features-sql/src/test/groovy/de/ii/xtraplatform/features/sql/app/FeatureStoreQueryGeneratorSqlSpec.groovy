@@ -9,7 +9,7 @@ package de.ii.xtraplatform.features.sql.app
 
 import de.ii.xtraplatform.cql.app.CqlFilterExamples
 import de.ii.xtraplatform.crs.domain.OgcCrs
-import de.ii.xtraplatform.features.sql.domain.SqlDialectPostGis
+import de.ii.xtraplatform.features.sql.domain.SqlDialectPgis
 import spock.lang.Ignore
 import spock.lang.Shared
 import spock.lang.Specification
@@ -19,14 +19,14 @@ import java.util.stream.Collectors
 // TODO no longer used, update
 @Ignore
 class FeatureStoreQueryGeneratorSqlSpec extends Specification {
-
+/*
 
     @Shared
     FeatureStoreQueryGeneratorSql queryGeneratorSql
 
 
     def setupSpec() {
-        queryGeneratorSql = new FeatureStoreQueryGeneratorSql(new SqlDialectPostGis(), OgcCrs.CRS84, null)
+        queryGeneratorSql = new FeatureStoreQueryGeneratorSql(new SqlDialectPgis(), OgcCrs.CRS84, null)
     }
 
 
@@ -497,5 +497,5 @@ class FeatureStoreQueryGeneratorSqlSpec extends Specification {
         metaQuery == "SELECT * FROM (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.road_class COLLATE \"de-DE-x-icu\" IN ('Οδος' COLLATE \"de-DE-x-icu\", 'Straße' COLLATE \"de-DE-x-icu\")) ORDER BY SKEY LIMIT 10) AS NR) AS NR2, (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.road_class COLLATE \"de-DE-x-icu\" IN ('Οδος' COLLATE \"de-DE-x-icu\", 'Straße' COLLATE \"de-DE-x-icu\")) ORDER BY 1) AS NM) AS NM2"
         instanceQuery == "SELECT A.id AS SKEY, A.road_class FROM container A WHERE A.id IN (SELECT AA.id FROM container AA  WHERE AA.road_class COLLATE \"de-DE-x-icu\" IN ('Οδος' COLLATE \"de-DE-x-icu\", 'Straße' COLLATE \"de-DE-x-icu\")) ORDER BY 1"
     }
-
+*/
 }

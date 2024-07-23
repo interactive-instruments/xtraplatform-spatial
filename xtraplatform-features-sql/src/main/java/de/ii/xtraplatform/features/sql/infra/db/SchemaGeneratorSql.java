@@ -16,8 +16,8 @@ import de.ii.xtraplatform.features.domain.SchemaBase.Scope;
 import de.ii.xtraplatform.features.domain.SchemaGenerator;
 import de.ii.xtraplatform.features.sql.app.SimpleFeatureGeometryFromToWkt;
 import de.ii.xtraplatform.features.sql.domain.SqlClientBasic;
-import de.ii.xtraplatform.features.sql.domain.SqlDialect;
-import de.ii.xtraplatform.features.sql.domain.SqlDialect.GeoInfo;
+import de.ii.xtraplatform.features.sql.domain.SqlDbmsAdapter;
+import de.ii.xtraplatform.features.sql.domain.SqlDbmsAdapter.GeoInfo;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -43,20 +43,20 @@ public class SchemaGeneratorSql implements SchemaGenerator {
   private final SqlClientBasic sqlClientBasic;
   private final Connection connection;
   private final SqlSchemaCrawler schemaCrawler;
-  private final SqlDialect dialect;
+  private final SqlDbmsAdapter dbmsAdapter;
 
   public SchemaGeneratorSql(SqlClientBasic sqlClientBasic) {
     this.sqlClientBasic = sqlClientBasic;
     this.connection = sqlClientBasic.getConnection();
     this.schemaCrawler = new SqlSchemaCrawler(connection);
-    this.dialect = sqlClientBasic.getSqlDialect();
+    this.dbmsAdapter = sqlClientBasic.getDbmsAdapter();
   }
 
   @Override
   public Map<String, List<String>> analyze() {
     try {
       Catalog catalog =
-          schemaCrawler.getCatalog(dialect.getSystemSchemas(), dialect.getSystemTables());
+          schemaCrawler.getCatalog(dbmsAdapter.getSystemSchemas(), dbmsAdapter.getSystemTables());
 
       return catalog.getSchemas().stream()
           .map(

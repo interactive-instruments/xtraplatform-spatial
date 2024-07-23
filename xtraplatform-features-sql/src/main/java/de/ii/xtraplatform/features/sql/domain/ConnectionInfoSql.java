@@ -20,10 +20,6 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
-/**
- * @author zahnen
- */
-
 /** */
 @Value.Immutable
 @Value.Style(
@@ -57,8 +53,8 @@ public interface ConnectionInfoSql extends ConnectionInfo {
    * @default PGIS
    */
   @Value.Default
-  default Dialect getDialect() {
-    return Dialect.PGIS;
+  default String getDialect() {
+    return SqlDbmsPgis.ID;
   }
 
   /**
@@ -99,8 +95,8 @@ public interface ConnectionInfoSql extends ConnectionInfo {
   List<String> getSchemas();
 
   /**
-   * @langEn Connection pool settings, for details see [Pool](#connection-pool) below.
-   * @langDe Einstellungen für den Connection-Pool, für Details siehe [Pool](#connection-pool).
+   * @langEn Connection pool settings, for details see [Pool](10-sql.md#pool) below.
+   * @langDe Einstellungen für den Connection-Pool, für Details siehe [Pool](10-sql.md#pool).
    * @default see below
    */
   @Nullable

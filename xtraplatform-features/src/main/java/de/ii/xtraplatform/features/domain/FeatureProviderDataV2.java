@@ -12,13 +12,7 @@ import com.fasterxml.jackson.annotation.JsonMerge;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.docs.DocFile;
 import de.ii.xtraplatform.docs.DocIgnore;
-import de.ii.xtraplatform.docs.DocStep;
-import de.ii.xtraplatform.docs.DocStep.Step;
-import de.ii.xtraplatform.docs.DocTable;
-import de.ii.xtraplatform.docs.DocTable.ColumnSet;
-import de.ii.xtraplatform.docs.DocVar;
 import de.ii.xtraplatform.entities.domain.AutoEntity;
 import de.ii.xtraplatform.entities.domain.EntityDataBuilder;
 import de.ii.xtraplatform.entities.domain.ValidationResult.MODE;
@@ -30,105 +24,6 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
-/**
- * @langEn # Features
- *     <p>There are currently three types of Feature providers:
- *     <p><code>
- * - [SQL](10-sql.md): The features are stored in a SQL database (PostgreSQL/PostGIS, GeoPackage, SQLite/SpatiaLite).
- * - [WFS](50-wfs.md): The features are retrieved from an OGC WFS.
- * - [GraphQL](60-graphql.md): The features are retrieved from a GraphQL API. This Feature provider is **experimental** and has limitations..
- *     </code>
- *     <p>## Configuration
- *     <p>These are common configuration options for all provider types.
- *     <p>{@docTable:properties}
- *     <p>### Schema Definitions
- *     <p>{@docTable:types}
- *     <p>
- * @langDe # Allgemein
- *     <p>Es werden aktuell drei Arten von Feature-Providern unterstützt:
- *     <p><code>
- * - [SQL](10-sql.md): Die Features sind in einer SQL-Datenbank gespeichert (PostgreSQL/PostGIS, GeoPackage, SQLite/SpatiaLite).
- * - [WFS](50-wfs.md): Die Features werden von einem OGC WFS bezogen.
- * - [GraphQL](60-graphql.md): Die Features werden von einer GraphQL API bezogen. Dieser Feature-Provider ist **experimentell** und hat einen eingeschränkten Funktionsumfang.
- *     </code>
- *     <p>## Konfiguration
- *     <p>Dies sind gemeinsame Konfigurations-Optionen für alle Provider-Typen.
- *     <p>{@docTable:properties}
- *     <p>### Schema-Definitionen
- *     <p>{@docTable:types}
- *     <p>
- * @langEn ### Connection Info
- *     <p>For data source specifics, see [SQL](10-sql.md#connection-info) and
- *     [WFS](50-wfs.md#connection-info).
- * @langDe ### Connection Info
- *     <p>Informationen zu den Datenquellen finden Sie auf separaten Seiten:
- *     [SQL](10-sql.md#connection-info) und [WFS](50-wfs.md#connection-info).
- *     <p>
- * @langEn ### Example Configuration (SQL)
- *     <p>See the [feature
- *     provider](https://github.com/interactive-instruments/ldproxy/blob/master/demo/vineyards/store/entities/providers/vineyards.yml)
- *     of the API [Vineyards in Rhineland-Palatinate, Germany](https://demo.ldproxy.net/vineyards).
- * @langDe ### Beispiel-Konfiguration (SQL)
- *     <p>Als Beispiel siehe die
- *     [Provider-Konfiguration](https://github.com/interactive-instruments/ldproxy/blob/master/demo/vineyards/store/entities/providers/vineyards.yml)
- *     der API [Weinlagen in Rheinland-Pfalz](https://demo.ldproxy.net/vineyards).
- * @langEn ### Mapping Operations
- *     <p>{@docVar:mappingOps}
- * @langDe ### Mapping Operationen
- *     <p>{@docVar:mappingOps}
- * @langEn ### Feature References
- *     <p>{@docVar:featureRefs}
- * @langDe ### Objektreferenzen
- *     <p>{@docVar:featureRefs}
- * @ref:cfgProperties {@link de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCommonData}
- * @ref:cfgProperties:types {@link de.ii.xtraplatform.features.domain.ImmutableFeatureSchema}
- * @ref:mappingOps {@link de.ii.xtraplatform.features.domain.MappingOperationResolver}
- * @ref:featureRefs {@link de.ii.xtraplatform.features.domain.transform.FeatureRefResolver}
- */
-@DocFile(
-    path = "providers/feature",
-    name = "README.md",
-    tables = {
-      @DocTable(
-          name = "properties",
-          rows = {
-            @DocStep(type = Step.TAG_REFS, params = "{@ref:cfgProperties}"),
-            @DocStep(type = Step.JSON_PROPERTIES)
-          },
-          columnSet = ColumnSet.JSON_PROPERTIES),
-      @DocTable(
-          name = "types",
-          rows = {
-            @DocStep(type = Step.TAG_REFS, params = "{@ref:cfgProperties:types}"),
-            @DocStep(type = Step.JSON_PROPERTIES)
-          },
-          columnSet = ColumnSet.JSON_PROPERTIES),
-    },
-    vars = {
-      @DocVar(
-          name = "mappingOps",
-          value = {
-            @DocStep(type = Step.TAG_REFS, params = "{@ref:mappingOps}"),
-            @DocStep(type = Step.TAG, params = "{@bodyBlock}")
-          }),
-      @DocVar(
-          name = "featureRefs",
-          value = {
-            @DocStep(type = Step.TAG_REFS, params = "{@ref:featureRefs}"),
-            @DocStep(type = Step.TAG, params = "{@bodyBlock}")
-          }),
-    })
-/*@DocFilesTemplate(
-    files = ForEach.IMPLEMENTATION,
-    path = "providers",
-    stripPrefix = "FeatureProvider",
-    stripSuffix = "Data",
-    template = {
-        @DocI18n(language = "en", value = "{@body}"),
-        @DocI18n(language = "de", value = "{@body}")
-    }
-)*/
-// @JsonDeserialize(builder = ImmutableFeatureProviderCommonData.Builder.class)
 public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, ExtendableConfiguration {
 
   @JsonIgnore

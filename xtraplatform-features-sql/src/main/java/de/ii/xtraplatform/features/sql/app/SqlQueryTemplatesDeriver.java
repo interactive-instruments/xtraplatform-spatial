@@ -89,9 +89,9 @@ public class SqlQueryTemplatesDeriver
         virtualTables,
         withNumberSkipped,
         withNumberReturned) -> {
-      String limitSql = limit > 0 ? String.format(" LIMIT %d", limit) : "";
-      String offsetSql = offset > 0 ? String.format(" OFFSET %d", offset) : "";
-      String skipOffsetSql = skipOffset > 0 ? String.format(" OFFSET %d", skipOffset) : "";
+      String limitSql = limit > 0 ? sqlDialect.applyToLimit(limit) : "";
+      String offsetSql = offset > 0 ? sqlDialect.applyToOffset(offset) : "";
+      String skipOffsetSql = skipOffset > 0 ? sqlDialect.applyToOffset(skipOffset) : "";
       Optional<String> filter = getFilter(schema, cqlFilter);
       String where = filter.isPresent() ? String.format(" WHERE %s", filter.get()) : "";
 
@@ -113,25 +113,28 @@ public class SqlQueryTemplatesDeriver
       String numberReturned =
           withNumberReturned
               ? String.format(
-                  "SELECT %7$s, count(*) AS numberReturned FROM (SELECT %2$s FROM %1$s%6$s ORDER BY %3$s%4$s%5$s) AS IDS",
-                  table, columns, orderBy, limitSql, offsetSql, where, minMaxColumns)
-              : String.format(
-                  "SELECT NULL AS minKey, NULL AS maxKey, %s AS numberReturned",
-                  sqlDialect.castToBigInt(0));
+                  "SELECT %7$s, count(*) AS numberReturned FROM (SELECT %2$s FROM %1$s%6$s ORDER BY %3$s%4$s%5$s) IDS",
+                  table, columns, orderBy, offsetSql, limitSql, where, minMaxColumns)
+              : sqlDialect.applyToNoTable(
+                  String.format(
+                      "SELECT NULL AS minKey, NULL AS maxKey, %s AS numberReturned",
+                      sqlDialect.castToBigInt(0)));
 
       String numberMatched =
           computeNumberMatched
               ? String.format(
-                  "SELECT count(*) AS numberMatched FROM (SELECT A.%2$s AS %4$s FROM %1$s A%3$s ORDER BY 1) AS IDS",
+                  "SELECT count(*) AS numberMatched FROM (SELECT A.%2$s AS %4$s FROM %1$s A%3$s ORDER BY 1) IDS",
                   tableName, schema.getSortKey().get(), where, SKEY)
-              : String.format("SELECT %s AS numberMatched", sqlDialect.castToBigInt(-1));
+              : sqlDialect.applyToNoTable(
+                  String.format("SELECT %s AS numberMatched", sqlDialect.castToBigInt(-1)));
 
       String numberSkipped =
           computeNumberSkipped && withNumberSkipped
               ? String.format(
-                  "SELECT CASE WHEN numberReturned = 0 THEN (SELECT count(*) AS numberSkipped FROM (SELECT %2$s FROM %1$s%5$s ORDER BY %3$s%4$s) AS IDS) ELSE %6$s END AS numberSkipped FROM NR",
+                  "SELECT CASE WHEN numberReturned = 0 THEN (SELECT count(*) AS numberSkipped FROM (SELECT %2$s FROM %1$s%5$s ORDER BY %3$s%4$s) IDS) ELSE %6$s END AS numberSkipped FROM NR",
                   table, columns, orderBy, skipOffsetSql, where, sqlDialect.castToBigInt(-1))
-              : String.format("SELECT %s AS numberSkipped", sqlDialect.castToBigInt(-1));
+              : sqlDialect.applyToNoTable(
+                  String.format("SELECT %s AS numberSkipped", sqlDialect.castToBigInt(-1)));
 
       return String.format(
           "WITH\n%4$s%4$sNR AS (%s),\n%4$s%4$sNM AS (%s),\n%4$s%4$sNS AS (%s)\n%4$sSELECT * FROM NR, NM, NS",
@@ -165,8 +168,8 @@ public class SqlQueryTemplatesDeriver
           additionalSortKeys.isEmpty() || (limit == 0 && offset == 0)
               ? Optional.empty()
               : Optional.of(
-                  (limit > 0 ? String.format(" LIMIT %d", limit) : "")
-                      + (offset > 0 ? String.format(" OFFSET %d", offset) : ""));
+                  (offset > 0 ? sqlDialect.applyToOffset(offset) : "")
+                      + (limit > 0 ? sqlDialect.applyToLimit(limit) : ""));
 
       return getTableQuery(
           schema, whereClause, pagingClause, additionalSortKeys, parents, virtualTables);
@@ -213,8 +216,8 @@ public class SqlQueryTemplatesDeriver
                           }
                           if (column.isTemporal()) {
                             if (column.getType() == SchemaBase.Type.DATE)
-                              return sqlDialect.applyToDate(name);
-                            return sqlDialect.applyToDatetime(name);
+                              return sqlDialect.applyToDate(name, column.getFormat());
+                            return sqlDialect.applyToDatetime(name, column.getFormat());
                           }
 
                           return name;

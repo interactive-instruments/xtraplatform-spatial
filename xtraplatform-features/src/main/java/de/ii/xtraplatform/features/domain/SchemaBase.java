@@ -137,6 +137,8 @@ public interface SchemaBase<T extends SchemaBase<T>> {
 
   Optional<SimpleFeatureGeometry> getGeometryType();
 
+  Optional<String> getFormat();
+
   Optional<String> getRefType();
 
   Optional<String> getRefUriTemplate();

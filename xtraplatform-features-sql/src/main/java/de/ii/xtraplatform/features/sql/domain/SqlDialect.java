@@ -14,29 +14,26 @@ import de.ii.xtraplatform.cql.domain.SpatialFunction;
 import de.ii.xtraplatform.cql.domain.TemporalFunction;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
-import de.ii.xtraplatform.crs.domain.EpsgCrs.Force;
+import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql.PropertyTypeInfo;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import javax.annotation.Nullable;
-import org.immutables.value.Value;
 import org.threeten.extra.Interval;
 
 public interface SqlDialect {
 
   String applyToWkt(String column, boolean forcePolygonCCW, boolean linearizeCurves);
 
+  String applyToWkt(String wkt, int srid);
+
   String applyToExtent(String column, boolean is3d);
 
   String applyToString(String string);
 
-  String applyToDate(String column);
+  String applyToDate(String column, Optional<String> format);
 
-  String applyToDatetime(String column);
+  String applyToDatetime(String column, Optional<String> format);
 
   String applyToDateLiteral(String date);
 
@@ -56,6 +53,18 @@ public interface SqlDialect {
         "Arrays as queryables are not supported for this feature provider.");
   }
 
+  default String applyToLimit(long limit) {
+    return String.format(" LIMIT %d", limit);
+  }
+
+  default String applyToOffset(long offset) {
+    return String.format(" OFFSET %d", offset);
+  }
+
+  default String applyToNoTable(String select) {
+    return select;
+  }
+
   String castToBigInt(int value);
 
   Optional<BoundingBox> parseExtent(String extent, EpsgCrs crs);
@@ -64,24 +73,15 @@ public interface SqlDialect {
 
   String escapeString(String value);
 
-  String geometryInfoQuery(Map<String, String> dbInfo);
-
-  Map<String, GeoInfo> getGeoInfo(Connection connection, DbInfo dbInfo) throws SQLException;
-
-  DbInfo getDbInfo(Connection connection) throws SQLException;
-
-  default EpsgCrs.Force forceAxisOrder(DbInfo dbInfo) {
-    return Force.NONE;
+  default Tuple<String, Optional<String>> getSpatialOperator(
+      SpatialFunction spatialFunction, boolean is3d) {
+    return is3d && SPATIAL_OPERATORS_3D.containsKey(spatialFunction)
+        ? Tuple.of(SPATIAL_OPERATORS_3D.get(spatialFunction), Optional.empty())
+        : Tuple.of(SPATIAL_OPERATORS.get(spatialFunction), Optional.empty());
   }
 
-  List<String> getSystemSchemas();
-
-  List<String> getSystemTables();
-
-  default String getSpatialOperator(SpatialFunction spatialFunction, boolean is3d) {
-    return is3d && SPATIAL_OPERATORS_3D.containsKey(spatialFunction)
-        ? SPATIAL_OPERATORS_3D.get(spatialFunction)
-        : SPATIAL_OPERATORS.get(spatialFunction);
+  default String getSpatialOperatorMatch(SpatialFunction spatialFunction) {
+    return "";
   }
 
   default String getTemporalOperator(TemporalFunction temporalFunction) {
@@ -91,41 +91,6 @@ public interface SqlDialect {
 
   default Set<TemporalFunction> getTemporalOperators() {
     return ImmutableSet.of();
-  }
-
-  interface DbInfo {}
-
-  @Value.Immutable
-  interface GeoInfo {
-
-    String SCHEMA = "schema";
-    String TABLE = "table";
-    String COLUMN = "column";
-    String DIMENSION = "dimension";
-    String SRID = "srid";
-    String TYPE = "type";
-
-    @Nullable
-    @Value.Parameter
-    String getSchema();
-
-    @Value.Parameter
-    String getTable();
-
-    @Value.Parameter
-    String getColumn();
-
-    @Value.Parameter
-    String getDimension();
-
-    @Value.Parameter
-    String getSrid();
-
-    @Value.Parameter
-    String getForce();
-
-    @Value.Parameter
-    String getType();
   }
 
   Map<SpatialFunction, String> SPATIAL_OPERATORS =
