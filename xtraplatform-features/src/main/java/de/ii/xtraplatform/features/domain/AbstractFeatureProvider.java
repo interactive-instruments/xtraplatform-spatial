@@ -179,9 +179,7 @@ public abstract class AbstractFeatureProvider<
             getRunnerQueueSize(getConnectionInfo()));
 
     FeatureProviderConnector<T, U, V> connector1 =
-        (FeatureProviderConnector<T, U, V>)
-            connectorFactory.createConnector(
-                getData().getProviderSubType(), connectorId, getConnectionInfo());
+        createConnector(getData().getProviderSubType(), connectorId);
     this.connector.set(connector1);
 
     // TODO: ignore when startupMode=ASYNC
@@ -229,6 +227,12 @@ public abstract class AbstractFeatureProvider<
     addSubcomponent(Volatile2.available("base"), FeatureInfo.CAPABILITY, FeatureChanges.CAPABILITY);
 
     return true;
+  }
+
+  protected FeatureProviderConnector<T, U, V> createConnector(
+      String providerSubType, String connectorId) {
+    return (FeatureProviderConnector<T, U, V>)
+        connectorFactory.createConnector(providerSubType, connectorId, getConnectionInfo());
   }
 
   @Override

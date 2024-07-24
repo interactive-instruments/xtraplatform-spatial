@@ -23,9 +23,9 @@ import de.ii.xtraplatform.features.domain.FeatureProviderEntity;
 import de.ii.xtraplatform.features.domain.FeatureQueriesExtension;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.Query;
-import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.features.sql.domain.SqlClient;
 import de.ii.xtraplatform.features.sql.domain.SqlConnector;
+import de.ii.xtraplatform.features.sql.domain.SqlDbmsPgis;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -93,7 +93,7 @@ public class FeatureChangesPgListener implements FeatureQueriesExtension {
   @Override
   public boolean isSupported(FeatureProviderConnector<?, ?, ?> connector) {
     return connector instanceof SqlConnector
-        && ((SqlConnector) connector).getDialect() == Dialect.PGIS;
+        && ((SqlConnector) connector).getDialect().equals(SqlDbmsPgis.ID);
   }
 
   @Override

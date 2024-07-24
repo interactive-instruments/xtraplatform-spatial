@@ -7,22 +7,15 @@
  */
 package de.ii.xtraplatform.features.sql.app;
 
-import de.ii.xtraplatform.base.domain.AppContext;
-import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
-import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
-import de.ii.xtraplatform.features.sql.domain.ImmutableDbInfoGpkg;
 import de.ii.xtraplatform.features.sql.domain.SqlClientBasic;
 import de.ii.xtraplatform.features.sql.domain.SqlClientBasicFactory;
+import de.ii.xtraplatform.features.sql.domain.SqlDbmsAdapter;
+import de.ii.xtraplatform.features.sql.domain.SqlDbmsAdapter.DbInfo;
+import de.ii.xtraplatform.features.sql.domain.SqlDbmsAdapter.GeoInfo;
+import de.ii.xtraplatform.features.sql.domain.SqlDbmsAdapters;
 import de.ii.xtraplatform.features.sql.domain.SqlDialect;
-import de.ii.xtraplatform.features.sql.domain.SqlDialect.DbInfo;
-import de.ii.xtraplatform.features.sql.domain.SqlDialect.GeoInfo;
-import de.ii.xtraplatform.features.sql.domain.SqlDialectGpkg;
-import de.ii.xtraplatform.features.sql.domain.SqlDialectGpkg.DbInfoGpkg.SpatialMetadata;
-import de.ii.xtraplatform.features.sql.domain.SqlDialectPostGis;
 import de.ii.xtraplatform.features.sql.infra.db.SqlConnectorRx;
-import de.ii.xtraplatform.features.sql.infra.db.SqlDataSourceFactory;
-import de.ii.xtraplatform.features.sql.infra.db.SqlDataSourceFactoryImpl;
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.Connection;
@@ -33,18 +26,23 @@ import java.util.Map;
 import javax.sql.DataSource;
 
 public class SqlClientBasicFactorySimple implements SqlClientBasicFactory {
-  private final SqlDataSourceFactory sqlDataSourceFactory;
+  private final SqlDbmsAdapters dbmsAdapters;
 
-  public SqlClientBasicFactorySimple(AppContext appContext, ResourceStore resourceStore) {
-    this.sqlDataSourceFactory = new SqlDataSourceFactoryImpl(appContext, resourceStore, null);
+  public SqlClientBasicFactorySimple(SqlDbmsAdapters dbmsAdapters) {
+    this.dbmsAdapters = dbmsAdapters;
   }
 
   @Override
   public SqlClientBasic create(
       String providerType, String providerId, ConnectionInfoSql connectionInfo) {
-    DataSource dataSource = sqlDataSourceFactory.create(providerId, connectionInfo);
+    DataSource dataSource =
+        dbmsAdapters.get(connectionInfo.getDialect()).createDataSource(providerId, connectionInfo);
 
-    return new SqlClientBasicSimple(dataSource, connectionInfo);
+    return new SqlClientBasicSimple(
+        dataSource,
+        connectionInfo,
+        dbmsAdapters.get(connectionInfo.getDialect()),
+        dbmsAdapters.getDialect(connectionInfo.getDialect()));
   }
 
   @Override
@@ -71,17 +69,19 @@ public class SqlClientBasicFactorySimple implements SqlClientBasicFactory {
   private static class SqlClientBasicSimple implements SqlClientBasic {
     private final DataSource dataSource;
     private final ConnectionInfoSql connectionInfo;
-
+    private final SqlDbmsAdapter dbmsAdapter;
     private final SqlDialect dialect;
     private final List<Connection> connections;
 
-    private SqlClientBasicSimple(DataSource dataSource, ConnectionInfoSql connectionInfo) {
+    private SqlClientBasicSimple(
+        DataSource dataSource,
+        ConnectionInfoSql connectionInfo,
+        SqlDbmsAdapter dbmsAdapter,
+        SqlDialect dialect) {
       this.dataSource = dataSource;
       this.connectionInfo = connectionInfo;
-      this.dialect =
-          connectionInfo.getDialect() == Dialect.GPKG
-              ? new SqlDialectGpkg()
-              : new SqlDialectPostGis();
+      this.dbmsAdapter = dbmsAdapter;
+      this.dialect = dialect;
       this.connections = new ArrayList<>();
     }
 
@@ -107,22 +107,22 @@ public class SqlClientBasicFactorySimple implements SqlClientBasicFactory {
     }
 
     @Override
-    public DbInfo getDbInfo() throws SQLException {
-      if (connectionInfo.getDialect() == Dialect.GPKG) {
-        // spatialite ist not available in simple client
-        return ImmutableDbInfoGpkg.of("unknown", "unknown", SpatialMetadata.GPKG);
-      }
+    public SqlDbmsAdapter getDbmsAdapter() {
+      return dbmsAdapter;
+    }
 
+    @Override
+    public DbInfo getDbInfo() throws SQLException {
       Connection connection = connections.isEmpty() ? getConnection() : connections.get(0);
 
-      return dialect.getDbInfo(connection);
+      return dbmsAdapter.getDbInfo(connection);
     }
 
     @Override
     public Map<String, GeoInfo> getGeoInfo() throws SQLException {
       Connection connection = connections.isEmpty() ? getConnection() : connections.get(0);
 
-      return dialect.getGeoInfo(connection, getDbInfo());
+      return dbmsAdapter.getGeoInfo(connection, getDbInfo());
     }
   }
 }

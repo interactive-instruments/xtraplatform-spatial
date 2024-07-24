@@ -22,20 +22,24 @@ import org.immutables.value.Value;
 /**
  * @examplesAll <code>
  * ```yaml
- * connectorType: HTTP
- * version: 2.0.0
- * gmlVersion: 3.2.1
- * namespaces:
- *   ave: http://rexample.com/ns/app/1.0
- *   wfs: http://www.opengis.net/wfs/2.0
- *   fes: http://www.opengis.net/fes/2.0
- *   gml: http://www.opengis.net/gml/3.2
- *   xsd: http://www.w3.org/2001/XMLSchema
- *   ows: http://www.opengis.net/ows/1.1
- *   xlink: http://www.w3.org/1999/xlink
- *   xsi: http://www.w3.org/2001/XMLSchema-instance
- * uri: https://example.com/pfad/zum/wfs?
- * method: GET
+ * id: wfs
+ * providerType: FEATURE
+ * providerSubType: WFS
+ * connectionInfo:
+ *   connectorType: HTTP
+ *   version: 2.0.0
+ *   gmlVersion: 3.2.1
+ *   namespaces:
+ *     ave: http://rexample.com/ns/app/1.0
+ *     wfs: http://www.opengis.net/wfs/2.0
+ *     fes: http://www.opengis.net/fes/2.0
+ *     gml: http://www.opengis.net/gml/3.2
+ *     xsd: http://www.w3.org/2001/XMLSchema
+ *     ows: http://www.opengis.net/ows/1.1
+ *     xlink: http://www.w3.org/1999/xlink
+ *     xsi: http://www.w3.org/2001/XMLSchema-instance
+ *   uri: https://example.com/pfad/zum/wfs?
+ *   method: GET
  * ```
  * </code>
  */

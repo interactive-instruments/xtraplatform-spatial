@@ -13,7 +13,6 @@ import static de.ii.xtraplatform.cql.domain.ArrayFunction.A_EQUALS;
 import static de.ii.xtraplatform.cql.domain.ArrayFunction.A_OVERLAPS;
 
 import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.cql.domain.ArrayFunction;
 import de.ii.xtraplatform.cql.domain.SpatialFunction;
@@ -21,24 +20,19 @@ import de.ii.xtraplatform.cql.domain.TemporalFunction;
 import de.ii.xtraplatform.crs.domain.BoundingBox;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
+import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql.PropertyTypeInfo;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import org.immutables.value.Value;
 import org.threeten.extra.Interval;
 
-public class SqlDialectPostGis implements SqlDialect {
+public class SqlDialectPgis implements SqlDialect {
 
   private static final Splitter BBOX_SPLITTER =
       Splitter.onPattern("[(), ]").omitEmptyStrings().trimResults();
@@ -70,6 +64,11 @@ public class SqlDialectPostGis implements SqlDialect {
       queryBuilder.append(",32,0,1)");
     }
     return queryBuilder.append(")").toString();
+  }
+
+  @Override
+  public String applyToWkt(String wkt, int srid) {
+    return String.format("ST_GeomFromText('%s',%s)", wkt, srid);
   }
 
   @Override
@@ -130,9 +129,10 @@ public class SqlDialectPostGis implements SqlDialect {
   }
 
   @Override
-  public String getSpatialOperator(SpatialFunction spatialFunction, boolean is3d) {
+  public Tuple<String, Optional<String>> getSpatialOperator(
+      SpatialFunction spatialFunction, boolean is3d) {
     return is3d && SPATIAL_OPERATORS_3D.containsKey(spatialFunction)
-        ? SPATIAL_OPERATORS_3D.get(spatialFunction)
+        ? Tuple.of(SPATIAL_OPERATORS_3D.get(spatialFunction), Optional.empty())
         : SqlDialect.super.getSpatialOperator(spatialFunction, is3d);
   }
 
@@ -152,14 +152,30 @@ public class SqlDialectPostGis implements SqlDialect {
   }
 
   @Override
-  public String applyToDate(String column) {
+  public String applyToDate(String column, Optional<String> format) {
+    return format
+        .map(f -> String.format("to_date(%s, '%s')", column, f))
+        .orElse(String.format("%s::date", column));
+  }
+
+  @Override
+  public String applyToDatetime(String column, Optional<String> format) {
+    return format
+        .map(f -> String.format("to_timestamp_tz(%s, '%s')", column, f))
+        .orElse(String.format("%s::timestamp(0)", column));
+  }
+
+  /* FIXME
+  @Override
+  public String applyToDate(String column, Optional<String> format) {
     return String.format("%s::date", column);
   }
 
   @Override
-  public String applyToDatetime(String column) {
+  public String applyToDatetime(String column, Optional<String> format) {
     return String.format("%s::timestamp(0)", column);
   }
+   */
 
   @Override
   public String applyToDateLiteral(String date) {
@@ -284,88 +300,5 @@ public class SqlDialectPostGis implements SqlDialect {
   @Override
   public String escapeString(String value) {
     return value.replaceAll("'", "''");
-  }
-
-  @Override
-  public String geometryInfoQuery(Map<String, String> dbInfo) {
-    return String.format(
-        "SELECT f_table_schema AS \"%s\", f_table_name AS \"%s\", f_geometry_column AS \"%s\", coord_dimension AS \"%s\", srid AS \"%s\", type AS \"%s\" FROM geometry_columns;",
-        GeoInfo.SCHEMA,
-        GeoInfo.TABLE,
-        GeoInfo.COLUMN,
-        GeoInfo.DIMENSION,
-        GeoInfo.SRID,
-        GeoInfo.TYPE);
-  }
-
-  @Override
-  public Map<String, GeoInfo> getGeoInfo(Connection connection, DbInfo dbInfo) throws SQLException {
-    if (!(dbInfo instanceof DbInfoPgis)) {
-      throw new SQLException("Not a valid spatial PostgreSQL database.");
-    }
-    String query =
-        String.format(
-            "SELECT f_table_schema AS \"%s\", f_table_name AS \"%s\", f_geometry_column AS \"%s\", coord_dimension AS \"%s\", srid AS \"%s\", type AS \"%s\" FROM geometry_columns;",
-            GeoInfo.SCHEMA,
-            GeoInfo.TABLE,
-            GeoInfo.COLUMN,
-            GeoInfo.DIMENSION,
-            GeoInfo.SRID,
-            GeoInfo.TYPE);
-
-    Statement stmt = connection.createStatement();
-    ResultSet rs = stmt.executeQuery(query);
-    Map<String, GeoInfo> result = new LinkedHashMap<>();
-
-    while (rs.next()) {
-      result.put(
-          rs.getString(GeoInfo.TABLE),
-          ImmutableGeoInfo.of(
-              rs.getString(GeoInfo.SCHEMA),
-              rs.getString(GeoInfo.TABLE),
-              rs.getString(GeoInfo.COLUMN),
-              rs.getString(GeoInfo.DIMENSION),
-              rs.getString(GeoInfo.SRID),
-              forceAxisOrder(dbInfo).name(),
-              rs.getString(GeoInfo.TYPE)));
-    }
-
-    return result;
-  }
-
-  @Override
-  public DbInfo getDbInfo(Connection connection) throws SQLException {
-    String query = "SELECT version(), PostGIS_Lib_Version();";
-
-    Statement stmt = connection.createStatement();
-    ResultSet rs = stmt.executeQuery(query);
-    rs.next();
-
-    return ImmutableDbInfoPgis.of(rs.getString(1), rs.getString(2));
-  }
-
-  @Value.Immutable
-  interface DbInfoPgis extends DbInfo {
-
-    @Value.Parameter
-    String getPostgresVersion();
-
-    @Value.Parameter
-    String getPostGisVersion();
-  }
-
-  @Override
-  public List<String> getSystemSchemas() {
-    return ImmutableList.of("information_schema", "pg_catalog", "tiger", "tiger_data", "topology");
-  }
-
-  @Override
-  public List<String> getSystemTables() {
-    return ImmutableList.of(
-        "spatial_ref_sys",
-        "geography_columns",
-        "geometry_columns",
-        "raster_columns",
-        "raster_overviews");
   }
 }

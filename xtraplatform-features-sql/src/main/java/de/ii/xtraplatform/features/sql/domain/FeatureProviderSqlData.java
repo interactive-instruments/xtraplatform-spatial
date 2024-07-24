@@ -9,13 +9,8 @@ package de.ii.xtraplatform.features.sql.domain;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableMap;
-import de.ii.xtraplatform.docs.DocFile;
 import de.ii.xtraplatform.docs.DocIgnore;
 import de.ii.xtraplatform.docs.DocMarker;
-import de.ii.xtraplatform.docs.DocStep;
-import de.ii.xtraplatform.docs.DocStep.Step;
-import de.ii.xtraplatform.docs.DocTable;
-import de.ii.xtraplatform.docs.DocTable.ColumnSet;
 import de.ii.xtraplatform.entities.domain.EntityDataBuilder;
 import de.ii.xtraplatform.entities.domain.EntityDataDefaults;
 import de.ii.xtraplatform.entities.domain.maptobuilder.BuildableMap;
@@ -36,132 +31,6 @@ import java.util.Optional;
 import javax.annotation.Nullable;
 import org.immutables.value.Value;
 
-/**
- * # SQL
- *
- * @langEn The specifics of the SQL feature provider.
- * @langDe Hier werden die Besonderheiten des SQL-Feature-Providers beschrieben.
- * @langAll {@docTable:properties}
- * @langAll ## Connection Info
- * @langEn The connection info object for SQL databases has the following properties:
- * @langDe Das Connection-Info-Objekt für SQL-Datenbanken wird wie folgt beschrieben:
- * @langAll {@docTable:connectionInfo}
- * @langAll ### Pool
- * @langEn Settings for the connection pool.
- * @langDe Einstellungen für den Connection-Pool.
- * @langAll {@docTable:pool}
- * @langEn ## Source Path Defaults
- *     <p>Defaults for the path expressions in `sourcePath`, also see [Source Path
- *     Syntax](#path-syntax).
- * @langDe ## SQL-Pfad-Defaults
- *     <p>Defaults für die Pfad-Ausdrücke in `sourcePath`, siehe auch
- *     [SQL-Pfad-Syntax](#path-syntax).
- * @langAll {@docTable:sourcePathDefaults}
- * @langEn ## Source Path Syntax
- *     <p>The fundamental elements of the path syntax are demonstrated in the example above. The
- *     path to a property is formed by concatenating the relative paths (`sourcePath`) with "/". A
- *     `sourcePath` has to be defined for the for object that represents the feature type and most
- *     child objects.
- *     <p>On the first level the path is formed by a "/" followed by the table name for the feature
- *     type. Every row in the table corresponds to a feature. Example: `/kita`
- *     <p>When defining a feature property on a deeper level using a column from the given table,
- *     the path equals the column name, e.g. `name`. The full path will then be `/kita/name`.
- *     <p>A join is defined using the pattern `[id=fk]tab`, where `id` is the primary key of the
- *     table from the parent object, `fk` is the foreign key of the joining table and `tab` is the
- *     name of the joining table. Example from above: `[oid=kita_fk]plaetze`. When a junction table
- *     should be used, two such joins are concatenated with "/", e.g. `[id=fka]a_2_b/[fkb=id]tab_b`.
- *     <p>Rows for a table can be filtered by adding `{filter=expression}` after the table name,
- *     where `expression` is a [CQL2 Text](https://docs.ogc.org/is/21-065r1/21-065r1.html#cql2-text)
- *     expression. For details see the building block [Filter /
- *     CQL](../../services/building-blocks/filter.md), which provides the implementation but does
- *     not have to be enabled.
- *     <p>To select capacity information only when the value is not NULL and greater than zero in
- *     the example above, the filter would look like this: `[oid=kita_fk]plaetze{filter=anzahl IS
- *     NOT NULL AND anzahl>0}`
- *     <p>A non-default sort key can be set by adding `{sortKey=columnName}` after the table name.
- *     If that sort key is not unique, add `{sortKeyUnique=false}`.
- * @langDe ## SQL-Pfad-Syntax
- *     <p>In dem Beispiel oben sind die wesentlichen Elemente der Pfadsyntax in der Datenbank
- *     bereits erkennbar. Der Pfad zu einer Eigenschaft ergibt sich immer als Konkatenation der
- *     relativen Pfadangaben (`sourcePath`), jeweils ergänzt um ein "/". Die Eigenschaft
- *     `sourcePath` ist beim ersten Objekt, das die Objektart repräsentiert, angegeben und bei allen
- *     untergeordneten Schemaobjekten, außer es handelt sich um einen festen Wert.
- *     <p>Auf der obersten Ebene entspricht der Pfad einem "/" gefolgt vom Namen der Tabelle zur
- *     Objektart. Jede Zeile in der Tabelle entsprich einem Feature. Beispiel: `/kita`.
- *     <p>Bei nachgeordneten relativen Pfadangaben zu einem Feld in derselben Tabelle wird einfach
- *     der Spaltenname angeben, z.B. `name`. Daraus ergibt sich der Gesamtpfad `/kita/name`.
- *     <p>Ein Join wird nach dem Muster `[id=fk]tab` angegeben, wobei `id` der Primärschlüssel der
- *     Tabelle aus dem übergeordneten Schemaobjekt ist, `fk` der Fremdschlüssel aus der über den
- *     Join angebundenen Tabelle und `tab` der Tabellenname. Siehe `[oid=kita_fk]plaetze` in dem
- *     Beispiel oben. Bei der Verwendung einer Zwischentabelle werden zwei dieser Joins
- *     aneinandergehängt, z.B. `[id=fka]a_2_b/[fkb=id]tab_b`.
- *     <p>Auf einer Tabelle (der Haupttabelle eines Features oder einer über Join-angebundenen
- *     Tabelle) kann zusätzlich ein einschränkender Filter durch den Zusatz `{filter=ausdruck}`
- *     angegeben werden, wobei `ausdruck` das Selektionskriertium in [CQL2
- *     Text](https://docs.ogc.org/is/21-065r1/21-065r1.html#cql2-text) spezifiziert. Für Details
- *     siehe den Baustein [Filter / CQL](../../services/building-blocks/filter.md), welches die
- *     Implementierung bereitstellt, aber nicht aktiviert sein muss.
- *     <p>Wenn z.B. in dem Beispiel oben nur Angaben zur Belegungskapazität selektiert werden
- *     sollen, deren Wert nicht NULL und gleichzeitig größer als Null ist, dann könnte man
- *     schreiben: `[oid=kita_fk]plaetze{filter=anzahl IS NOT NULL AND anzahl>0}`.
- *     <p>Ein vom Standard abweichender `sortKey` kann durch den Zusatz von `{sortKey=Spaltenname}`
- *     nach dem Tabellennamen angegeben werden. Wenn dieser nicht eindeutig ist, kann
- *     `{sortKeyUnique=false}` hinzugefügt werden.
- *     <p>Ein vom Standard abweichender `primaryKey` kann durch den Zusatz von
- *     `{primaryKey=Spaltenname}` nach dem Tabellennamen angegeben werden.
- * @langEn ## Query Generation
- *     <p>Options for query generation.
- * @langDe ## Query-Generierung
- *     <p>Optionen für die Query-Generierung in `queryGeneration`.
- * @langAll {@docTable:queryGeneration}
- * @ref:properties {@link de.ii.xtraplatform.features.sql.domain.ImmutableFeatureProviderSqlData}
- * @ref:connectionInfo {@link de.ii.xtraplatform.features.sql.domain.ImmutableConnectionInfoSql}
- * @ref:pool {@link de.ii.xtraplatform.features.sql.domain.ImmutablePoolSettings}
- * @ref:sourcePathDefaults {@link de.ii.xtraplatform.features.sql.domain.ImmutableSqlPathDefaults}
- * @ref:queryGeneration {@link
- *     de.ii.xtraplatform.features.sql.domain.ImmutableQueryGeneratorSettings}
- */
-@DocFile(
-    path = "providers/feature",
-    name = "10-sql.md",
-    tables = {
-      @DocTable(
-          name = "properties",
-          rows = {
-            @DocStep(type = Step.TAG_REFS, params = "{@ref:properties}"),
-            @DocStep(type = Step.JSON_PROPERTIES),
-            @DocStep(type = Step.MARKED, params = "specific")
-          },
-          columnSet = ColumnSet.JSON_PROPERTIES),
-      @DocTable(
-          name = "connectionInfo",
-          rows = {
-            @DocStep(type = Step.TAG_REFS, params = "{@ref:connectionInfo}"),
-            @DocStep(type = Step.JSON_PROPERTIES)
-          },
-          columnSet = ColumnSet.JSON_PROPERTIES),
-      @DocTable(
-          name = "pool",
-          rows = {
-            @DocStep(type = Step.TAG_REFS, params = "{@ref:pool}"),
-            @DocStep(type = Step.JSON_PROPERTIES)
-          },
-          columnSet = ColumnSet.JSON_PROPERTIES),
-      @DocTable(
-          name = "sourcePathDefaults",
-          rows = {
-            @DocStep(type = Step.TAG_REFS, params = "{@ref:sourcePathDefaults}"),
-            @DocStep(type = Step.JSON_PROPERTIES)
-          },
-          columnSet = ColumnSet.JSON_PROPERTIES),
-      @DocTable(
-          name = "queryGeneration",
-          rows = {
-            @DocStep(type = Step.TAG_REFS, params = "{@ref:queryGeneration}"),
-            @DocStep(type = Step.JSON_PROPERTIES)
-          },
-          columnSet = ColumnSet.JSON_PROPERTIES),
-    })
 @Value.Immutable(prehash = true)
 @Value.Style(
     builder = "new",
@@ -183,19 +52,19 @@ public interface FeatureProviderSqlData
 
   /**
    * @langEn Defaults for the path expressions in `sourcePath`, for details see [Source Path
-   *     Defaults](#source-path-defaults) below.
+   *     Defaults](10-sql.md#source-path-defaults) below.
    * @langDe Defaults für die Pfad-Ausdrücke in `sourcePath`, für Details siehe
-   *     [SQL-Pfad-Defaults](#source-path-defaults).
+   *     [SQL-Pfad-Defaults](10-sql.md#source-path-defaults).
    */
   @DocMarker("specific")
   @Nullable
   SqlPathDefaults getSourcePathDefaults();
 
   /**
-   * @langEn Options for query generation, for details see [Query Generation](#query-generation)
-   *     below.
+   * @langEn Options for query generation, for details see [Query
+   *     Generation](10-sql.md#query-generation) below.
    * @langDe Einstellungen für die Query-Generierung, für Details siehe
-   *     [Query-Generierung](#query-generation).
+   *     [Query-Generierung](10-sql.md#query-generation).
    */
   @DocMarker("specific")
   @Nullable

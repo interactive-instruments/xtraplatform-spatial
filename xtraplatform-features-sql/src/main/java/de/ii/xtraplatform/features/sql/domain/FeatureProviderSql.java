@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package de.ii.xtraplatform.features.sql.app;
+package de.ii.xtraplatform.features.sql.domain;
 
 import static de.ii.xtraplatform.cql.domain.In.ID_PLACEHOLDER;
 
@@ -24,6 +24,11 @@ import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
 import de.ii.xtraplatform.crs.domain.OgcCrs;
+import de.ii.xtraplatform.docs.DocDefs;
+import de.ii.xtraplatform.docs.DocStep;
+import de.ii.xtraplatform.docs.DocStep.Step;
+import de.ii.xtraplatform.docs.DocTable;
+import de.ii.xtraplatform.docs.DocTable.ColumnSet;
 import de.ii.xtraplatform.entities.domain.Entity;
 import de.ii.xtraplatform.entities.domain.Entity.SubType;
 import de.ii.xtraplatform.features.domain.AbstractFeatureProvider;
@@ -72,25 +77,22 @@ import de.ii.xtraplatform.features.domain.transform.PropertyTransformationsColle
 import de.ii.xtraplatform.features.domain.transform.SchemaTransformerChain;
 import de.ii.xtraplatform.features.sql.ImmutableSqlPathSyntax;
 import de.ii.xtraplatform.features.sql.SqlPathSyntax;
-import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
-import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
-import de.ii.xtraplatform.features.sql.domain.FeatureProviderSqlData;
-import de.ii.xtraplatform.features.sql.domain.FeatureTokenStatsCollector;
-import de.ii.xtraplatform.features.sql.domain.ImmutableConnectionInfoSql;
-import de.ii.xtraplatform.features.sql.domain.ImmutablePoolSettings;
-import de.ii.xtraplatform.features.sql.domain.ImmutableSchemaMappingSql;
-import de.ii.xtraplatform.features.sql.domain.SchemaMappingSql;
-import de.ii.xtraplatform.features.sql.domain.SchemaSql;
-import de.ii.xtraplatform.features.sql.domain.SqlClient;
-import de.ii.xtraplatform.features.sql.domain.SqlConnector;
-import de.ii.xtraplatform.features.sql.domain.SqlDialect;
-import de.ii.xtraplatform.features.sql.domain.SqlDialectGpkg;
-import de.ii.xtraplatform.features.sql.domain.SqlDialectPostGis;
-import de.ii.xtraplatform.features.sql.domain.SqlPathDefaults;
-import de.ii.xtraplatform.features.sql.domain.SqlPathParser;
-import de.ii.xtraplatform.features.sql.domain.SqlQueryBatch;
-import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
-import de.ii.xtraplatform.features.sql.domain.SqlRow;
+import de.ii.xtraplatform.features.sql.app.AggregateStatsQueryGenerator;
+import de.ii.xtraplatform.features.sql.app.AggregateStatsReaderSql;
+import de.ii.xtraplatform.features.sql.app.FeatureDecoderSql;
+import de.ii.xtraplatform.features.sql.app.FeatureEncoderSql2;
+import de.ii.xtraplatform.features.sql.app.FeatureMutationsSql;
+import de.ii.xtraplatform.features.sql.app.FeatureQueryEncoderSql;
+import de.ii.xtraplatform.features.sql.app.FeatureSql;
+import de.ii.xtraplatform.features.sql.app.FilterEncoderSql;
+import de.ii.xtraplatform.features.sql.app.ModifiableFeatureSql;
+import de.ii.xtraplatform.features.sql.app.MutationSchemaBuilderSql;
+import de.ii.xtraplatform.features.sql.app.MutationSchemaDeriver;
+import de.ii.xtraplatform.features.sql.app.PathParserSql;
+import de.ii.xtraplatform.features.sql.app.QuerySchemaDeriver;
+import de.ii.xtraplatform.features.sql.app.SqlInsertGenerator2;
+import de.ii.xtraplatform.features.sql.app.SqlQueryTemplates;
+import de.ii.xtraplatform.features.sql.app.SqlQueryTemplatesDeriver;
 import de.ii.xtraplatform.features.sql.infra.db.SourceSchemaValidatorSql;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.RunnableStream;
@@ -119,6 +121,162 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.threeten.extra.Interval;
 
+/**
+ * @title SQL
+ * @sortPriority 10
+ * @langEn The features are stored in a SQL database (PostgreSQL/PostGIS, GeoPackage,
+ *     SQLite/SpatiaLite).
+ * @langDe Die Features sind in einer SQL-Datenbank gespeichert (PostgreSQL/PostGIS, GeoPackage,
+ *     SQLite/SpatiaLite).
+ * @limitationsEn
+ *     <p>All identifiers must be unquoted identifiers; that is the identifiers will be all
+ *     lowercase.
+ *     <p>For `PGIS` the following known limitations exist:
+ *     <p><code>
+ * - Not all CQL2 expressions are supported in JSON columns.
+ *     </code>
+ *     <p>For `GPKG` the following known limitations exist:
+ *     <p><code>
+ * - The option `linearizeCurves` is not supported. All geometries must conform to the OGC Simple
+ *   Feature Access standard.
+ * - The CQL2 functions `DIAMETER2D()` and `DIAMETER3D()` are not supported.
+ * - Arrays as queryables are not supported for GeoPackage feature providers.
+ * - Queryables that are values in an array are not supported for GeoPackage feature providers.
+ *     </code>
+ * @limitationsDe
+ *     <p>Alle Bezeichner müssen nicht in Anführungszeichen gesetzt werden, d.h. die Bezeichner
+ *     werden klein geschrieben.
+ *     <p>Für `PGIS` gibt es die folgenden bekannten Einschränkungen:
+ *     <p><code>
+ * - Nicht alle CQL2-Ausdrücke werden in JSON-Spalten unterstützt.
+ *     </code>
+ *     <p>Für `GPKG` gibt es die folgenden bekannten Einschränkungen:
+ *     <p><code>
+ * - Die Option `linearizeCurves` wird nicht unterstützt. Alle Geometrien müssen Geometrien gemäß
+ *   dem Standard OGC Simple Feature Access sein.
+ * - Die CQL2-Funktionen `DIAMETER2D()` und `DIAMETER3D()` werden nicht unterstützt.
+ * - Arrays als Queryables werden für GeoPackage Feature Provider nicht unterstützt.
+ * - Queryables, die Werte in einem Array sind, werden für GeoPackage Feature-Anbieter nicht
+ *   unterstützt.
+ *     </code>
+ * @cfgPropertiesAdditionalEn ### Connection Info
+ *     <p>The connection info object for SQL databases has the following properties:
+ *     <p>{@docTable:connectionInfo}
+ *     <p>#### Pool
+ *     <p>Settings for the connection pool.
+ *     <p>{@docTable:pool}
+ *     <p>### Source Path Defaults
+ *     <p>Defaults for the path expressions in `sourcePath`, also see [Source Path
+ *     Syntax](#path-syntax).
+ *     <p>{@docTable:sourcePathDefaults}
+ *     <p>### Source Path Syntax
+ *     <p>The fundamental elements of the path syntax are demonstrated in the example above. The
+ *     path to a property is formed by concatenating the relative paths (`sourcePath`) with "/". A
+ *     `sourcePath` has to be defined for the for object that represents the feature type and most
+ *     child objects.
+ *     <p>On the first level the path is formed by a "/" followed by the table name for the feature
+ *     type. Every row in the table corresponds to a feature. Example: `/kita`
+ *     <p>When defining a feature property on a deeper level using a column from the given table,
+ *     the path equals the column name, e.g. `name`. The full path will then be `/kita/name`.
+ *     <p>A join is defined using the pattern `[id=fk]tab`, where `id` is the primary key of the
+ *     table from the parent object, `fk` is the foreign key of the joining table and `tab` is the
+ *     name of the joining table. Example from above: `[oid=kita_fk]plaetze`. When a junction table
+ *     should be used, two such joins are concatenated with "/", e.g. `[id=fka]a_2_b/[fkb=id]tab_b`.
+ *     <p>Rows for a table can be filtered by adding `{filter=expression}` after the table name,
+ *     where `expression` is a [CQL2 Text](https://docs.ogc.org/is/21-065r1/21-065r1.html#cql2-text)
+ *     expression. For details see the building block [Filter /
+ *     CQL](../../services/building-blocks/filter.md), which provides the implementation but does
+ *     not have to be enabled.
+ *     <p>To select capacity information only when the value is not NULL and greater than zero in
+ *     the example above, the filter would look like this: `[oid=kita_fk]plaetze{filter=anzahl IS
+ *     NOT NULL AND anzahl>0}`
+ *     <p>A non-default sort key can be set by adding `{sortKey=columnName}` after the table name.
+ *     If that sort key is not unique, add `{sortKeyUnique=false}`.
+ *     <p>All table and column names must be unquoted identifiers.
+ *     <p>### Query Generation
+ *     <p>Options for query generation.
+ *     <p>{@docTable:queryGeneration}
+ * @cfgPropertiesAdditionalDe ### Connection Info
+ *     <p>Das Connection-Info-Objekt für SQL-Datenbanken wird wie folgt beschrieben:
+ *     <p>{@docTable:connectionInfo}
+ *     <p>#### Pool
+ *     <p>Einstellungen für den Connection-Pool.
+ *     <p>{@docTable:pool}
+ *     <p>### SQL-Pfad-Defaults
+ *     <p>Defaults für die Pfad-Ausdrücke in `sourcePath`, siehe auch
+ *     [SQL-Pfad-Syntax](#path-syntax).
+ *     <p>{@docTable:sourcePathDefaults}
+ *     <p>### SQL-Pfad-Syntax
+ *     <p>In dem Beispiel oben sind die wesentlichen Elemente der Pfadsyntax in der Datenbank
+ *     bereits erkennbar. Der Pfad zu einer Eigenschaft ergibt sich immer als Konkatenation der
+ *     relativen Pfadangaben (`sourcePath`), jeweils ergänzt um ein "/". Die Eigenschaft
+ *     `sourcePath` ist beim ersten Objekt, das die Objektart repräsentiert, angegeben und bei allen
+ *     untergeordneten Schemaobjekten, außer es handelt sich um einen festen Wert.
+ *     <p>Auf der obersten Ebene entspricht der Pfad einem "/" gefolgt vom Namen der Tabelle zur
+ *     Objektart. Jede Zeile in der Tabelle entsprich einem Feature. Beispiel: `/kita`.
+ *     <p>Bei nachgeordneten relativen Pfadangaben zu einem Feld in derselben Tabelle wird einfach
+ *     der Spaltenname angeben, z.B. `name`. Daraus ergibt sich der Gesamtpfad `/kita/name`.
+ *     <p>Ein Join wird nach dem Muster `[id=fk]tab` angegeben, wobei `id` der Primärschlüssel der
+ *     Tabelle aus dem übergeordneten Schemaobjekt ist, `fk` der Fremdschlüssel aus der über den
+ *     Join angebundenen Tabelle und `tab` der Tabellenname. Siehe `[oid=kita_fk]plaetze` in dem
+ *     Beispiel oben. Bei der Verwendung einer Zwischentabelle werden zwei dieser Joins
+ *     aneinandergehängt, z.B. `[id=fka]a_2_b/[fkb=id]tab_b`.
+ *     <p>Auf einer Tabelle (der Haupttabelle eines Features oder einer über Join-angebundenen
+ *     Tabelle) kann zusätzlich ein einschränkender Filter durch den Zusatz `{filter=ausdruck}`
+ *     angegeben werden, wobei `ausdruck` das Selektionskriertium in [CQL2
+ *     Text](https://docs.ogc.org/is/21-065r1/21-065r1.html#cql2-text) spezifiziert. Für Details
+ *     siehe den Baustein [Filter / CQL](../../services/building-blocks/filter.md), welches die
+ *     Implementierung bereitstellt, aber nicht aktiviert sein muss.
+ *     <p>Wenn z.B. in dem Beispiel oben nur Angaben zur Belegungskapazität selektiert werden
+ *     sollen, deren Wert nicht NULL und gleichzeitig größer als Null ist, dann könnte man
+ *     schreiben: `[oid=kita_fk]plaetze{filter=anzahl IS NOT NULL AND anzahl>0}`.
+ *     <p>Ein vom Standard abweichender `sortKey` kann durch den Zusatz von `{sortKey=Spaltenname}`
+ *     nach dem Tabellennamen angegeben werden. Wenn dieser nicht eindeutig ist, kann
+ *     `{sortKeyUnique=false}` hinzugefügt werden.
+ *     <p>Ein vom Standard abweichender `primaryKey` kann durch den Zusatz von
+ *     `{primaryKey=Spaltenname}` nach dem Tabellennamen angegeben werden.
+ *     <p>Alle Tabellen- und Spaltennamen müssen "unquoted Identifier" sein.
+ *     <p>### Query-Generierung
+ *     <p>Optionen für die Query-Generierung in `queryGeneration`.
+ *     <p>{@docTable:queryGeneration}
+ * @ref:cfgProperties {@link de.ii.xtraplatform.features.sql.domain.ImmutableFeatureProviderSqlData}
+ * @ref:connectionInfo {@link de.ii.xtraplatform.features.sql.domain.ImmutableConnectionInfoSql}
+ * @ref:pool {@link de.ii.xtraplatform.features.sql.domain.ImmutablePoolSettings}
+ * @ref:sourcePathDefaults {@link de.ii.xtraplatform.features.sql.domain.ImmutableSqlPathDefaults}
+ * @ref:queryGeneration {@link
+ *     de.ii.xtraplatform.features.sql.domain.ImmutableQueryGeneratorSettings}
+ */
+@DocDefs(
+    tables = {
+      @DocTable(
+          name = "connectionInfo",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:connectionInfo}"),
+            @DocStep(type = Step.JSON_PROPERTIES)
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
+      @DocTable(
+          name = "pool",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:pool}"),
+            @DocStep(type = Step.JSON_PROPERTIES)
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
+      @DocTable(
+          name = "sourcePathDefaults",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:sourcePathDefaults}"),
+            @DocStep(type = Step.JSON_PROPERTIES)
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
+      @DocTable(
+          name = "queryGeneration",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:queryGeneration}"),
+            @DocStep(type = Step.JSON_PROPERTIES)
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
+    })
 @Entity(
     type = ProviderData.ENTITY_TYPE,
     subTypes = {
@@ -145,6 +303,7 @@ public class FeatureProviderSql
   private final CrsTransformerFactory crsTransformerFactory;
   private final CrsInfo crsInfo;
   private final Cql cql;
+  private final SqlDbmsAdapters dbmsAdapters;
   private final Map<String, Supplier<Decoder>> subdecoders;
 
   private final de.ii.xtraplatform.cache.domain.Cache cache;
@@ -165,6 +324,7 @@ public class FeatureProviderSql
       CrsInfo crsInfo,
       Cql cql,
       ConnectorFactory connectorFactory,
+      SqlDbmsAdapters dbmsAdapters,
       Reactive reactive,
       ValueStore valueStore,
       ProviderExtensionRegistry extensionRegistry,
@@ -184,6 +344,7 @@ public class FeatureProviderSql
     this.crsTransformerFactory = crsTransformerFactory;
     this.crsInfo = crsInfo;
     this.cql = cql;
+    this.dbmsAdapters = dbmsAdapters;
     this.cache = cache.withPrefix(getEntityType(), getId());
 
     this.subdecoders =
@@ -204,10 +365,17 @@ public class FeatureProviderSql
 
   @Override
   protected boolean onStartup() throws InterruptedException {
+    if (!dbmsAdapters.isSupported(getData().getConnectionInfo().getDialect())) {
+      LOGGER.error(
+          "Feature provider with id '{}' could not be started: dialect '{}' is not supported",
+          getId(),
+          getData().getConnectionInfo().getDialect());
+      return false;
+    }
+
     List<String> validationSchemas =
-        getData().getConnectionInfo().getDialect() == Dialect.PGIS
-                && getData().getConnectionInfo().getSchemas().isEmpty()
-            ? ImmutableList.of("public")
+        getData().getConnectionInfo().getSchemas().isEmpty()
+            ? dbmsAdapters.get(getData().getConnectionInfo().getDialect()).getDefaultSchemas()
             : getData().getConnectionInfo().getSchemas();
     this.sourceSchemaValidator =
         new SourceSchemaValidatorSql(validationSchemas, this::getSqlClient);
@@ -248,10 +416,7 @@ public class FeatureProviderSql
       return false;
     }
 
-    SqlDialect sqlDialect =
-        getData().getConnectionInfo().getDialect() == Dialect.PGIS
-            ? new SqlDialectPostGis()
-            : new SqlDialectGpkg();
+    SqlDialect sqlDialect = dbmsAdapters.getDialect(getData().getConnectionInfo().getDialect());
     String accentiCollation =
         Objects.nonNull(getData().getQueryGeneration())
             ? getData().getQueryGeneration().getAccentiCollation().orElse(null)
@@ -567,7 +732,7 @@ public class FeatureProviderSql
 
   @Override
   public boolean supportsMutationsInternal() {
-    return getData().getConnectionInfo().getDialect() == Dialect.PGIS;
+    return Objects.equals(getData().getConnectionInfo().getDialect(), SqlDbmsPgis.ID);
   }
 
   @Override

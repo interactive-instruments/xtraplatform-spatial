@@ -12,11 +12,9 @@ import com.zaxxer.hikari.pool.ProxyConnection;
 import de.ii.xtraplatform.base.domain.LogContext.MARKER;
 import de.ii.xtraplatform.features.domain.Tuple;
 import de.ii.xtraplatform.features.sql.app.FeatureSql;
-import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
 import de.ii.xtraplatform.features.sql.domain.SqlClient;
+import de.ii.xtraplatform.features.sql.domain.SqlDbmsAdapter;
 import de.ii.xtraplatform.features.sql.domain.SqlDialect;
-import de.ii.xtraplatform.features.sql.domain.SqlDialectGpkg;
-import de.ii.xtraplatform.features.sql.domain.SqlDialectPostGis;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.SqlRow;
 import de.ii.xtraplatform.streams.domain.Reactive;
@@ -29,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -50,20 +47,16 @@ public class SqlClientRx implements SqlClient {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SqlClientRx.class);
 
-  /* NOTE: If the db uses e.g. the DE collation and some sort key actually contains e.g. umlauts
-           this might lead to wrong results.
-           To cover such cases, the locale would need to be configurable.
-  */
-  private static final Collator COLLATOR_DEFAULT = Collator.getInstance(Locale.US);
-
   private final Database session;
+  private final SqlDbmsAdapter dbmsAdapter;
   private final SqlDialect dialect;
   private final Collator collator;
 
-  public SqlClientRx(Database session, Dialect dialect) {
+  public SqlClientRx(Database session, SqlDbmsAdapter dbmsAdapter, SqlDialect dialect) {
     this.session = session;
-    this.dialect = dialect == Dialect.GPKG ? new SqlDialectGpkg() : new SqlDialectPostGis();
-    this.collator = dialect == Dialect.PGIS ? COLLATOR_DEFAULT : null;
+    this.dbmsAdapter = dbmsAdapter;
+    this.dialect = dialect;
+    this.collator = dbmsAdapter.getRowSortingCollator();
   }
 
   @Override
@@ -277,6 +270,11 @@ public class SqlClientRx implements SqlClient {
   @Override
   public SqlDialect getSqlDialect() {
     return dialect;
+  }
+
+  @Override
+  public SqlDbmsAdapter getDbmsAdapter() {
+    return dbmsAdapter;
   }
 
   @Override

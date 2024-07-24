@@ -23,14 +23,14 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import org.threeten.extra.Interval;
 
-class AggregateStatsReaderSql implements AggregateStatsReader<SchemaSql> {
+public class AggregateStatsReaderSql implements AggregateStatsReader<SchemaSql> {
 
   private final Supplier<SqlClient> sqlClient;
   private final AggregateStatsQueryGenerator queryGenerator;
   private final SqlDialect sqlDialect;
   private final EpsgCrs crs;
 
-  AggregateStatsReaderSql(
+  public AggregateStatsReaderSql(
       Supplier<SqlClient> sqlClient,
       AggregateStatsQueryGenerator queryGenerator,
       SqlDialect sqlDialect,

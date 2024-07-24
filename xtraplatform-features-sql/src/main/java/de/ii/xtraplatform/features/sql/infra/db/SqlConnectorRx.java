@@ -27,11 +27,12 @@ import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry.ChangeHandler;
 import de.ii.xtraplatform.base.domain.resiliency.VolatileUnavailableException;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.Tuple;
-import de.ii.xtraplatform.features.sql.app.FeatureProviderSql;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
-import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql.Dialect;
+import de.ii.xtraplatform.features.sql.domain.FeatureProviderSql;
 import de.ii.xtraplatform.features.sql.domain.SqlClient;
 import de.ii.xtraplatform.features.sql.domain.SqlConnector;
+import de.ii.xtraplatform.features.sql.domain.SqlDbmsAdapter;
+import de.ii.xtraplatform.features.sql.domain.SqlDbmsAdapters;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryBatch;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.SqlRow;
@@ -65,7 +66,7 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
   private static final SqlQueryOptions NO_OPTIONS = SqlQueryOptions.withColumnTypes(String.class);
   private static final Logger LOGGER = LoggerFactory.getLogger(SqlConnectorRx.class);
 
-  private final SqlDataSourceFactory sqlDataSourceFactory;
+  private final SqlDbmsAdapters dbmsAdapters;
   private final ConnectionInfoSql connectionInfo;
   private final String poolName;
   private final MetricRegistry metricRegistry;
@@ -87,7 +88,7 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
 
   @AssistedInject
   public SqlConnectorRx(
-      SqlDataSourceFactory sqlDataSourceFactory,
+      SqlDbmsAdapters dbmsAdapters,
       AppContext appContext,
       VolatileRegistry volatileRegistry,
       @Assisted MetricRegistry metricRegistry,
@@ -95,7 +96,7 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
       @Assisted String providerId,
       @Assisted ConnectionInfoSql connectionInfo) {
     super(volatileRegistry);
-    this.sqlDataSourceFactory = sqlDataSourceFactory;
+    this.dbmsAdapters = dbmsAdapters;
     this.connectionInfo = connectionInfo;
     this.poolName = String.format("db.%s", providerId);
     this.metricRegistry = metricRegistry;
@@ -150,7 +151,7 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
   }
 
   @Override
-  public Dialect getDialect() {
+  public String getDialect() {
     return connectionInfo.getDialect();
   }
 
@@ -160,7 +161,11 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
       HikariConfig hikariConfig = createHikariConfig();
       this.dataSource = new HikariDataSource(hikariConfig);
       this.session = createSession(dataSource);
-      this.sqlClient = new SqlClientRx(session, connectionInfo.getDialect());
+      this.sqlClient =
+          new SqlClientRx(
+              session,
+              dbmsAdapters.get(connectionInfo.getDialect()),
+              dbmsAdapters.getDialect(connectionInfo.getDialect()));
     } catch (Throwable e) {
       this.connectionError = e;
       setMessage(e.getMessage());
@@ -326,8 +331,10 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
     config.setPoolName(poolName);
     config.setKeepaliveTime(300000);
 
-    config.setDataSource(sqlDataSourceFactory.create(providerId, connectionInfo));
-    sqlDataSourceFactory.getInitSql(connectionInfo).ifPresent(config::setConnectionInitSql);
+    SqlDbmsAdapter dbmsAdapter = dbmsAdapters.get(connectionInfo.getDialect());
+
+    config.setDataSource(dbmsAdapter.createDataSource(providerId, connectionInfo));
+    dbmsAdapter.getInitSql(connectionInfo).ifPresent(config::setConnectionInitSql);
 
     config.setMetricRegistry(metricRegistry);
     // config.setHealthCheckRegistry(healthCheckRegistry);
@@ -337,8 +344,7 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
 
   private Database createSession(HikariDataSource dataSource) {
     int maxIdleTime = 600; // minConnections == maxConnections ? 0 : 600;
-    DatabaseType healthCheck =
-        connectionInfo.getDialect() == Dialect.GPKG ? DatabaseType.SQLITE : DatabaseType.POSTGRES;
+    DatabaseType healthCheck = dbmsAdapters.get(connectionInfo.getDialect()).getRxType();
     int idleTimeBeforeHealthCheck = 60;
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace(
