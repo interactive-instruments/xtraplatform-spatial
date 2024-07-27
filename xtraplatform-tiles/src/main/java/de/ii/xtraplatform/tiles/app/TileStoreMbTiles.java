@@ -40,6 +40,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.sqlite.SQLiteException;
 
 public class TileStoreMbTiles implements TileStore {
 
@@ -154,6 +155,9 @@ public class TileStoreMbTiles implements TileStore {
 
       return TileResult.found(content.get().readAllBytes());
     } catch (SQLException e) {
+      if (e instanceof SQLiteException && ((SQLiteException) e).getResultCode().code == 776) {
+        return TileResult.notFound();
+      }
       return TileResult.error(e.getMessage());
     }
   }
