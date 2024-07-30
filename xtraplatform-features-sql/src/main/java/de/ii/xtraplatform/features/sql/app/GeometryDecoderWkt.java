@@ -39,8 +39,14 @@ public class GeometryDecoderWkt {
   }
 
   public void decode(String text) throws IOException {
-    // remove whitespace after array delimiters, without this they will be matched as words
-    text = text.replace(") ", ")").replace("( ", "(").replace(" (", "(").replace(", ", ",");
+    // remove whitespace before and after array delimiters, without this they will be matched as
+    // words
+    text =
+        text.replace(") ", ")")
+            .replace("( ", "(")
+            .replace(" )", ")")
+            .replace(" (", "(")
+            .replace(", ", ",");
     StreamTokenizer tokenizer = new StreamTokenizer(new StringReader(text));
     final int char128 = 128;
     final int skip32 = 32;
@@ -60,8 +66,8 @@ public class GeometryDecoderWkt {
     // tokenizer.commentChar('#');
 
     String type = getNextWord(tokenizer);
-    int dimension = type.contains(" Z ") ? 3 : 2;
-    type = type.replace(" Z ", "");
+    int dimension = type.contains(" Z") ? 3 : 2;
+    type = type.replace(" Z", "");
     SimpleFeatureGeometry geometryType =
         SimpleFeatureGeometryFromToWkt.fromString(type).toSimpleFeatureGeometry();
 
