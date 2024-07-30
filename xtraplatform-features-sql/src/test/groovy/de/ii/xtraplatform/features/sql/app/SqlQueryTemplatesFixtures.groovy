@@ -13,38 +13,38 @@ import de.ii.xtraplatform.features.domain.Tuple
 class SqlQueryTemplatesFixtures {
 
     static String META = "WITH\n" +
-            "    NR AS (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY SKEY OFFSET 10 LIMIT 10) IDS),\n" +
-            "    NM AS (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY 1) IDS),\n" +
+            "    NR AS (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY SKEY LIMIT 10 OFFSET 10) AS IDS),\n" +
+            "    NM AS (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY 1) AS IDS),\n" +
             "    NS AS (SELECT -1::bigint AS numberSkipped)\n" +
             "  SELECT * FROM NR, NM, NS"
 
     static String META_WITHOUT_NUMBER_MATCHED = "WITH\n" +
-                    "    NR AS (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY SKEY OFFSET 10 LIMIT 10) IDS),\n" +
+                    "    NR AS (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY SKEY LIMIT 10 OFFSET 10) AS IDS),\n" +
                     "    NM AS (SELECT -1::bigint AS numberMatched),\n" +
                     "    NS AS (SELECT -1::bigint AS numberSkipped)\n" +
                     "  SELECT * FROM NR, NM, NS"
 
     static String META_SORT_BY = "WITH\n" +
-            "    NR AS (SELECT NULL AS minKey, NULL AS maxKey, count(*) AS numberReturned FROM (SELECT A.created AS CSKEY_0, A.id AS SKEY FROM externalprovider A ORDER BY CSKEY_0, SKEY OFFSET 10 LIMIT 10) IDS),\n" +
-            "    NM AS (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY 1) IDS),\n" +
+            "    NR AS (SELECT NULL AS minKey, NULL AS maxKey, count(*) AS numberReturned FROM (SELECT A.created AS CSKEY_0, A.id AS SKEY FROM externalprovider A ORDER BY CSKEY_0, SKEY LIMIT 10 OFFSET 10) AS IDS),\n" +
+            "    NM AS (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY 1) AS IDS),\n" +
             "    NS AS (SELECT -1::bigint AS numberSkipped)\n" +
             "  SELECT * FROM NR, NM, NS"
 
     static String META_SORT_BY_DESC = "WITH\n" +
-            "    NR AS (SELECT NULL AS minKey, NULL AS maxKey, count(*) AS numberReturned FROM (SELECT A.created AS CSKEY_0, A.id AS SKEY FROM externalprovider A ORDER BY CSKEY_0 DESC, SKEY OFFSET 10 LIMIT 10) IDS),\n" +
-            "    NM AS (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY 1) IDS),\n" +
+            "    NR AS (SELECT NULL AS minKey, NULL AS maxKey, count(*) AS numberReturned FROM (SELECT A.created AS CSKEY_0, A.id AS SKEY FROM externalprovider A ORDER BY CSKEY_0 DESC, SKEY LIMIT 10 OFFSET 10) AS IDS),\n" +
+            "    NM AS (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY 1) AS IDS),\n" +
             "    NS AS (SELECT -1::bigint AS numberSkipped)\n" +
             "  SELECT * FROM NR, NM, NS"
 
     static String META_SORT_BY_MIXED = "WITH\n" +
-            "    NR AS (SELECT NULL AS minKey, NULL AS maxKey, count(*) AS numberReturned FROM (SELECT A.created AS CSKEY_0, A.lastModified AS CSKEY_1, A.id AS SKEY FROM externalprovider A ORDER BY CSKEY_0 DESC, CSKEY_1, SKEY OFFSET 10 LIMIT 10) IDS),\n" +
-            "    NM AS (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY 1) IDS),\n" +
+            "    NR AS (SELECT NULL AS minKey, NULL AS maxKey, count(*) AS numberReturned FROM (SELECT A.created AS CSKEY_0, A.lastModified AS CSKEY_1, A.id AS SKEY FROM externalprovider A ORDER BY CSKEY_0 DESC, CSKEY_1, SKEY LIMIT 10 OFFSET 10) AS IDS),\n" +
+            "    NM AS (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM externalprovider A ORDER BY 1) AS IDS),\n" +
             "    NS AS (SELECT -1::bigint AS numberSkipped)\n" +
             "  SELECT * FROM NR, NM, NS"
 
     static String META_FILTER = "WITH\n" +
-            "    NR AS (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM externalprovider A WHERE A.id IN (SELECT AA.id FROM externalprovider AA WHERE AA.type = 1) ORDER BY SKEY OFFSET 10 LIMIT 10) IDS),\n" +
-            "    NM AS (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM externalprovider A WHERE A.id IN (SELECT AA.id FROM externalprovider AA WHERE AA.type = 1) ORDER BY 1) IDS),\n" +
+            "    NR AS (SELECT MIN(SKEY) AS minKey, MAX(SKEY) AS maxKey, count(*) AS numberReturned FROM (SELECT A.id AS SKEY FROM externalprovider A WHERE A.id IN (SELECT AA.id FROM externalprovider AA WHERE AA.type = 1) ORDER BY SKEY LIMIT 10 OFFSET 10) AS IDS),\n" +
+            "    NM AS (SELECT count(*) AS numberMatched FROM (SELECT A.id AS SKEY FROM externalprovider A WHERE A.id IN (SELECT AA.id FROM externalprovider AA WHERE AA.type = 1) ORDER BY 1) AS IDS),\n" +
             "    NS AS (SELECT -1::bigint AS numberSkipped)\n" +
             "  SELECT * FROM NR, NM, NS"
 
@@ -101,13 +101,13 @@ class SqlQueryTemplatesFixtures {
     ]
 
     static List<String> OBJECT_ARRAY_SORTBY_PAGING = [
-            "SELECT A.created AS CSKEY_0, A.id AS SKEY, A.id FROM explorationsite A ORDER BY 1,2 OFFSET 10 LIMIT 10",
-            "SELECT A.created AS CSKEY_0, A.id AS SKEY, C.id AS SKEY_1, C.id, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) WHERE (A.id IN (SELECT AA.id FROM explorationsite AA ORDER BY AA.created,AA.id OFFSET 10 LIMIT 10)) ORDER BY 1,2,3"
+            "SELECT A.created AS CSKEY_0, A.id AS SKEY, A.id FROM explorationsite A ORDER BY 1,2 LIMIT 10 OFFSET 10",
+            "SELECT A.created AS CSKEY_0, A.id AS SKEY, C.id AS SKEY_1, C.id, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) WHERE (A.id IN (SELECT AA.id FROM explorationsite AA ORDER BY AA.created,AA.id LIMIT 10 OFFSET 10)) ORDER BY 1,2,3"
     ]
 
     static List<String> OBJECT_ARRAY_SORTBY_PAGING_FILTER = [
-            "SELECT A.created AS CSKEY_0, A.id AS SKEY, A.id FROM explorationsite A WHERE ((A.id IN (SELECT AA.id FROM explorationsite AA JOIN explorationsite_task AB ON (AA.id=AB.explorationsite_fk) JOIN task AC ON (AB.task_fk=AC.id) WHERE AC.projectname = 'foo') AND A.id IN (SELECT AA.id FROM explorationsite AA JOIN explorationsite_task AB ON (AA.id=AB.explorationsite_fk) JOIN task AC ON (AB.task_fk=AC.id) WHERE AC.id = 'bar'))) ORDER BY 1,2 OFFSET 10 LIMIT 10",
-            "SELECT A.created AS CSKEY_0, A.id AS SKEY, C.id AS SKEY_1, C.id, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) WHERE (A.id IN (SELECT AAA.id FROM explorationsite AAA WHERE ((AAA.id IN (SELECT AA.id FROM explorationsite AA JOIN explorationsite_task AB ON (AA.id=AB.explorationsite_fk) JOIN task AC ON (AB.task_fk=AC.id) WHERE AC.projectname = 'foo') AND AAA.id IN (SELECT AA.id FROM explorationsite AA JOIN explorationsite_task AB ON (AA.id=AB.explorationsite_fk) JOIN task AC ON (AB.task_fk=AC.id) WHERE AC.id = 'bar'))) ORDER BY AAA.created,AAA.id OFFSET 10 LIMIT 10)) ORDER BY 1,2,3"
+            "SELECT A.created AS CSKEY_0, A.id AS SKEY, A.id FROM explorationsite A WHERE ((A.id IN (SELECT AA.id FROM explorationsite AA JOIN explorationsite_task AB ON (AA.id=AB.explorationsite_fk) JOIN task AC ON (AB.task_fk=AC.id) WHERE AC.projectname = 'foo') AND A.id IN (SELECT AA.id FROM explorationsite AA JOIN explorationsite_task AB ON (AA.id=AB.explorationsite_fk) JOIN task AC ON (AB.task_fk=AC.id) WHERE AC.id = 'bar'))) ORDER BY 1,2 LIMIT 10 OFFSET 10",
+            "SELECT A.created AS CSKEY_0, A.id AS SKEY, C.id AS SKEY_1, C.id, C.projectname, C.id FROM explorationsite A JOIN explorationsite_task B ON (A.id=B.explorationsite_fk) JOIN task C ON (B.task_fk=C.id) WHERE (A.id IN (SELECT AAA.id FROM explorationsite AAA WHERE ((AAA.id IN (SELECT AA.id FROM explorationsite AA JOIN explorationsite_task AB ON (AA.id=AB.explorationsite_fk) JOIN task AC ON (AB.task_fk=AC.id) WHERE AC.projectname = 'foo') AND AAA.id IN (SELECT AA.id FROM explorationsite AA JOIN explorationsite_task AB ON (AA.id=AB.explorationsite_fk) JOIN task AC ON (AB.task_fk=AC.id) WHERE AC.id = 'bar'))) ORDER BY AAA.created,AAA.id LIMIT 10 OFFSET 10)) ORDER BY 1,2,3"
     ]
 
     static List<String> PROPERTY_WITH_MULTIPLE_SOURCE_PATHS = [
