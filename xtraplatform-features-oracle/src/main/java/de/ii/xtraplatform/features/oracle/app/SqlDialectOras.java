@@ -143,6 +143,24 @@ public class SqlDialectOras implements SqlDialect {
   }
 
   @Override
+  public String applyToAsIds() {
+    return " IDS";
+  }
+
+  @Override
+  public String applyToLimitAndOffset(long limit, long offset) {
+    if (limit > 0 && offset > 0) {
+      return String.format(" OFFSET %d ROWS FETCH NEXT %d ROWS ONLY", offset, limit);
+    } else if (limit > 0) {
+      return applyToLimit(limit);
+    } else if (offset > 0) {
+      return applyToOffset(offset);
+    }
+
+    return "";
+  }
+
+  @Override
   public String applyToLimit(long limit) {
     return String.format(" FETCH NEXT %d ROWS ONLY", limit);
   }

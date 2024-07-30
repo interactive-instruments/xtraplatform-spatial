@@ -53,6 +53,22 @@ public interface SqlDialect {
         "Arrays as queryables are not supported for this feature provider.");
   }
 
+  default String applyToAsIds() {
+    return " AS IDS";
+  }
+
+  default String applyToLimitAndOffset(long limit, long offset) {
+    if (limit > 0 && offset > 0) {
+      return String.format(" LIMIT %d OFFSET %d", limit, offset);
+    } else if (limit > 0) {
+      return applyToLimit(limit);
+    } else if (offset > 0) {
+      return applyToOffset(offset);
+    }
+
+    return "";
+  }
+
   default String applyToLimit(long limit) {
     return String.format(" LIMIT %d", limit);
   }
