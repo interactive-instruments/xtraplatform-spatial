@@ -10,6 +10,7 @@ package de.ii.xtraplatform.tiles.domain;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.ii.xtraplatform.jobs.domain.Job;
 import de.ii.xtraplatform.tiles.app.FeatureEncoderMVT;
+import de.ii.xtraplatform.tiles.domain.ImmutableTileSeedingJob.Builder;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,17 +30,17 @@ public interface TileSeedingJob {
       boolean isReseed,
       Set<TileSubMatrix> subMatrices,
       String jobSetId) {
-    return Job.of(
-        TYPE_MVT,
-        new ImmutableTileSeedingJob.Builder()
+    ImmutableTileSeedingJob details =
+        new Builder()
             .tileProvider(tileProvider)
             .tileSet(tileSet)
             .tileMatrixSet(tileMatrixSet)
             .encoding(FeatureEncoderMVT.FORMAT)
             .isReseed(isReseed)
             .addAllSubMatrices(subMatrices)
-            .build(),
-        jobSetId);
+            .build();
+
+    return Job.of(TYPE_MVT, details, jobSetId, (int) details.getNumberOfTiles());
   }
 
   static Job raster(
@@ -50,9 +51,8 @@ public interface TileSeedingJob {
       Set<TileSubMatrix> subMatrices,
       String jobSetId,
       Map<String, String> storageInfo) {
-    return Job.of(
-        TYPE_PNG,
-        new ImmutableTileSeedingJob.Builder()
+    ImmutableTileSeedingJob details =
+        new Builder()
             .tileProvider(tileProvider)
             .tileSet(tileSet)
             .tileMatrixSet(tileMatrixSet)
@@ -60,8 +60,9 @@ public interface TileSeedingJob {
             .isReseed(isReseed)
             .addAllSubMatrices(subMatrices)
             .storage(storageInfo)
-            .build(),
-        jobSetId);
+            .build();
+
+    return Job.of(TYPE_PNG, details, jobSetId, (int) details.getNumberOfTiles());
   }
 
   String getTileProvider();

@@ -81,7 +81,9 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -837,7 +839,7 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
   }
 
   @Override
-  public void runSeeding(TileSeedingJob job) throws IOException {
+  public void runSeeding(TileSeedingJob job, Consumer<Integer> updateProgress) throws IOException {
     if (!metadata.containsKey(job.getTileSet())) {
       LOGGER.warn("Tileset with name '{}' not found", job.getTileSet());
       return;
@@ -870,9 +872,16 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
       }
     }
 
+    AtomicInteger current = new AtomicInteger(0);
+    Runnable updateProgress2 =
+        () -> {
+          int cur = current.incrementAndGet();
+          updateProgress.accept(cur);
+        };
+
     for (TileCache cache : caches) {
       if (cache.canProcess(job)) {
-        cache.seed(job, label);
+        cache.seed(job, label, updateProgress2);
       }
     }
 

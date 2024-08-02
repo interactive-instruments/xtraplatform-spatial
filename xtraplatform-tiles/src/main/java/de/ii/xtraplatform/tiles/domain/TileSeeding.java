@@ -10,6 +10,7 @@ package de.ii.xtraplatform.tiles.domain;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 public interface TileSeeding {
 
@@ -37,7 +38,7 @@ public interface TileSeeding {
 
   void cleanupSeeding(TileSeedingJobSet jobSet) throws IOException;
 
-  void runSeeding(TileSeedingJob job) throws IOException;
+  void runSeeding(TileSeedingJob job, Consumer<Integer> updateProgress) throws IOException;
 
   default void deleteFromCache(
       String tileset, TileMatrixSetBase tileMatrixSet, TileMatrixSetLimits limits) {}

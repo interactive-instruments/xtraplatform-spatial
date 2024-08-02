@@ -120,12 +120,13 @@ public class TileCacheDynamic implements ChainedTileProvider, TileCache {
   }
 
   @Override
-  public void seed(TileSeedingJob job, String tileSourceLabel) throws IOException {
+  public void seed(TileSeedingJob job, String tileSourceLabel, Runnable updateProgress)
+      throws IOException {
     if (!isSeeded) {
       return;
     }
 
-    doSeed(job, tileSourceLabel, tileStore, delegate, tileWalker);
+    doSeed(job, tileSourceLabel, tileStore, delegate, tileWalker, updateProgress);
   }
 
   @Override

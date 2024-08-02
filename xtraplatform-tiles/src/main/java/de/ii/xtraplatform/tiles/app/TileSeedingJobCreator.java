@@ -111,11 +111,12 @@ public class TileSeedingJobCreator implements JobProcessor<Boolean, TileSeedingJ
               seedingJobSet.getTileSets().keySet());
         }
 
-        jobSet.getStartedAt().set(Instant.now().getEpochSecond());
+        jobSet.start();
+
         Map<String, Map<String, Set<TileMatrixSetLimits>>> coverage =
-            tileProvider.seeding().get().getCoverage(seedingJobSet.getTileSets());
+            tileProvider.seeding().get().getCoverage(seedingJobSet.getTileSetParameters());
         Map<String, Map<String, Set<TileMatrixSetLimits>>> rasterCoverage =
-            tileProvider.seeding().get().getRasterCoverage(seedingJobSet.getTileSets());
+            tileProvider.seeding().get().getRasterCoverage(seedingJobSet.getTileSetParameters());
         TileStorePartitions tileStorePartitions =
             new TileStorePartitions(
                 tileProvider.seeding().get().getOptions().getEffectiveJobSize());
@@ -137,7 +138,7 @@ public class TileSeedingJobCreator implements JobProcessor<Boolean, TileSeedingJ
                 .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
 
         Map<String, TileGenerationParameters> rasterForVectorTilesets =
-            seedingJobSet.getTileSets().entrySet().stream()
+            seedingJobSet.getTileSetParameters().entrySet().stream()
                 .flatMap(
                     entry ->
                         rasterForVector.get(entry.getKey()).stream()
@@ -196,7 +197,18 @@ public class TileSeedingJobCreator implements JobProcessor<Boolean, TileSeedingJ
                               jobSet.getId());
 
                   pushJob.accept(job2);
-                  jobSet.getTotal().incrementAndGet();
+                  // jobSet.getTotal().incrementAndGet();
+                  jobSet.getTotal().addAndGet(job2.getTotal().get());
+                  seedingJobSet
+                      .getTileSets()
+                      .get(tileSet)
+                      .getProgress()
+                      .getTotal()
+                      .updateAndGet(
+                          old -> old == -1 ? job2.getTotal().get() : old + job2.getTotal().get());
+
+                  seedingJobSet.withLevel(
+                      tileSet, tileMatrixSet, subMatrix.getLevel(), job2.getTotal().get());
                 }
               });
         }
@@ -215,7 +227,7 @@ public class TileSeedingJobCreator implements JobProcessor<Boolean, TileSeedingJ
                       : getConcurrency(jobSet) + " local";
           LOGGER.debug(
               MARKER.JOBS,
-              "{}: processing {} jobs with {} processors",
+              "{}: processing {} tiles with {} processors",
               jobSet.getLabel(),
               jobSet.getTotal().get(),
               processors);

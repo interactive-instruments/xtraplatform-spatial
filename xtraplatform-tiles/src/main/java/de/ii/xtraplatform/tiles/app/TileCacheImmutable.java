@@ -110,7 +110,8 @@ public class TileCacheImmutable implements ChainedTileProvider, TileCache {
   }
 
   @Override
-  public void seed(TileSeedingJob job, String tileSourceLabel) throws IOException {
-    doSeed(job, tileSourceLabel, tileStore, delegate, tileWalker);
+  public void seed(TileSeedingJob job, String tileSourceLabel, Runnable updateProgress)
+      throws IOException {
+    doSeed(job, tileSourceLabel, tileStore, delegate, tileWalker, updateProgress);
   }
 }

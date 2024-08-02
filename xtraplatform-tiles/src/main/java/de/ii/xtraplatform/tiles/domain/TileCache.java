@@ -50,59 +50,64 @@ public interface TileCache {
 
   void cleanupSeeding(TileSeedingJobSet jobSet, String tileSourceLabel) throws IOException;
 
-  void seed(TileSeedingJob job, String tileSourceLabel) throws IOException;
+  void seed(TileSeedingJob job, String tileSourceLabel, Runnable updateProgress) throws IOException;
 
   default void doSeed(
       TileSeedingJob job,
       String tileSourceLabel,
       TileStore tileStore,
       ChainedTileProvider delegate,
-      TileWalker tileWalker)
+      TileWalker tileWalker,
+      Runnable updateProgress)
       throws IOException {
     tileWalker.walkTileSeedingJob(
         job,
         getTmsRanges(),
         (tileset, encoding, tms, level, row, col) -> {
-          if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace(
-                String.format(
-                    "currently processing -> %s, %s/%s/%s/%s, %s",
-                    job.getTileSet(), job.getTileMatrixSet(), level, row, col, encoding));
-          }
-
-          TileQuery tile =
-              ImmutableTileQuery.builder()
-                  .tileset(job.getTileSet())
-                  .mediaType(encoding)
-                  .tileMatrixSet(tms)
-                  .level(level)
-                  .row(row)
-                  .col(col)
-                  // TODO .generationParameters(tilesets.get(tileset))
-                  .build();
-
-          if (job.isReseed() || tileStore.isDirty(tile) || !tileStore.has(tile)) {
-            TileResult result = delegate.get(tile);
-
-            if (shouldCache(tile) && result.isAvailable()) {
-              tileStore.put(tile, new ByteArrayInputStream(result.getContent().get()));
-              /*if (isEmpty[0]) {
-                isEmpty[0] = false;
-              }*/
+          try {
+            if (LOGGER.isTraceEnabled()) {
+              LOGGER.trace(
+                  String.format(
+                      "currently processing -> %s, %s/%s/%s/%s, %s",
+                      job.getTileSet(), job.getTileMatrixSet(), level, row, col, encoding));
             }
 
-            if (result.isError()) {
-              LOGGER.warn(
-                  "{}: processing failed -> {}, {}/{}/{}/{}, {} | {}",
-                  tileSourceLabel,
-                  job.getTileSet(),
-                  tms.getId(),
-                  level,
-                  row,
-                  col,
-                  encoding,
-                  result.getError().get());
+            TileQuery tile =
+                ImmutableTileQuery.builder()
+                    .tileset(job.getTileSet())
+                    .mediaType(encoding)
+                    .tileMatrixSet(tms)
+                    .level(level)
+                    .row(row)
+                    .col(col)
+                    // TODO .generationParameters(tilesets.get(tileset))
+                    .build();
+
+            if (job.isReseed() || tileStore.isDirty(tile) || !tileStore.has(tile)) {
+              TileResult result = delegate.get(tile);
+
+              if (shouldCache(tile) && result.isAvailable()) {
+                tileStore.put(tile, new ByteArrayInputStream(result.getContent().get()));
+                /*if (isEmpty[0]) {
+                  isEmpty[0] = false;
+                }*/
+              }
+
+              if (result.isError()) {
+                LOGGER.warn(
+                    "{}: processing failed -> {}, {}/{}/{}/{}, {} | {}",
+                    tileSourceLabel,
+                    job.getTileSet(),
+                    tms.getId(),
+                    level,
+                    row,
+                    col,
+                    encoding,
+                    result.getError().get());
+              }
             }
+          } finally {
+            updateProgress.run();
           }
         });
   }

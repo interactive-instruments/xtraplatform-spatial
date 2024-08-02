@@ -19,6 +19,7 @@ import de.ii.xtraplatform.tiles.domain.TileProvider;
 import de.ii.xtraplatform.tiles.domain.TileSeedingJob;
 import de.ii.xtraplatform.tiles.domain.TileSeedingJobSet;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.function.Consumer;
 import javax.inject.Inject;
@@ -60,6 +61,7 @@ public class VectorSeedingJobProcessor implements JobProcessor<TileSeedingJob, T
   @Override
   public JobResult process(Job job, JobSet jobSet, Consumer<Job> pushJob) {
     TileSeedingJob seedingJob = getDetails(job);
+    TileSeedingJobSet seedingJobSet = getSetDetails(jobSet);
 
     Optional<TileProvider> optionalTileProvider = getTileProvider(seedingJob.getTileProvider());
     if (optionalTileProvider.isPresent()) {
@@ -96,10 +98,37 @@ public class VectorSeedingJobProcessor implements JobProcessor<TileSeedingJob, T
         return JobResult.onHold(); // early return
       }
 
+      final int[] last = {0};
+      Consumer<Integer> updateProgress =
+          (current) -> {
+            int delta = current - last[0];
+            last[0] = current;
+
+            // TODO: encapsulate, levels
+            job.getCurrent().addAndGet(delta);
+            job.getUpdatedAt().set(Instant.now().getEpochSecond());
+            jobSet.getCurrent().addAndGet(delta);
+            jobSet.getUpdatedAt().set(Instant.now().getEpochSecond());
+            seedingJobSet
+                .getTileSets()
+                .get(seedingJob.getTileSet())
+                .getProgress()
+                .getCurrent()
+                .addAndGet(delta);
+            seedingJobSet.withLevelSub(
+                seedingJob.getTileSet(),
+                seedingJob.getTileMatrixSet(),
+                seedingJob.getSubMatrices().get(0).getLevel(),
+                delta);
+          };
+
       try {
-        tileProvider.seeding().get().runSeeding(seedingJob);
+        tileProvider.seeding().get().runSeeding(seedingJob, updateProgress);
       } catch (IOException e) {
         return JobResult.retry(e.getMessage());
+      } catch (Throwable e) {
+        updateProgress.accept(job.getTotal().get());
+        throw e;
       }
     }
 
