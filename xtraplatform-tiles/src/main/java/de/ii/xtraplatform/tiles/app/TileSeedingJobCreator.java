@@ -197,17 +197,8 @@ public class TileSeedingJobCreator implements JobProcessor<Boolean, TileSeedingJ
                               jobSet.getId());
 
                   pushJob.accept(job2);
-                  // jobSet.getTotal().incrementAndGet();
-                  jobSet.getTotal().addAndGet(job2.getTotal().get());
-                  seedingJobSet
-                      .getTileSets()
-                      .get(tileSet)
-                      .getProgress()
-                      .getTotal()
-                      .updateAndGet(
-                          old -> old == -1 ? job2.getTotal().get() : old + job2.getTotal().get());
-
-                  seedingJobSet.withLevel(
+                  jobSet.init(job2.getTotal().get());
+                  seedingJobSet.init(
                       tileSet, tileMatrixSet, subMatrix.getLevel(), job2.getTotal().get());
                 }
               });

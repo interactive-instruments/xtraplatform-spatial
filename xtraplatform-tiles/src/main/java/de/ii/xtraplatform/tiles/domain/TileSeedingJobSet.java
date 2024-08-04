@@ -9,20 +9,21 @@ package de.ii.xtraplatform.tiles.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.jobs.domain.Job;
 import de.ii.xtraplatform.jobs.domain.JobProgress;
 import de.ii.xtraplatform.jobs.domain.JobSet;
+import de.ii.xtraplatform.jobs.domain.JobSet.JobSetDetails;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicIntegerArray;
-import java.util.stream.Collectors;
 import org.immutables.value.Value;
 
 @Value.Immutable
-public interface TileSeedingJobSet {
+public interface TileSeedingJobSet extends JobSetDetails {
 
   String TYPE = "tile-seeding";
   String TYPE_SETUP = type("setup");
@@ -64,30 +65,49 @@ public interface TileSeedingJobSet {
   @Value.Lazy
   default Map<String, TileGenerationParameters> getTileSetParameters() {
     return getTileSets().entrySet().stream()
-        .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getParameters()));
+        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, e -> e.getValue().getParameters()));
   }
 
   boolean isReseed();
 
-  default void withLevel(String tileSet, String tileMatrixSet, int level, int count) {
-    LinkedHashMap<String, AtomicIntegerArray> levels =
-        getTileSets().get(tileSet).getProgress().getLevels();
+  default void init(String tileSet, String tileMatrixSet, int level, int count) {
+    TilesetProgress progress = getTileSets().get(tileSet).getProgress();
 
-    if (!levels.containsKey(tileMatrixSet)) {
+    progress.getTotal().updateAndGet(old -> old == -1 ? count : old + count);
+
+    if (!progress.getLevels().containsKey(tileMatrixSet)) {
       int[] levelProgress = new int[24];
       Arrays.fill(levelProgress, -1);
-      levels.put(tileMatrixSet, new AtomicIntegerArray(levelProgress));
+      progress.getLevels().put(tileMatrixSet, new AtomicIntegerArray(levelProgress));
     }
 
-    levels.get(tileMatrixSet).getAndUpdate(level, val -> val == -1 ? count : val + count);
+    progress
+        .getLevels()
+        .get(tileMatrixSet)
+        .getAndUpdate(level, old -> old == -1 ? count : old + count);
   }
 
-  default void withLevelSub(String tileSet, String tileMatrixSet, int level, int count) {
-    LinkedHashMap<String, AtomicIntegerArray> levels =
-        getTileSets().get(tileSet).getProgress().getLevels();
+  default void update(String tileSet, String tileMatrixSet, int level, int delta) {
+    TilesetProgress progress = getTileSets().get(tileSet).getProgress();
 
-    if (levels.containsKey(tileMatrixSet)) {
-      levels.get(tileMatrixSet).addAndGet(level, -1 * count);
+    progress.getCurrent().addAndGet(delta);
+
+    if (progress.getLevels().containsKey(tileMatrixSet)) {
+      progress.getLevels().get(tileMatrixSet).addAndGet(level, -1 * delta);
+    }
+  }
+
+  @Override
+  default void update(Map<String, String> parameters) {
+    if (parameters.containsKey("tileSet")
+        && parameters.containsKey("tileMatrixSet")
+        && parameters.containsKey("level")
+        && parameters.containsKey("delta")) {
+      update(
+          parameters.get("tileSet"),
+          parameters.get("tileMatrixSet"),
+          Integer.parseInt(parameters.get("level")),
+          Integer.parseInt(parameters.get("delta")));
     }
   }
 
@@ -96,7 +116,8 @@ public interface TileSeedingJobSet {
 
     static Map<String, TilesetDetails> of(Map<String, TileGenerationParameters> tilesets) {
       return tilesets.entrySet().stream()
-          .collect(Collectors.toMap(Map.Entry::getKey, e -> TilesetDetails.of(e.getValue())));
+          .collect(
+              ImmutableMap.toImmutableMap(Map.Entry::getKey, e -> TilesetDetails.of(e.getValue())));
     }
 
     static TilesetDetails of(TileGenerationParameters parameters) {
@@ -128,7 +149,7 @@ public interface TileSeedingJobSet {
                 }
                 return Map.entry(e.getKey(), levels);
               })
-          .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+          .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
   }
 }
