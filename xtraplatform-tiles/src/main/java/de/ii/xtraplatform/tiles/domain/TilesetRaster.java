@@ -16,14 +16,20 @@ import java.util.List;
 import java.util.Optional;
 import org.immutables.value.Value;
 
+/**
+ * @langEn ### Raster Tileset
+ *     <p>To generate raster tiles [xtratiler](https://github.com/ldproxy/xtratiler) is required.
+ *     Raster tiles cannot be generated on-demand, so a seeded [cache](#cache) is required.
+ * @langDe ### Raster-Tileset
+ *     <p>Um Raster-Kacheln zu generieren, wird [xtratiler](https://github.com/ldproxy/xtratiler)
+ *     benötigt. Raster-Kacheln können nicht auf Anfrage generiert werden, daher ist ein `seeded`
+ *     [Cache](#cache) erforderlich.
+ */
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableTilesetRaster.Builder.class)
 public interface TilesetRaster extends TilesetCommonDefaults, Buildable<TilesetRaster> {
-  /**
-   * @langEn The tileset id.
-   * @langDe Die Tileset-Id.
-   * @since v4.0
-   */
+
+  @DocIgnore
   Optional<String> getPrefix();
 
   @DocIgnore
@@ -35,9 +41,12 @@ public interface TilesetRaster extends TilesetCommonDefaults, Buildable<TilesetR
   Optional<LonLat> getCenter();
 
   /**
-   * @langEn List of styles.
-   * @langDe Liste der Styles.
-   * @since v4.0
+   * @langEn List of MapLibre styles that raster tiles should be generated for. The entries are
+   *     relative paths to values of type `maplibre-styles` in the store.
+   * @langDe Liste der MapLibre-Styles für die Raster-Kacheln generiert werden sollen. Die Einträge
+   *     sind relative Pfade zu Values vom Typ `maplibre-styles` im Store.
+   * @since v4.1
+   * @default []
    */
   List<String> getStyles();
 
