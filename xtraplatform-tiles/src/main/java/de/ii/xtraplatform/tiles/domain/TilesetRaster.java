@@ -20,10 +20,11 @@ import org.immutables.value.Value;
  * @langEn ### Raster Tileset
  *     <p>To generate raster tiles [xtratiler](https://github.com/ldproxy/xtratiler) is required.
  *     Raster tiles cannot be generated on-demand, so a seeded [cache](#cache) is required.
+ *     Currently only `DYNAMIC` caches are supported.
  * @langDe ### Raster-Tileset
  *     <p>Um Raster-Kacheln zu generieren, wird [xtratiler](https://github.com/ldproxy/xtratiler)
  *     benötigt. Raster-Kacheln können nicht auf Anfrage generiert werden, daher ist ein `seeded`
- *     [Cache](#cache) erforderlich.
+ *     [Cache](#cache) erforderlich. Aktuell werden nur `DYNAMIC`-Caches unterstützt.
  */
 @Value.Immutable
 @JsonDeserialize(builder = ImmutableTilesetRaster.Builder.class)
