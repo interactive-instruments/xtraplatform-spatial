@@ -126,8 +126,8 @@ public class FeatureTransformerFromSql2 implements FeatureConsumer {
   }
 
   private boolean isPropertyInWhitelist(FeatureProperty featureProperty) {
-    if (featureProperty.isSpatial()) {
-      return !skipGeometry;
+    if (featureProperty.isSpatial() && skipGeometry) {
+      return false;
     }
     return featureProperty.isId()
         || fields.contains(featureProperty.getName())
