@@ -18,6 +18,7 @@ import de.ii.xtraplatform.tiles.domain.Cache.Storage;
 import de.ii.xtraplatform.tiles.domain.TileGenerationSchema;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetBase;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetLimits;
+import de.ii.xtraplatform.tiles.domain.TileMatrixSetRepository;
 import de.ii.xtraplatform.tiles.domain.TileQuery;
 import de.ii.xtraplatform.tiles.domain.TileResult;
 import de.ii.xtraplatform.tiles.domain.TileStore;
@@ -26,11 +27,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
@@ -50,21 +53,30 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
   private final Map<String, Map<String, TileGenerationSchema>> tileSchemas;
   private final List<Tuple<TileStore, ResourceStore>> active;
   private final Map<String, Map<String, List<TileMatrixSetLimits>>> dirty;
+  private final Map<String, Set<String>> tileMatrixSets;
+  private final Optional<TileMatrixSetRepository> tileMatrixSetRepository;
+  private final Optional<TileStorePartitions> partitions;
   private Tuple<TileStore, ResourceStore> staging;
 
   public TileStoreMulti(
       ResourceStore cacheStore,
       Storage storage,
       String tileSetName,
-      Map<String, Map<String, TileGenerationSchema>> tileSchemas) {
+      Map<String, Map<String, TileGenerationSchema>> tileSchemas,
+      Map<String, Set<String>> tileMatrixSets,
+      Optional<TileMatrixSetRepository> tileMatrixSetRepository,
+      Optional<TileStorePartitions> partitions) {
     this.cacheStore = cacheStore;
     this.storage = storage;
     this.tileSetName = tileSetName;
     this.tileSchemas = tileSchemas;
+    this.tileMatrixSets = tileMatrixSets;
+    this.tileMatrixSetRepository = tileMatrixSetRepository;
+    this.partitions = partitions;
     this.staging = null;
-    this.active = getActive();
     this.dirty = new ConcurrentHashMap<>();
     tileSchemas.keySet().forEach(tileset -> dirty.put(tileset, new ConcurrentHashMap<>()));
+    this.active = getActive();
   }
 
   private List<Tuple<TileStore, ResourceStore>> getActive() {
@@ -197,6 +209,29 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
   }
 
   @Override
+  public Storage getStorageType() {
+    return storage == Storage.MBTILES
+        ? Storage.PER_TILESET
+        : storage == Storage.PLAIN ? Storage.PER_TILE : storage;
+  }
+
+  @Override
+  public Optional<String> getStorageInfo(
+      String tileset, String tileMatrixSet, TileMatrixSetLimits limits) {
+    List<String> paths = new ArrayList<>();
+
+    if (inProgress()) {
+      staging.first().getStorageInfo(tileset, tileMatrixSet, limits).ifPresent(paths::add);
+    }
+
+    for (Tuple<TileStore, ResourceStore> store : active) {
+      store.first().getStorageInfo(tileset, tileMatrixSet, limits).ifPresent(paths::add);
+    }
+
+    return paths.isEmpty() ? Optional.empty() : Optional.of("[" + String.join(",", paths) + "]");
+  }
+
+  @Override
   public boolean isDirty(TileQuery tile) {
     return dirty.containsKey(tile.getTileset())
         && dirty.get(tile.getTileset()).containsKey(tile.getTileMatrixSet().getId())
@@ -233,22 +268,43 @@ public class TileStoreMulti implements TileStore, TileStore.Staging {
     return true;
   }
 
+  // TODO
   private TileStore getTileStore(ResourceStore blobStore) {
     return storage == Storage.MBTILES
-        ? TileStoreMbTiles.readWrite(blobStore, tileSetName, tileSchemas)
+            || storage == Storage.PER_TILESET
+            || storage == Storage.PER_JOB
+        ? TileStoreMbTiles.readWrite(
+            blobStore,
+            tileSetName,
+            tileSchemas,
+            tileMatrixSets,
+            tileMatrixSetRepository,
+            partitions)
         : new TileStorePlain(blobStore);
   }
 
   @Override
   public synchronized void promote() throws IOException {
     if (inProgress()) {
-      staging.second().delete(Path.of(".staging"));
-
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("Promoting cache level {}", staging.second().getPrefix());
+      boolean empty = false;
+      try (Stream<Path> files = staging.second().walk(Path.of(""), 1, (p, a) -> true)) {
+        // only self and .staging
+        if (files.count() == 2) {
+          empty = true;
+        }
+      } catch (IOException e) {
+        // continue
       }
 
-      this.active.add(0, staging);
+      if (!empty) {
+        if (LOGGER.isDebugEnabled()) {
+          LOGGER.debug("Promoting cache level {}", staging.second().getPrefix());
+        }
+
+        staging.second().delete(Path.of(".staging"));
+        this.active.add(0, staging);
+      }
+
       this.staging = null;
 
       for (String tileset : dirty.keySet()) {

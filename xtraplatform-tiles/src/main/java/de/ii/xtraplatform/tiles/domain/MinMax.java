@@ -38,4 +38,9 @@ public interface MinMax extends Buildable<MinMax> {
   }
 
   abstract class Builder implements BuildableBuilder<MinMax> {}
+
+  @Value.Lazy
+  default Range<Integer> asRange() {
+    return Range.closed(getMin(), getMax());
+  }
 }

@@ -165,18 +165,6 @@ public class SqlDialectPgis implements SqlDialect {
         .orElse(String.format("%s::timestamp(0)", column));
   }
 
-  /* FIXME
-  @Override
-  public String applyToDate(String column, Optional<String> format) {
-    return String.format("%s::date", column);
-  }
-
-  @Override
-  public String applyToDatetime(String column, Optional<String> format) {
-    return String.format("%s::timestamp(0)", column);
-  }
-   */
-
   @Override
   public String applyToDateLiteral(String date) {
     return String.format("DATE '%s'", date);

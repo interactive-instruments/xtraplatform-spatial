@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.blobs.domain.ResourceStore;
+import de.ii.xtraplatform.tiles.domain.Cache.Storage;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetBase;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetLimits;
 import de.ii.xtraplatform.tiles.domain.TileQuery;
@@ -20,6 +21,8 @@ import de.ii.xtraplatform.tiles.domain.TileResult;
 import de.ii.xtraplatform.tiles.domain.TileStore;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
@@ -33,7 +36,7 @@ class TileStorePlain implements TileStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(TileStorePlain.class);
 
   private static Map<MediaType, String> EXTENSIONS =
-      ImmutableMap.of(FeatureEncoderMVT.FORMAT, "mvt");
+      ImmutableMap.of(FeatureEncoderMVT.FORMAT, "mvt", MediaType.valueOf("image/png"), "png");
 
   private final ResourceStore blobStore;
 
@@ -128,6 +131,10 @@ class TileStorePlain implements TileStore {
       try {
         matchingFiles.forEach(consumerMayThrow(blobStore::delete));
       } catch (RuntimeException e) {
+        if (e instanceof UncheckedIOException && e.getCause() instanceof NoSuchFileException) {
+          // ignore
+          return;
+        }
         if (e.getCause() instanceof IOException) {
           throw (IOException) e.getCause();
         }
@@ -139,6 +146,40 @@ class TileStorePlain implements TileStore {
   @Override
   public void delete(String tileset, String tms, int level, int row, int col) throws IOException {
     blobStore.delete(path(tileset, tms, level, row, col));
+  }
+
+  @Override
+  public Storage getStorageType() {
+    return Storage.PER_TILE;
+  }
+
+  @Override
+  public Optional<String> getStorageInfo(
+      String tileset, String tileMatrixSet, TileMatrixSetLimits limits) {
+    try {
+      Optional<Path> path =
+          blobStore.asLocalPath(
+              path(
+                  tileset,
+                  tileMatrixSet,
+                  Integer.parseInt(limits.getTileMatrix()),
+                  limits.getMinTileRow(),
+                  limits.getMinTileCol()),
+              true);
+
+      return path.map(Path::toString)
+          .map(
+              p ->
+                  p.replace(
+                      Integer.toString(limits.getMinTileRow())
+                          + "/"
+                          + Integer.toString(limits.getMinTileCol()),
+                      "{row}/{col}"));
+    } catch (IOException e) {
+      // ignore
+    }
+
+    return Optional.empty();
   }
 
   private static Path path(TileQuery tile) {

@@ -7,11 +7,10 @@
  */
 package de.ii.xtraplatform.tiles.app;
 
-import static de.ii.xtraplatform.base.domain.util.LambdaWithException.consumerMayThrow;
-
 import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
+import de.ii.xtraplatform.tiles.domain.Cache.Storage;
 import de.ii.xtraplatform.tiles.domain.ImmutableMbtilesMetadata;
 import de.ii.xtraplatform.tiles.domain.ImmutableVectorLayer;
 import de.ii.xtraplatform.tiles.domain.MbtilesMetadata;
@@ -19,10 +18,12 @@ import de.ii.xtraplatform.tiles.domain.MbtilesTileset;
 import de.ii.xtraplatform.tiles.domain.TileGenerationSchema;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetBase;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetLimits;
+import de.ii.xtraplatform.tiles.domain.TileMatrixSetRepository;
 import de.ii.xtraplatform.tiles.domain.TileQuery;
 import de.ii.xtraplatform.tiles.domain.TileResult;
 import de.ii.xtraplatform.tiles.domain.TileStore;
 import de.ii.xtraplatform.tiles.domain.TileStoreReadOnly;
+import de.ii.xtraplatform.tiles.domain.TilesFormat;
 import de.ii.xtraplatform.tiles.domain.VectorLayer;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,16 +35,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.sqlite.SQLiteException;
 
 public class TileStoreMbTiles implements TileStore {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TileStoreMbTiles.class);
-  private static final String MBTILES_SUFFIX = ".mbtiles";
+  public static final String MBTILES_SUFFIX = ".mbtiles";
 
   static TileStoreReadOnly readOnly(Map<String, Path> tileSetSources) {
     Map<String, MbtilesTileset> tileSets =
@@ -51,42 +53,35 @@ public class TileStoreMbTiles implements TileStore {
             .map(
                 entry ->
                     new SimpleImmutableEntry<>(
-                        entry.getKey(), new MbtilesTileset(entry.getValue())))
+                        entry.getKey(), new MbtilesTileset(entry.getValue(), false)))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-    return new TileStoreMbTiles("", null, tileSets, Map.of());
+    return new TileStoreMbTiles("", null, tileSets, Map.of(), Optional.empty(), Optional.empty());
   }
 
   static TileStore readWrite(
       ResourceStore rootStore,
       String providerId,
-      Map<String, Map<String, TileGenerationSchema>> tileSchemas) {
-
+      Map<String, Map<String, TileGenerationSchema>> tileSchemas,
+      Map<String, Set<String>> tileMatrixSets,
+      Optional<TileMatrixSetRepository> tileMatrixSetRepository,
+      Optional<TileStorePartitions> partitions) {
     Map<String, MbtilesTileset> tileSets = new ConcurrentHashMap<>();
-
-    try (Stream<Path> files =
-        rootStore.walk(
-            Path.of(""),
-            2,
-            (p, a) -> a.isValue() && p.getFileName().toString().endsWith(MBTILES_SUFFIX))) {
-      files
-          .filter(path -> path.getNameCount() == 2)
-          .forEach(
-              consumerMayThrow(
-                  path -> {
-                    String tileset = path.getName(0).toString();
-                    if (tileSchemas.containsKey(tileset)) {
-                      String tms = path.getName(1).toString().replace(MBTILES_SUFFIX, "");
-                      tileSets.put(
-                          key(tileset, tms),
-                          createTileSet(
-                              rootStore,
-                              providerId,
-                              tileset,
-                              tms,
-                              getVectorLayers(tileSchemas, tileset)));
-                    }
-                  }));
+    try {
+      for (String tileset : tileSchemas.keySet()) {
+        for (String tms : tileMatrixSets.get(tileset)) {
+          tileSets.put(
+              key(tileset, tms),
+              createTileSet(
+                  rootStore,
+                  providerId,
+                  tileset,
+                  tms,
+                  getVectorLayers(tileSchemas, tileset),
+                  partitions,
+                  tileSchemas.get(tileset).isEmpty()));
+        }
+      }
     } catch (IOException e) {
       LogContext.errorAsWarn(LOGGER, e, "Error when loading tile caches");
     } catch (RuntimeException e) {
@@ -95,23 +90,32 @@ public class TileStoreMbTiles implements TileStore {
       }
       throw e;
     }
-    return new TileStoreMbTiles(providerId, rootStore, tileSets, tileSchemas);
+    return new TileStoreMbTiles(
+        providerId, rootStore, tileSets, tileSchemas, partitions, tileMatrixSetRepository);
   }
 
   private final String providerId;
   private final ResourceStore rootStore;
   private final Map<String, Map<String, TileGenerationSchema>> tileSchemas;
   private final Map<String, MbtilesTileset> tileSets;
+  private final Optional<TileStorePartitions> partitions;
+  // the tile matrix set is only necessary for writable MBTiles files,
+  // i.e., caches that are used for seeding
+  private final Optional<TileMatrixSetRepository> tileMatrixSetRepository;
 
   private TileStoreMbTiles(
       String providerId,
       ResourceStore rootStore,
       Map<String, MbtilesTileset> tileSets,
-      Map<String, Map<String, TileGenerationSchema>> tileSchemas) {
+      Map<String, Map<String, TileGenerationSchema>> tileSchemas,
+      Optional<TileStorePartitions> partitions,
+      Optional<TileMatrixSetRepository> tileMatrixSetRepository) {
     this.providerId = providerId;
     this.rootStore = rootStore;
     this.tileSchemas = tileSchemas;
     this.tileSets = tileSets;
+    this.partitions = partitions;
+    this.tileMatrixSetRepository = tileMatrixSetRepository;
   }
 
   @Override
@@ -151,6 +155,9 @@ public class TileStoreMbTiles implements TileStore {
 
       return TileResult.found(content.get().readAllBytes());
     } catch (SQLException e) {
+      if (e instanceof SQLiteException && ((SQLiteException) e).getResultCode().code == 776) {
+        return TileResult.notFound();
+      }
       return TileResult.error(e.getMessage());
     }
   }
@@ -207,7 +214,9 @@ public class TileStoreMbTiles implements TileStore {
                 providerId,
                 tile.getTileset(),
                 tile.getTileMatrixSet().getId(),
-                getVectorLayers(tileSchemas, tile.getTileset())));
+                getVectorLayers(tileSchemas, tile.getTileset()),
+                partitions,
+                false));
       }
     }
     MbtilesTileset tileset = tileSets.get(key(tile));
@@ -310,7 +319,8 @@ public class TileStoreMbTiles implements TileStore {
           try {
             mbtiles.walk(
                 (level, row, col) -> {
-                  walker.walk(fromKey[0], fromKey[1], level, row, col);
+                  walker.walk(
+                      fromKey[0], fromKey[1], level, getXyzRow(fromKey[1], level, row), col);
                 });
           } catch (SQLException | IOException e) {
             // ignore
@@ -322,7 +332,9 @@ public class TileStoreMbTiles implements TileStore {
   public boolean has(String tileset, String tms, int level, int row, int col) throws IOException {
     try {
       return tileSets.containsKey(key(tileset, tms))
-          && tileSets.get(key(tileset, tms)).tileExists(level, row, col);
+          && tileSets
+              .get(key(tileset, tms))
+              .tileExists(level, row, getTmsRow(tms, level, row), col);
     } catch (SQLException | IOException e) {
       // ignore
     }
@@ -333,10 +345,33 @@ public class TileStoreMbTiles implements TileStore {
   public void delete(String tileset, String tms, int level, int row, int col) throws IOException {
     try {
       if (tileSets.containsKey(key(tileset, tms)))
-        tileSets.get(key(tileset, tms)).deleteTile(level, row, col, false);
+        tileSets
+            .get(key(tileset, tms))
+            .deleteTile(level, row, getTmsRow(tms, level, row), col, false);
     } catch (SQLException | IOException e) {
       // ignore
     }
+  }
+
+  @Override
+  public Storage getStorageType() {
+    return partitions.isEmpty() ? Storage.PER_TILESET : Storage.PER_JOB;
+  }
+
+  @Override
+  public Optional<String> getStorageInfo(
+      String tileset, String tileMatrixSet, TileMatrixSetLimits limits) {
+    if (tileSets.containsKey(key(tileset, tileMatrixSet))) {
+      return Optional.of(
+          tileSets
+              .get(key(tileset, tileMatrixSet))
+              .getStorageInfo(
+                  Integer.parseInt(limits.getTileMatrix()),
+                  limits.getMinTileRow(),
+                  limits.getMinTileCol()));
+    }
+
+    return Optional.empty();
   }
 
   @Override
@@ -344,12 +379,28 @@ public class TileStoreMbTiles implements TileStore {
     tileSets.forEach(
         (key, mbtiles) -> {
           String[] fromKey = fromKey(key);
-          try {
-            mbtiles.cleanup();
-          } catch (SQLException | IOException e) {
-            // ignore
+          if (tileSchemas.containsKey(fromKey[0]) && !tileSchemas.get(fromKey[0]).isEmpty()) {
+            try {
+              mbtiles.cleanup();
+            } catch (SQLException | IOException e) {
+              // ignore
+            }
           }
         });
+  }
+
+  private int getTmsRow(String tmsId, int level, int row) {
+    return tileMatrixSetRepository
+        .flatMap(r -> r.get(tmsId))
+        .map(tms -> tms.getTmsRow(level, row))
+        .orElse((int) Math.pow(2, level) - row - 1);
+  }
+
+  private int getXyzRow(String tmsId, int level, int tmsRow) {
+    return tileMatrixSetRepository
+        .flatMap(r -> r.get(tmsId))
+        .map(tms -> tms.getXyzRow(level, tmsRow))
+        .orElse((int) Math.pow(2, level) - tmsRow - 1);
   }
 
   private static List<VectorLayer> getVectorLayers(
@@ -381,9 +432,12 @@ public class TileStoreMbTiles implements TileStore {
       String name,
       String tileset,
       String tileMatrixSet,
-      List<VectorLayer> vectorLayers)
+      List<VectorLayer> vectorLayers,
+      Optional<TileStorePartitions> partitions,
+      boolean isXtratiler)
       throws IOException {
-    Path relPath = Path.of(tileset).resolve(tileMatrixSet + MBTILES_SUFFIX);
+    Path relPath =
+        Path.of(tileset).resolve(tileMatrixSet + (partitions.isEmpty() ? MBTILES_SUFFIX : ""));
     Optional<Path> filePath;
 
     try {
@@ -397,18 +451,23 @@ public class TileStoreMbTiles implements TileStore {
           "Could not create MBTiles file. Make sure you have a writable localizable source defined in cfg.yml.");
     }
 
-    if (rootStore.has(relPath)) {
-      return new MbtilesTileset(filePath.get());
-    }
-
     MbtilesMetadata md =
         ImmutableMbtilesMetadata.builder()
             .name(name)
-            .format(MbtilesMetadata.MbtilesFormat.pbf)
+            .format(isXtratiler ? TilesFormat.PNG : TilesFormat.MVT)
             .vectorLayers(vectorLayers)
             .build();
+
+    if (partitions.isPresent()) {
+      return new MbtilesTileset(filePath.get(), md, partitions, isXtratiler);
+    }
+
+    if (rootStore.has(relPath)) {
+      return new MbtilesTileset(filePath.get(), isXtratiler);
+    }
+
     try {
-      return new MbtilesTileset(filePath.get(), md);
+      return new MbtilesTileset(filePath.get(), md, Optional.empty(), isXtratiler);
     } catch (FileAlreadyExistsException e) {
       throw new IllegalStateException(
           "A MBTiles file already exists. It must have been created by a parallel thread, which should not occur. MBTiles file creation must be synchronized.");

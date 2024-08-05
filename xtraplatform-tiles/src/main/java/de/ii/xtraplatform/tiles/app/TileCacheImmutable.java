@@ -8,19 +8,21 @@
 package de.ii.xtraplatform.tiles.app;
 
 import com.google.common.collect.Range;
-import de.ii.xtraplatform.services.domain.TaskContext;
+import de.ii.xtraplatform.tiles.domain.Cache.Storage;
 import de.ii.xtraplatform.tiles.domain.ChainedTileProvider;
 import de.ii.xtraplatform.tiles.domain.TileCache;
 import de.ii.xtraplatform.tiles.domain.TileGenerationParameters;
+import de.ii.xtraplatform.tiles.domain.TileMatrixSetLimits;
 import de.ii.xtraplatform.tiles.domain.TileQuery;
 import de.ii.xtraplatform.tiles.domain.TileResult;
+import de.ii.xtraplatform.tiles.domain.TileSeedingJob;
+import de.ii.xtraplatform.tiles.domain.TileSeedingJobSet;
 import de.ii.xtraplatform.tiles.domain.TileStore;
 import de.ii.xtraplatform.tiles.domain.TileWalker;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import javax.ws.rs.core.MediaType;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,16 +34,19 @@ public class TileCacheImmutable implements ChainedTileProvider, TileCache {
   private final TileStore tileStore;
   private final ChainedTileProvider delegate;
   private final Map<String, Map<String, Range<Integer>>> tmsRanges;
+  private final Map<String, Map<String, Range<Integer>>> rasterTmsRanges;
 
   public TileCacheImmutable(
       TileWalker tileWalker,
       TileStore tileStore,
       ChainedTileProvider delegate,
-      Map<String, Map<String, Range<Integer>>> tmsRanges) {
+      Map<String, Map<String, Range<Integer>>> tmsRanges,
+      Map<String, Map<String, Range<Integer>>> rasterTmsRanges) {
     this.tileWalker = tileWalker;
     this.tileStore = tileStore;
     this.delegate = delegate;
     this.tmsRanges = tmsRanges;
+    this.rasterTmsRanges = rasterTmsRanges;
   }
 
   @Override
@@ -63,33 +68,50 @@ public class TileCacheImmutable implements ChainedTileProvider, TileCache {
   }
 
   @Override
-  public void seed(
-      Map<String, TileGenerationParameters> tilesets,
-      List<MediaType> mediaTypes,
-      boolean reseed,
-      String tileSourceLabel,
-      TaskContext taskContext)
-      throws IOException {
+  public Map<String, Map<String, Set<TileMatrixSetLimits>>> getCoverage(
+      Map<String, TileGenerationParameters> tilesets) throws IOException {
+    return getCoverage(tilesets, tileWalker, getTmsRanges());
+  }
 
+  @Override
+  public Map<String, Map<String, Set<TileMatrixSetLimits>>> getRasterCoverage(
+      Map<String, TileGenerationParameters> tilesets) throws IOException {
+    return getCoverage(tilesets, tileWalker, rasterTmsRanges);
+  }
+
+  @Override
+  public Storage getStorageType() {
+    return tileStore.getStorageType();
+  }
+
+  @Override
+  public Optional<String> getStorageInfo(
+      String tileset, String tileMatrixSet, TileMatrixSetLimits limits) {
+    return tileStore.getStorageInfo(tileset, tileMatrixSet, limits);
+  }
+
+  @Override
+  public boolean isSeeded() {
+    return true;
+  }
+
+  @Override
+  public void setupSeeding(TileSeedingJobSet jobSet, String tileSourceLabel) throws IOException {
     tileStore.staging().init();
+  }
 
-    doSeed(
-        tilesets,
-        mediaTypes,
-        reseed,
-        tileSourceLabel,
-        taskContext,
-        tileStore,
-        delegate,
-        tileWalker,
-        getTmsRanges());
+  @Override
+  public void cleanupSeeding(TileSeedingJobSet jobSet, String tileSourceLabel) throws IOException {
+    tileStore.staging().promote();
 
-    if (taskContext.getActivePartials() == 1) {
-      tileStore.staging().promote();
+    tileStore.staging().cleanup();
 
-      tileStore.staging().cleanup();
+    tileStore.tidyup();
+  }
 
-      tileStore.tidyup();
-    }
+  @Override
+  public void seed(TileSeedingJob job, String tileSourceLabel, Runnable updateProgress)
+      throws IOException {
+    doSeed(job, tileSourceLabel, tileStore, delegate, tileWalker, updateProgress);
   }
 }

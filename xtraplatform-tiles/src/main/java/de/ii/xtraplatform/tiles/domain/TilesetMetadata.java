@@ -22,7 +22,7 @@ import org.immutables.value.Value;
 @Value.Style(deepImmutablesDetection = true)
 public interface TilesetMetadata extends WithTmsLevels {
 
-  Set<String> getEncodings();
+  Set<TilesFormat> getEncodings();
 
   @Override
   Map<String, MinMax> getLevels();
@@ -33,6 +33,8 @@ public interface TilesetMetadata extends WithTmsLevels {
 
   List<FeatureSchema> getVectorSchemas();
 
+  Optional<String> getStyleId();
+
   @JsonIgnore
   @Value.Derived
   default Set<String> getTileMatrixSets() {
@@ -42,7 +44,16 @@ public interface TilesetMetadata extends WithTmsLevels {
   @JsonIgnore
   @Value.Derived
   default boolean isVector() {
-    return getEncodings().contains("MVT");
+    return getEncodings().contains(TilesFormat.MVT);
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  default boolean isRaster() {
+    return getEncodings().contains(TilesFormat.JPEG)
+        || getEncodings().contains(TilesFormat.PNG)
+        || getEncodings().contains(TilesFormat.WebP)
+        || getEncodings().contains(TilesFormat.TIFF);
   }
 
   @Value.Check

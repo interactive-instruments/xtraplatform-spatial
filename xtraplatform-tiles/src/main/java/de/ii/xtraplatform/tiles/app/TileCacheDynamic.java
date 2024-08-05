@@ -8,22 +8,22 @@
 package de.ii.xtraplatform.tiles.app;
 
 import com.google.common.collect.Range;
-import de.ii.xtraplatform.crs.domain.BoundingBox;
-import de.ii.xtraplatform.services.domain.TaskContext;
+import de.ii.xtraplatform.tiles.domain.Cache.Storage;
 import de.ii.xtraplatform.tiles.domain.ChainedTileProvider;
 import de.ii.xtraplatform.tiles.domain.TileCache;
 import de.ii.xtraplatform.tiles.domain.TileGenerationParameters;
 import de.ii.xtraplatform.tiles.domain.TileMatrixSetLimits;
 import de.ii.xtraplatform.tiles.domain.TileQuery;
 import de.ii.xtraplatform.tiles.domain.TileResult;
+import de.ii.xtraplatform.tiles.domain.TileSeedingJob;
+import de.ii.xtraplatform.tiles.domain.TileSeedingJobSet;
 import de.ii.xtraplatform.tiles.domain.TileStore;
 import de.ii.xtraplatform.tiles.domain.TileWalker;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import javax.ws.rs.core.MediaType;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +35,7 @@ public class TileCacheDynamic implements ChainedTileProvider, TileCache {
   private final TileStore tileStore;
   private final ChainedTileProvider delegate;
   private final Map<String, Map<String, Range<Integer>>> tmsRanges;
+  private final Map<String, Map<String, Range<Integer>>> rasterTmsRanges;
   private final boolean isSeeded;
 
   public TileCacheDynamic(
@@ -42,11 +43,13 @@ public class TileCacheDynamic implements ChainedTileProvider, TileCache {
       TileStore tileStore,
       ChainedTileProvider delegate,
       Map<String, Map<String, Range<Integer>>> tmsRanges,
+      Map<String, Map<String, Range<Integer>>> rasterTmsRanges,
       boolean seeded) {
     this.tileWalker = tileWalker;
     this.tileStore = tileStore;
     this.delegate = delegate;
     this.tmsRanges = tmsRanges;
+    this.rasterTmsRanges = rasterTmsRanges;
     this.isSeeded = seeded;
   }
 
@@ -81,85 +84,73 @@ public class TileCacheDynamic implements ChainedTileProvider, TileCache {
   }
 
   @Override
-  public void seed(
-      Map<String, TileGenerationParameters> tilesets,
-      List<MediaType> mediaTypes,
-      boolean reseed,
-      String tileSourceLabel,
-      TaskContext taskContext)
-      throws IOException {
-    if (!isSeeded) {
-      return;
-    }
-
-    doSeed(
-        tilesets,
-        mediaTypes,
-        reseed,
-        tileSourceLabel,
-        taskContext,
-        tileStore,
-        delegate,
-        tileWalker,
-        getTmsRanges());
+  public Map<String, Map<String, Set<TileMatrixSetLimits>>> getCoverage(
+      Map<String, TileGenerationParameters> tilesets) throws IOException {
+    return getCoverage(tilesets, tileWalker, getTmsRanges());
   }
 
   @Override
-  public void purge(
-      Map<String, TileGenerationParameters> tilesets,
-      List<MediaType> mediaTypes,
-      boolean reseed,
-      String tileSourceLabel,
-      TaskContext taskContext)
+  public Map<String, Map<String, Set<TileMatrixSetLimits>>> getRasterCoverage(
+      Map<String, TileGenerationParameters> tilesets) throws IOException {
+    return getCoverage(tilesets, tileWalker, rasterTmsRanges);
+  }
+
+  @Override
+  public Storage getStorageType() {
+    return tileStore.getStorageType();
+  }
+
+  @Override
+  public Optional<String> getStorageInfo(
+      String tileset, String tileMatrixSet, TileMatrixSetLimits limits) {
+    return tileStore.getStorageInfo(tileset, tileMatrixSet, limits);
+  }
+
+  @Override
+  public boolean isSeeded() {
+    return isSeeded;
+  }
+
+  @Override
+  public void setupSeeding(TileSeedingJobSet jobSet, String tileSourceLabel) throws IOException {}
+
+  @Override
+  public void cleanupSeeding(TileSeedingJobSet jobSet, String tileSourceLabel) throws IOException {
+    tileStore.tidyup();
+  }
+
+  @Override
+  public void seed(TileSeedingJob job, String tileSourceLabel, Runnable updateProgress)
       throws IOException {
     if (!isSeeded) {
       return;
     }
 
-    // NOTE: other partials may start writing before first partial is done with purging, as a
-    // workaround they will sleep for 1s
-    // TODO: to implement this properly, add preRun and postRun to tasks which are run before/after
-    // partials
-    if (reseed) {
-      if (taskContext.isFirstPartial()) {
-        LOGGER.debug("{}: purging cache for {}", taskContext.getTaskLabel(), tileSourceLabel);
+    doSeed(job, tileSourceLabel, tileStore, delegate, tileWalker, updateProgress);
+  }
 
-        Map<String, Optional<BoundingBox>> boundingBoxes = getBoundingBoxes(tilesets);
-
-        tileWalker.walkTilesetsAndLimits(
-            tilesets.keySet(),
-            getTmsRanges(),
-            boundingBoxes,
-            (tileset, tileMatrixSet, limits) -> {
-              try {
-                // Purge: delete all tiles in the tile matrix
-                BoundingBox bbox = tileMatrixSet.getBoundingBox();
-                TileMatrixSetLimits purgeLimits =
-                    tileMatrixSet.getLimits(Integer.parseInt(limits.getTileMatrix()), bbox);
-                tileStore.delete(tileset, tileMatrixSet, purgeLimits, false);
-              } catch (IOException e) {
-                // ignore
-                LOGGER.debug(
-                    "{}: Error while purging cached tiles for {}, tileset {}, tile matrix {}. Reason: {}",
-                    taskContext.getTaskLabel(),
-                    tileSourceLabel,
-                    tileset,
-                    limits.getTileMatrix(),
-                    e.getMessage());
-              }
-            });
-
-        tileStore.tidyup();
-
-        LOGGER.debug(
-            "{}: purged cache successfully for {}", taskContext.getTaskLabel(), tileSourceLabel);
-      } else {
-        try {
-          Thread.sleep(10000);
-        } catch (InterruptedException e) {
-          // ignore
-        }
-      }
+  @Override
+  public void purge(TileSeedingJob job, String tileSourceLabel) throws IOException {
+    if (!isSeeded) {
+      return;
     }
+
+    tileWalker.walkTileSeedingJobLimits(
+        job,
+        getTmsRanges(),
+        (tileset, tileMatrixSet, limits) -> {
+          try {
+            tileStore.delete(tileset, tileMatrixSet, limits, false);
+          } catch (IOException e) {
+            // ignore
+            LOGGER.debug(
+                "{}: error while purging cached tiles for {}, tileset {}, tile matrix {}. Reason: {}",
+                TileSeedingJobSet.LABEL,
+                tileSourceLabel,
+                tileset,
+                limits.getTileMatrix(),
+                e.getMessage());
+          }
+        });
   }
 }

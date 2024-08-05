@@ -28,13 +28,16 @@ import org.immutables.value.Value;
  * # Features
  *
  * @langEn In this tile provider, the tiles in Mapbox Vector Tiles format are derived from a
- *     [Feature Provider](../feature/README.md).
+ *     [Feature Provider](../feature/README.md). Additionally, raster tiles in PNG format can be
+ *     derived from the vector tiles using [xtratiler](https://github.com/ldproxy/xtratiler).
  *     <p>## Configuration
  *     <p>{@docTable:properties}
  *     <p>{@docVar:tilesetDefaults}
  *     <p>{@docTable:tilesetDefaults}
  *     <p>{@docVar:tileset}
  *     <p>{@docTable:tileset}
+ *     <p>{@docVar:rasterTileset}
+ *     <p>{@docTable:rasterTileset}
  *     <p>{@docVar:cache}
  *     <p>{@docTable:cache}
  *     <p>{@docVar:seeding}
@@ -42,13 +45,17 @@ import org.immutables.value.Value;
  *     <p>## Example
  *     <p>{@docVar:examples}
  * @langDe Bei diesem Tile-Provider werden die Kacheln im Format Mapbox Vector Tiles aus einem
- *     [Feature Provider](../feature/README.md) abgeleitet.
+ *     [Feature Provider](../feature/README.md) abgeleitet. Zusätzlich können Raster-Kacheln im
+ *     PNG-Format aus den Vektor-Kacheln mit [xtratiler](https://github.com/ldproxy/xtratiler)
+ *     abgeleitet werden.
  *     <p>## Konfiguration
  *     <p>{@docTable:properties}
  *     <p>{@docVar:tilesetDefaults}
  *     <p>{@docTable:tilesetDefaults}
  *     <p>{@docVar:tileset}
  *     <p>{@docTable:tileset}
+ *     <p>{@docVar:rasterTileset}
+ *     <p>{@docTable:rasterTileset}
  *     <p>{@docVar:cache}
  *     <p>{@docTable:cache}
  *     <p>{@docVar:seeding}
@@ -61,6 +68,8 @@ import org.immutables.value.Value;
  *     de.ii.xtraplatform.tiles.domain.ImmutableTilesetFeaturesDefaults}
  * @ref:tileset {@link de.ii.xtraplatform.tiles.domain.TilesetFeatures}
  * @ref:tilesetTable {@link de.ii.xtraplatform.tiles.domain.ImmutableTilesetFeatures}
+ * @ref:rasterTileset {@link de.ii.xtraplatform.tiles.domain.TilesetRaster}
+ * @ref:rasterTilesetTable {@link de.ii.xtraplatform.tiles.domain.ImmutableTilesetRaster}
  * @ref:seeding {@link de.ii.xtraplatform.tiles.domain.SeedingOptions}
  * @ref:seedingTable {@link de.ii.xtraplatform.tiles.domain.ImmutableSeedingOptions}
  * @ref:cache {@link de.ii.xtraplatform.tiles.domain.Cache}
@@ -124,6 +133,13 @@ import org.immutables.value.Value;
           },
           columnSet = ColumnSet.JSON_PROPERTIES),
       @DocTable(
+          name = "rasterTileset",
+          rows = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:rasterTilesetTable}"),
+            @DocStep(type = Step.JSON_PROPERTIES)
+          },
+          columnSet = ColumnSet.JSON_PROPERTIES),
+      @DocTable(
           name = "seeding",
           rows = {
             @DocStep(type = Step.TAG_REFS, params = "{@ref:seedingTable}"),
@@ -149,6 +165,12 @@ import org.immutables.value.Value;
           name = "tileset",
           value = {
             @DocStep(type = Step.TAG_REFS, params = "{@ref:tileset}"),
+            @DocStep(type = Step.TAG, params = "{@bodyBlock}")
+          }),
+      @DocVar(
+          name = "rasterTileset",
+          value = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:rasterTileset}"),
             @DocStep(type = Step.TAG, params = "{@bodyBlock}")
           }),
       @DocVar(
@@ -204,6 +226,14 @@ public interface TileProviderFeaturesData extends TileProviderData, WithCaches, 
    */
   @Override
   BuildableMap<TilesetFeatures, ImmutableTilesetFeatures.Builder> getTilesets();
+
+  /**
+   * @langEn Definition of raster tilesets, see [Raster Tileset](#raster-tileset).
+   * @langDe Definition von Raster-Tilesets, see [Raster-Tileset](#raster-tileset).
+   * @since v4.1
+   * @default {}
+   */
+  BuildableMap<TilesetRaster, ImmutableTilesetRaster.Builder> getRasterTilesets();
 
   /**
    * @langEn List of cache definitions, see [Cache](#cache).

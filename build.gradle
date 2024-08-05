@@ -54,3 +54,4 @@ subprojects {
 apply from: 'formatting.gradle'
 
 tasks.clean { dependsOn subprojects*.tasks*.findByPath('clean') }
+
