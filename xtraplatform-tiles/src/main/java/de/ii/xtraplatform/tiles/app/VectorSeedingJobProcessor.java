@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.tiles.app;
 
 import com.github.azahnen.dagger.annotations.AutoBind;
+import de.ii.xtraplatform.base.domain.AppContext;
 import de.ii.xtraplatform.base.domain.LogContext.MARKER;
 import de.ii.xtraplatform.base.domain.resiliency.Volatile2.State;
 import de.ii.xtraplatform.entities.domain.EntityRegistry;
@@ -32,10 +33,12 @@ public class VectorSeedingJobProcessor implements JobProcessor<TileSeedingJob, T
 
   private static final Logger LOGGER = LoggerFactory.getLogger(VectorSeedingJobProcessor.class);
 
+  private final int concurrency;
   private final EntityRegistry entityRegistry;
 
   @Inject
-  VectorSeedingJobProcessor(EntityRegistry entityRegistry) {
+  VectorSeedingJobProcessor(AppContext appContext, EntityRegistry entityRegistry) {
+    this.concurrency = appContext.getConfiguration().getBackgroundTasks().getMaxThreads();
     this.entityRegistry = entityRegistry;
   }
 
@@ -46,15 +49,7 @@ public class VectorSeedingJobProcessor implements JobProcessor<TileSeedingJob, T
 
   @Override
   public int getConcurrency(JobSet jobSet) {
-    TileSeedingJobSet seedingJobSet = getSetDetails(jobSet);
-
-    Optional<TileProvider> tileProvider = getTileProvider(seedingJobSet.getTileProvider());
-
-    if (tileProvider.isPresent() && tileProvider.get().seeding().isSupported()) {
-      return tileProvider.get().seeding().get().getOptions().getEffectiveMaxThreads();
-    }
-
-    return 1;
+    return concurrency;
   }
 
   @Override
