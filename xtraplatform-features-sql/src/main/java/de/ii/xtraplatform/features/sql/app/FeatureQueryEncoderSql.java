@@ -194,7 +194,7 @@ public class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch
                             typeQuery.getFilter(),
                             additionalQueryParameters,
                             query.getOffset() > 0,
-                            maxLimit > 0));
+                            maxLimit > 0 && !query.hitsOnly()));
 
     TriFunction<SqlRowMeta, Long, Long, Stream<String>> valueQueries =
         (metaResult, maxLimit, skipped) ->

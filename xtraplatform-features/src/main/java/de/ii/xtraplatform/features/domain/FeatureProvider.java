@@ -257,6 +257,11 @@ public interface FeatureProvider extends VolatileComposed {
     return false;
   }
 
+  // TODO: to QueryCapabilities
+  default boolean supportsHitsOnly() {
+    return false;
+  }
+
   default String getCapabilityKey(String subKey) {
     return String.format("%s/%s", getUniqueKey(), subKey);
   }
