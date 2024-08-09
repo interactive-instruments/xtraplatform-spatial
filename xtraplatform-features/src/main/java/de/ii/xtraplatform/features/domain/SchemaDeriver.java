@@ -209,6 +209,7 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
                                 ::get)
                         .replace("__apiUri__", "{apiUri}")
                         .replace("__featureId__", "{featureId}"));
+    Optional<String> codelistId = schema.getConstraints().flatMap(SchemaConstraints::getCodelist);
 
     switch (propertyType) {
       case VALUE:
@@ -223,7 +224,8 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
                             s.getUnit(),
                             role,
                             refCollectionId,
-                            refUriTemplate))
+                            refUriTemplate,
+                            codelistId))
                 .collect(Collectors.toSet());
         valueSchema = withOneOfWrapper(valueSchemas, Optional.of(propertyName), label, description);
         break;
@@ -235,7 +237,14 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
       case DATE:
         valueSchema =
             getSchemaForLiteralType(
-                propertyType, label, description, unit, role, refCollectionId, refUriTemplate);
+                propertyType,
+                label,
+                description,
+                unit,
+                role,
+                refCollectionId,
+                refUriTemplate,
+                codelistId);
         break;
       case VALUE_ARRAY:
         if (!schema.getConcat().isEmpty() && schema.getValueType().isEmpty()) {
@@ -250,7 +259,8 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
                               s.getUnit(),
                               role,
                               refCollectionId,
-                              refUriTemplate))
+                              refUriTemplate,
+                              codelistId))
                   .collect(Collectors.toSet());
           valueSchema = withOneOfWrapper(valueSchemas2, Optional.empty(), label, description);
         } else {
@@ -262,7 +272,8 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
                   unit,
                   role,
                   refCollectionId,
-                  refUriTemplate);
+                  refUriTemplate,
+                  codelistId);
         }
         break;
       case GEOMETRY:
@@ -291,7 +302,8 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
                               Optional.empty(),
                               Optional.of("reference"),
                               s.getRefType().or(() -> refCollectionId),
-                              refUriTemplate))
+                              refUriTemplate,
+                              Optional.empty()))
                   .collect(Collectors.toList());
           valueSchema = withOneOfWrapper(valueSchemas2, Optional.empty(), label, description);
         } else {
@@ -303,7 +315,8 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
                   unit,
                   Optional.of("reference"),
                   refCollectionId,
-                  refUriTemplate);
+                  refUriTemplate,
+                  Optional.empty());
         }
         break;
       case UNKNOWN:
@@ -364,7 +377,8 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
       Optional<String> unit,
       Optional<String> role,
       Optional<String> refCollectionId,
-      Optional<String> refUriTemplate);
+      Optional<String> refUriTemplate,
+      Optional<String> codelistId);
 
   protected abstract T getSchemaForGeometry(
       SimpleFeatureGeometry geometryType,
