@@ -28,6 +28,7 @@ import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.DecoderFactories;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
+import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
 import de.ii.xtraplatform.features.domain.MappingOperationResolver;
 import de.ii.xtraplatform.features.domain.ProviderData;
@@ -51,7 +52,10 @@ import de.ii.xtraplatform.features.sql.domain.ImmutableSqlPathDefaults;
 import de.ii.xtraplatform.features.sql.domain.SqlClientBasicFactory;
 import de.ii.xtraplatform.features.sql.domain.SqlDbmsAdapters;
 import de.ii.xtraplatform.streams.domain.Reactive;
+import de.ii.xtraplatform.strings.domain.StringTemplateFilters;
 import de.ii.xtraplatform.values.domain.ValueStore;
+import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -209,10 +213,11 @@ public class FeatureProviderSqlFactory
         data = featureProviderSqlAuto.generate(data, tables, ignore -> {});
       }
 
-      return normalizeConstants(
-          normalizeImplicitMappings(
-              normalizeFeatureRefs(
-                  resolveMappingOperationsIfNecessary(resolveSchemasIfNecessary(data)))));
+      return applyLabelTemplate(
+          normalizeConstants(
+              normalizeImplicitMappings(
+                  normalizeFeatureRefs(
+                      resolveMappingOperationsIfNecessary(resolveSchemasIfNecessary(data))))));
     } catch (Throwable e) {
       LogContext.error(
           LOGGER, e, "Feature provider with id '{}' could not be started", data.getId());
@@ -240,7 +245,7 @@ public class FeatureProviderSqlFactory
     }
 
     if (rounds > 0) {
-      return new Builder().from(data).types(types).build();
+      return new Builder().from(data).types(types).fragments(Map.of()).build();
     }
 
     return data;
@@ -274,6 +279,49 @@ public class FeatureProviderSqlFactory
         data,
         p -> p.getType() == Type.FEATURE_REF || p.getType() == Type.FEATURE_REF_ARRAY,
         new FeatureRefResolver(connectors));
+  }
+
+  private FeatureProviderSqlData applyLabelTemplate(FeatureProviderSqlData data) {
+    if (data.getLabelTemplate().isPresent()) {
+
+      Map<String, FeatureSchema> types =
+          data.getTypes().entrySet().stream()
+              .map(
+                  entry ->
+                      new SimpleImmutableEntry<>(
+                          entry.getKey(),
+                          entry
+                              .getValue()
+                              .accept(
+                                  (SchemaVisitorTopDown<FeatureSchema, FeatureSchema>)
+                                      (schema, parents, visitedProperties) -> {
+                                        ImmutableFeatureSchema.Builder builder =
+                                            new ImmutableFeatureSchema.Builder().from(schema);
+                                        visitedProperties.forEach(
+                                            prop -> builder.putPropertyMap(prop.getName(), prop));
+                                        Map<String, String> lookup = new HashMap<>();
+                                        lookup.put(
+                                            "value", schema.getLabel().orElse(schema.getName()));
+                                        schema
+                                            .getUnit()
+                                            .ifPresent(unit -> lookup.put("unit", unit));
+
+                                        builder.label(
+                                            StringTemplateFilters.applyTemplate(
+                                                data.getLabelTemplate().get(), lookup::get));
+
+                                        return builder.build();
+                                      })))
+              .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
+
+      return new ImmutableFeatureProviderSqlData.Builder()
+          .from(data)
+          .types(types)
+          .labelTemplate(Optional.empty())
+          .build();
+    }
+
+    return data;
   }
 
   private FeatureProviderSqlData applySchemaTransformation(
