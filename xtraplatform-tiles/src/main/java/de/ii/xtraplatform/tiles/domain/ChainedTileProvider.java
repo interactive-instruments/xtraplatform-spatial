@@ -18,6 +18,20 @@ import org.slf4j.LoggerFactory;
 public interface ChainedTileProvider {
   Logger LOGGER = LoggerFactory.getLogger(ChainedTileProvider.class);
 
+  static ChainedTileProvider noOp() {
+    return new ChainedTileProvider() {
+      @Override
+      public Map<String, Map<String, Range<Integer>>> getTmsRanges() {
+        return Map.of();
+      }
+
+      @Override
+      public TileResult getTile(TileQuery tile) {
+        return TileResult.notFound();
+      }
+    };
+  }
+
   Map<String, Map<String, Range<Integer>>> getTmsRanges();
 
   TileResult getTile(TileQuery tile) throws IOException;

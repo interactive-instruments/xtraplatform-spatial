@@ -176,7 +176,7 @@ import org.threeten.extra.Interval;
           key = ProviderData.PROVIDER_SUB_TYPE_KEY,
           value = FeatureProviderGraphQl.PROVIDER_TYPE)
     },
-    data = FeatureProviderGraphQl.class)
+    data = FeatureProviderGraphQlData.class)
 public class FeatureProviderGraphQl
     extends AbstractFeatureProvider<
         byte[], String, FeatureProviderConnector.QueryOptions, FeatureSchema>

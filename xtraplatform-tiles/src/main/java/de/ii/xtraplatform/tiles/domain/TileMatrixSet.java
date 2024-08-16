@@ -356,4 +356,15 @@ public interface TileMatrixSet extends TileMatrixSetBase {
   default int getTmsRow(int level, int row) {
     return getRows(level) - 1 - row;
   }
+
+  /**
+   * convert a row in the TMS scheme to a row in the XYZ scheme
+   *
+   * @param level level of the row
+   * @param tmsRow row number in the TMS scheme
+   * @return row number in the XYZ scheme
+   */
+  default int getXyzRow(int level, int tmsRow) {
+    return getRows(level) - 1 - tmsRow;
+  }
 }

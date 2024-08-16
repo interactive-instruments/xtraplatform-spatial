@@ -7,10 +7,12 @@
  */
 package de.ii.xtraplatform.tiles.domain;
 
+import de.ii.xtraplatform.tiles.domain.Cache.Storage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.Optional;
 
 public interface TileStore extends TileStoreReadOnly {
 
@@ -23,6 +25,10 @@ public interface TileStore extends TileStoreReadOnly {
       throws IOException;
 
   void delete(String tileset, String tms, int level, int row, int col) throws IOException;
+
+  Storage getStorageType();
+
+  Optional<String> getStorageInfo(String tileset, String tileMatrixSet, TileMatrixSetLimits limits);
 
   default boolean isDirty(TileQuery tile) {
     return false;
