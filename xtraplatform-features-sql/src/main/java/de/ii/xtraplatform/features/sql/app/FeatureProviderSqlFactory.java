@@ -282,7 +282,7 @@ public class FeatureProviderSqlFactory
   }
 
   private FeatureProviderSqlData applyLabelTemplate(FeatureProviderSqlData data) {
-    if (data.getLabelTemplate().isPresent()) {
+    if (data.getLabelTemplate().isPresent() && !"{{value}}".equals(data.getLabelTemplate().get())) {
 
       Map<String, FeatureSchema> types =
           data.getTypes().entrySet().stream()
