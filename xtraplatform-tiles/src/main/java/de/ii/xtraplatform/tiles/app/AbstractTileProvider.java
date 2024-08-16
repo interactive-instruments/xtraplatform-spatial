@@ -15,6 +15,7 @@ import de.ii.xtraplatform.tiles.domain.TileAccess;
 import de.ii.xtraplatform.tiles.domain.TileProvider;
 import de.ii.xtraplatform.tiles.domain.TileProviderData;
 import de.ii.xtraplatform.tiles.domain.TilesetMetadata;
+import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +64,22 @@ public abstract class AbstractTileProvider<T extends TileProviderData>
   }
 
   @Override
-  public Optional<TilesetMetadata> getMetadata(String tileset) {
+  public Optional<TilesetMetadata> getMetadata(String tilesetId) {
     return Optional.empty();
+  }
+
+  @Override
+  public Optional<TilesetMetadata> getMetadata(String vectorTilesetId, String mapStyleId) {
+    return Optional.empty();
+  }
+
+  @Override
+  public List<String> getMapStyles(String vectorTilesetId) {
+    return List.of();
+  }
+
+  @Override
+  public String getMapStyleTileset(String vectorTilesetId, String mapStyleId) {
+    throw new IllegalStateException("Styles are not supported by this tile provider.");
   }
 }

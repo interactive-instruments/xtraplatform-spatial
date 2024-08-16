@@ -38,7 +38,7 @@ public interface TilesetHttp extends TilesetCommon, WithEncodings, Buildable<Til
 
   @DocIgnore
   @Override
-  Map<String, String> getEncodings();
+  Map<TilesFormat, String> getEncodings();
 
   /**
    * @langEn URL template for accessing tiles. Parameters to use are `{{tileMatrix}}`,

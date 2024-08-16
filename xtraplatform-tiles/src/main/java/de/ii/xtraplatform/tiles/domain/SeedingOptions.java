@@ -25,6 +25,28 @@ import org.immutables.value.Value;
 @JsonDeserialize(builder = ImmutableSeedingOptions.Builder.class)
 public interface SeedingOptions {
 
+  enum JobSize {
+    S,
+    M,
+    L,
+    XL;
+
+    public int getNumberOfTiles() {
+      switch (this) {
+        case S:
+          return 256;
+        case M:
+          return 1024;
+        case L:
+          return 16384;
+        case XL:
+          return 65536;
+        default:
+          return 1024;
+      }
+    }
+  }
+
   /**
    * @langEn If disabled the seeding will not be run when the API starts.
    * @langDe Steuert, ob das Seeding beim Start einer API ausgeführt wird.
@@ -99,5 +121,22 @@ public interface SeedingOptions {
   @JsonIgnore
   default int getEffectiveMaxThreads() {
     return Objects.isNull(getMaxThreads()) || getMaxThreads() <= 1 ? 1 : getMaxThreads();
+  }
+
+  /**
+   * @langEn The maximum number of tiles in a seeding job (S=256, M=1024, L=16384, XL=65536). The
+   *     tile seeding is split into multiple jobs to distribute the work across threads and nodes.
+   * @langDe Die maximale Anzahl an Tiles in einem Seeding-Job (S=256, M=1024, L=16384, XL=65536).
+   *     Das Seeding wird in mehrere Jobs aufgeteilt, um die Arbeit auf Threads und Knoten zu
+   *     verteilen.
+   * @default M
+   */
+  @Nullable
+  JobSize getJobSize();
+
+  @Value.Lazy
+  @JsonIgnore
+  default int getEffectiveJobSize() {
+    return Objects.requireNonNullElse(getJobSize(), JobSize.M).getNumberOfTiles();
   }
 }

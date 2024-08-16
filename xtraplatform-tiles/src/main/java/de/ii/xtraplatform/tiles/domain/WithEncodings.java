@@ -18,5 +18,5 @@ public interface WithEncodings {
    * @default {}
    * @since v3.4
    */
-  Map<String, String> getEncodings();
+  Map<TilesFormat, String> getEncodings();
 }

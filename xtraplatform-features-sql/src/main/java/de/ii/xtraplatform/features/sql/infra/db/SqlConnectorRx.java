@@ -14,9 +14,11 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import com.zaxxer.hikari.pool.HikariPool;
 import dagger.assisted.Assisted;
 import dagger.assisted.AssistedInject;
 import de.ii.xtraplatform.base.domain.AppContext;
+import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.base.domain.LogContext.MARKER;
 import de.ii.xtraplatform.base.domain.resiliency.AbstractVolatilePolling;
 import de.ii.xtraplatform.base.domain.resiliency.Volatile2.Polling;
@@ -35,6 +37,7 @@ import de.ii.xtraplatform.features.sql.domain.SqlQueryBatch;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.SqlRow;
 import de.ii.xtraplatform.streams.domain.Reactive.Source;
+import io.reactivex.rxjava3.plugins.RxJavaPlugins;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -119,14 +122,12 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
     this.refCounter = new AtomicInteger(0);
     this.asyncStartup = appContext.getConfiguration().getModules().isStartupAsync();
 
-    /*RxJavaPlugins.setErrorHandler(
-    e -> {
-      if (e instanceof UndeliverableException) {
-        LogContext.error(LOGGER, e.getCause(), "RXUD");
-      } else {
-        LogContext.error(LOGGER, e, "RX");
-      }
-    });*/
+    RxJavaPlugins.setErrorHandler(
+        e -> {
+          if (LOGGER.isTraceEnabled()) {
+            LogContext.errorAsDebug(LOGGER, e.getCause(), "RxJava undeliverable exception");
+          }
+        });
   }
 
   @Override
@@ -323,7 +324,7 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
 
     config.setUsername(connectionInfo.getUser().orElse(""));
     config.setPassword(getPassword(connectionInfo));
-    config.setMaximumPoolSize(maxConnections);
+    config.setMaximumPoolSize(asyncStartup ? maxConnections + 1 : maxConnections);
     config.setMinimumIdle(asyncStartup ? 0 : minConnections);
     config.setInitializationFailTimeout(asyncStartup ? -1 : getInitFailTimeout(connectionInfo));
     config.setIdleTimeout(parseMs(connectionInfo.getPool().getIdleTimeout()));
@@ -337,10 +338,6 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
 
     config.setMetricRegistry(metricRegistry);
     // config.setHealthCheckRegistry(healthCheckRegistry);
-
-    if (asyncStartup) {
-      config.setConnectionTimeout(5000);
-    }
 
     return config;
   }
@@ -457,6 +454,7 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
 
     try {
       if (Objects.nonNull(pollConnection) && !pollConnection.isValid(1)) {
+        // LOGGER.debug("INVALID POLL CONNECTION");
         try {
           pollConnection.close();
         } catch (Throwable e) {
@@ -465,7 +463,10 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
         this.pollConnection = null;
       }
       if (Objects.isNull(pollConnection)) {
-        this.pollConnection = dataSource.getConnection();
+        // LOGGER.debug("GET POLL CONNECTION");
+        // this.pollConnection = dataSource.getConnection();
+        this.pollConnection = ((HikariPool) dataSource.getHikariPoolMXBean()).getConnection(5000);
+        // LOGGER.debug("GOT POLL CONNECTION");
         // boolean valid = pollConnection.isValid(1);
         // sqlClient.getSqlDialect().getDbInfo(connection);
       }
