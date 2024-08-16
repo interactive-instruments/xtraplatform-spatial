@@ -102,14 +102,14 @@ public interface FeatureProviderDataV2 extends ProviderData, AutoEntity, Extenda
    *     name, if no label is set. The template is a string template and can contain the variables
    *     `{{value}}` for the schema label and `{{unit}}` for the unit declared in the schema. For
    *     example, to append the unit of measure in square brackets to the property label, one can
-   *     use `{{value}}{{unit | prepend:' [' | append:']'}}`. This option is only supported in the
+   *     use `{{value}}{{unit \| prepend:' [' \| append:']'}}`. This option is only supported in the
    *     SQL feature provider.
    * @langDe Ein Template für Labels im Schema. Standardmäßig wird das im Schema festgelegte Label
    *     verwendet - oder der Name, wenn kein Label festgelegt ist. Die Vorlage ist eine
-   *     String-Vorlage und kann die Variablen `{{Wert}}` für die Schemabezeichnung und `{Einheit}}`
+   *     String-Vorlage und kann die Variablen `{{value}}` für die Schemabezeichnung und `{unit}}`
    *     für die im Schema deklarierte Maßeinheit enthalten. Um zum Beispiel die Einheit in eckigen
-   *     Klammern an das Label einer Property anzuhängen, kann man `{{value}}{{unit | prepend:' [' |
-   *     append:']'}}` verwenden. Diese Option wird nur im SQL Feature-Provider unterstützt.
+   *     Klammern an das Label einer Property anzuhängen, kann man `{{value}}{{unit \| prepend:' ['
+   *     \| append:']'}}` verwenden. Diese Option wird nur im SQL Feature-Provider unterstützt.
    * @default `{{value}}`
    */
   Optional<String> getLabelTemplate();
