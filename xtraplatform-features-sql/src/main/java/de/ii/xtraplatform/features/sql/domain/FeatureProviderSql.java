@@ -93,6 +93,7 @@ import de.ii.xtraplatform.features.sql.app.QuerySchemaDeriver;
 import de.ii.xtraplatform.features.sql.app.SqlInsertGenerator2;
 import de.ii.xtraplatform.features.sql.app.SqlQueryTemplates;
 import de.ii.xtraplatform.features.sql.app.SqlQueryTemplatesDeriver;
+import de.ii.xtraplatform.features.sql.domain.FeatureProviderSqlData.QueryGeneratorSettings;
 import de.ii.xtraplatform.features.sql.infra.db.SourceSchemaValidatorSql;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.streams.domain.Reactive.RunnableStream;
@@ -1188,6 +1189,13 @@ public class FeatureProviderSql
   @Override
   public boolean supportsHighLoad() {
     return true;
+  }
+
+  @Override
+  public boolean supportsHitsOnly() {
+    return Optional.ofNullable(getData().getQueryGeneration())
+        .map(QueryGeneratorSettings::getComputeNumberMatched)
+        .orElse(true);
   }
 
   @Override
