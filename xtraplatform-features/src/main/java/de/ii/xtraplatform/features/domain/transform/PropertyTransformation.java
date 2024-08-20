@@ -242,13 +242,19 @@ public interface PropertyTransformation
   /**
    * @langEn Maps the value according to the given [codelist](../../auxiliaries/codelists.md). If
    *     the value is not found in the codelist or the codelist does not exist, the original value
-   *     is passed through. Falls der Wert nicht in der Codelist enthalten ist oder die Codelist
-   *     nicht gefunden wird, bleibt der Wert unverändert. Not applicable for properties containing
-   *     objects.
+   *     is passed through. Not applicable for properties containing objects. It is no longer
+   *     recommended to specify `codelist` transformations in the feature provider or in the
+   *     service. Instead, codelists associated with a property should be specified through the
+   *     `constraints` of the property. Only the use in `constraints` enables the control of the
+   *     representation of the values via the `profile` query parameter.
    * @langDe Bildet den Wert anhand der genannten [Codelist](../../auxiliaries/codelists.md) ab.
    *     Falls der Wert nicht in der Codelist enthalten ist oder die Codelist nicht gefunden wird,
    *     bleibt der Wert unverändert. Diese Transformation ist nicht bei objektwertigen
-   *     Eigenschaften anwendbar.
+   *     Eigenschaften anwendbar. Es wird nicht mehr empfohlen, `codelist`-Transformationen im
+   *     Feature-Provider oder im Service anzugeben. Stattdessen sollten Codelisten, die mit einer
+   *     Eigenschaft verbunden sind, durch die `constraints` der Eigenschaft angegeben werden. Nur
+   *     die Verwendung in `constraints` ermöglicht die Steuerung der Repräsentation der Werte über
+   *     den `profile`-Query-Parameter.
    */
   Optional<String> getCodelist();
 
