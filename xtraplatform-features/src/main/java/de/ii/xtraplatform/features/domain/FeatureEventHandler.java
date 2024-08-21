@@ -258,7 +258,7 @@ public interface FeatureEventHandler<
           || (schema.isSpatial() && (Objects.isNull(typeQuery()) || !typeQuery().skipGeometry()))
           // TODO: enable if projected output needs to be schema valid
           // || isRequired(schema, parentSchemas)
-          || (!schema.isId() && !schema.isSpatial() && propertyIsInFields(path));
+          || (!schema.isId() && propertyIsInFields(path));
     }
 
     private TypeQuery typeQuery() {

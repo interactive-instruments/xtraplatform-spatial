@@ -37,6 +37,7 @@ public interface TypeQuery {
     return ImmutableList.of("*");
   }
 
+  @Deprecated(since = "4.2.0", forRemoval = true)
   @Value.Default
   default boolean skipGeometry() {
     return false;
