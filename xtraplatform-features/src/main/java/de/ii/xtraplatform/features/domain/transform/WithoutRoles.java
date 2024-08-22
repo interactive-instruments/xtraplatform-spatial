@@ -10,40 +10,24 @@ package de.ii.xtraplatform.features.domain.transform;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
-import de.ii.xtraplatform.features.domain.SchemaBase.Scope;
+import de.ii.xtraplatform.features.domain.SchemaBase.Role;
 import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
 import java.util.AbstractMap.SimpleImmutableEntry;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Set;
+import java.util.Optional;
 
-public class WithScope implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
+public class WithoutRoles implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
 
-  private final Set<Scope> scopes;
-
-  public WithScope(Scope scope) {
-    this.scopes = EnumSet.of(scope);
-  }
-
-  public WithScope(Set<Scope> scopes) {
-    this.scopes = scopes;
-  }
+  public WithoutRoles() {}
 
   @Override
   public FeatureSchema visit(
       FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
 
-    // always include ID property
-    if (!schema.hasOneOf(scopes) && !schema.isId() && !schema.isEmbeddedId()) {
-      return null;
-    }
-
     Map<String, FeatureSchema> visitedPropertiesMap =
         visitedProperties.stream()
-            .filter(Objects::nonNull)
             .map(
                 featureSchema ->
                     new SimpleImmutableEntry<>(featureSchema.getFullPathAsString(), featureSchema))
@@ -51,8 +35,14 @@ public class WithScope implements SchemaVisitorTopDown<FeatureSchema, FeatureSch
                 ImmutableMap.toImmutableMap(
                     Entry::getKey, Entry::getValue, (first, second) -> second));
 
+    Optional<Role> embeddedRole =
+        schema.getRole().filter(r -> r != Role.EMBEDDED_FEATURE).or(schema::getEmbeddedRole);
+    Optional<Role> role = schema.getRole().filter(r -> r == Role.EMBEDDED_FEATURE);
+
     return new ImmutableFeatureSchema.Builder()
         .from(schema)
+        .role(role)
+        .embeddedRole(embeddedRole)
         .propertyMap(visitedPropertiesMap)
         .build();
   }

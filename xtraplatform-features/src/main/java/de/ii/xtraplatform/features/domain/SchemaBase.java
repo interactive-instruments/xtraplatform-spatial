@@ -31,7 +31,8 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     PRIMARY_INSTANT,
     PRIMARY_INTERVAL_START,
     PRIMARY_INTERVAL_END,
-    SECONDARY_GEOMETRY
+    SECONDARY_GEOMETRY,
+    EMBEDDED_FEATURE
   }
 
   enum Type {
@@ -49,6 +50,11 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     FEATURE_REF,
     FEATURE_REF_ARRAY,
     UNKNOWN
+  }
+
+  enum Embed {
+    NEVER,
+    ALWAYS
   }
 
   /**
@@ -133,6 +139,8 @@ public interface SchemaBase<T extends SchemaBase<T>> {
 
   Optional<Role> getRole();
 
+  Optional<Role> getEmbeddedRole();
+
   Optional<Type> getValueType();
 
   Optional<SimpleFeatureGeometry> getGeometryType();
@@ -144,6 +152,8 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   Optional<String> getRefUriTemplate();
 
   Optional<String> getRefKeyTemplate();
+
+  Optional<Embed> getEmbed();
 
   List<String> getPath();
 
@@ -309,6 +319,16 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @JsonIgnore
   @Value.Derived
   @Value.Auxiliary
+  default Optional<T> getEmbeddedPrimaryGeometry() {
+    return getAllNestedProperties().stream()
+        .filter(SchemaBase::isEmbeddedPrimaryGeometry)
+        .findFirst()
+        .or(() -> getProperties().stream().filter(SchemaBase::isSpatial).findFirst());
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
   default Optional<T> getPrimaryInstant() {
     return getAllNestedProperties().stream()
         .filter(SchemaBase::isPrimaryInstant)
@@ -377,6 +397,23 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     return getAllObjects().stream()
         .filter(schema -> schema.getProperties().stream().anyMatch(SchemaBase::isSecondaryGeometry))
         .findFirst();
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default Optional<T> getEmbeddedSecondaryGeometry() {
+    return getAllNestedProperties().stream()
+        .filter(SchemaBase::isEmbeddedSecondaryGeometry)
+        .findFirst();
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean hasEmbeddedFeature() {
+    return getAllNestedProperties().stream()
+        .anyMatch(s -> s.getRole().filter(r -> r == Role.EMBEDDED_FEATURE).isPresent());
   }
 
   @JsonIgnore
@@ -466,6 +503,13 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @JsonIgnore
   @Value.Derived
   @Value.Auxiliary
+  default boolean isEmbed() {
+    return isFeatureRef() && getEmbed().map(e -> e == Embed.ALWAYS).orElse(false);
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
   default boolean isId() {
     return getRole().filter(role -> role == Role.ID).isPresent();
   }
@@ -473,8 +517,22 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @JsonIgnore
   @Value.Derived
   @Value.Auxiliary
+  default boolean isEmbeddedId() {
+    return getEmbeddedRole().filter(role -> role == Role.ID).isPresent();
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
   default boolean isPrimaryGeometry() {
     return getRole().filter(role -> role == Role.PRIMARY_GEOMETRY).isPresent();
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean isEmbeddedPrimaryGeometry() {
+    return getEmbeddedRole().filter(role -> role == Role.PRIMARY_GEOMETRY).isPresent();
   }
 
   @JsonIgnore
@@ -503,6 +561,13 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Auxiliary
   default boolean isSecondaryGeometry() {
     return getRole().filter(role -> role == Role.SECONDARY_GEOMETRY).isPresent();
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean isEmbeddedSecondaryGeometry() {
+    return getEmbeddedRole().filter(role -> role == Role.SECONDARY_GEOMETRY).isPresent();
   }
 
   @JsonIgnore

@@ -279,6 +279,19 @@ public interface FeatureSchema
   @Override
   Optional<String> getRefKeyTemplate();
 
+  /**
+   * FIXME: describe constraints
+   *
+   * @langEn For a property of type `FEATURE_REF` or `FEATURE_REF_ARRAY` where the target is always
+   *     a feature of another type in the same provider, the value will be embedded, not referenced,
+   *     if the value is `ALWAYS`.
+   * @langDe Für eine Feature-Eigenschaft des Typs `FEATURE_REF` oder `FEATURE_REF_ARRAY`, bei der
+   *     das Ziel immer ein Feature einer anderen Objektart im selben Provider ist, wird der Wert
+   *     eingebettet, nicht referenziert, wenn der Wert `ALWAYS` ist.
+   */
+  @Override
+  Optional<Embed> getEmbed();
+
   @Override
   @JsonIgnore
   @Value.Derived
