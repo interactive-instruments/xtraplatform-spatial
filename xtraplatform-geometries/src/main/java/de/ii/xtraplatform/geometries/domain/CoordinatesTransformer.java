@@ -70,7 +70,7 @@ public abstract class CoordinatesTransformer extends Writer {
       return getMaxAllowableOffset() * requestFactor;
     }
 
-    return getMaxAllowableOffset();
+    return getMaxAllowableOffset() * requestFactor / localFactor;
   }
 
   @Value.Derived

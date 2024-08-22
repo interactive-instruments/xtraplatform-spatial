@@ -64,8 +64,8 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
     SingleCRS horizontalSourceCrs = getHorizontalCrs(sourceCrs);
     SingleCRS horizontalTargetCrs = getHorizontalCrs(targetCrs);
 
-    this.sourceUnitEquivalentInMeters = getUnitEquivalentInMeters(horizontalSourceCrs);
-    this.targetUnitEquivalentInMeters = getUnitEquivalentInMeters(horizontalTargetCrs);
+    this.sourceUnitEquivalentInMeters = getUnitEquivalentInMeters(horizontalSourceCrs, true);
+    this.targetUnitEquivalentInMeters = getUnitEquivalentInMeters(horizontalTargetCrs, false);
 
     this.sourceDimension = sourceDimension;
     this.targetDimension = targetDimension;
@@ -144,8 +144,9 @@ public class CrsTransformerProj extends BoundingBoxTransformer implements CrsTra
     return coordinateOperation.getMathTransform();
   }
 
-  private double getUnitEquivalentInMeters(SingleCRS horizontalCrs) {
-    return isSourceMetric || !(horizontalCrs.getDatum() instanceof GeodeticDatum)
+  private double getUnitEquivalentInMeters(SingleCRS horizontalCrs, boolean isSource) {
+    return (isSource ? isSourceMetric : isTargetMetric)
+            || !(horizontalCrs.getDatum() instanceof GeodeticDatum)
         ? 1
         : (Math.PI / 180.00)
             * ((GeodeticDatum) horizontalCrs.getDatum()).getEllipsoid().getSemiMajorAxis();
