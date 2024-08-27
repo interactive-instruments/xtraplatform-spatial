@@ -68,10 +68,15 @@ import java.util.function.Supplier;
  *     <p>{@docVar:featureRefs}
  * @langDe ### Objektreferenzen
  *     <p>{@docVar:featureRefs}
+ * @langEn ### Embedding Feature References
+ *     <p>{@docVar:embedFeatureRefs}
+ * @langDe ### Einbetten von Objektreferenzen
+ *     <p>{@docVar:embedFeatureRefs}
  * @ref:cfgProperties {@link de.ii.xtraplatform.features.domain.ImmutableFeatureProviderCommonData}
  * @ref:cfgProperties:types {@link de.ii.xtraplatform.features.domain.ImmutableFeatureSchema}
  * @ref:mappingOps {@link de.ii.xtraplatform.features.domain.MappingOperationResolver}
  * @ref:featureRefs {@link de.ii.xtraplatform.features.domain.transform.FeatureRefResolver}
+ * @ref:embedFeatureRefs {@link de.ii.xtraplatform.features.domain.transform.FeatureRefEmbedder}
  */
 @DocFile(
     path = "providers/feature",
@@ -133,6 +138,12 @@ import java.util.function.Supplier;
           name = "featureRefs",
           value = {
             @DocStep(type = Step.TAG_REFS, params = "{@ref:featureRefs}"),
+            @DocStep(type = Step.TAG, params = "{@bodyBlock}")
+          }),
+      @DocVar(
+          name = "embedFeatureRefs",
+          value = {
+            @DocStep(type = Step.TAG_REFS, params = "{@ref:embedFeatureRefs}"),
             @DocStep(type = Step.TAG, params = "{@bodyBlock}")
           }),
     })

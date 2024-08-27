@@ -20,7 +20,54 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** FIXME add documentation, or include in FeatureRefResolver */
+/**
+ * @langEn Feature references can also be embedded inline instead of creating a reference/link. To
+ *     always embed the referenced features, the `embed` option in the feature schema of the feature
+ *     reference is set to `ALWAYS`.
+ *     <p>#### Configuration
+ *     <p>The `sourcePath` of the feature reference property must end at the referenced feature;
+ *     that is, at least the `id` property of the reference must be declared explicitly.
+ *     <p>In the following example, the `abs` column is the foreign key of the referenced feature in
+ *     the `abschnitteaeste` feature type:
+ *     <p><code>
+ * ```yaml
+ * abs:
+ *   sourcePath: '[abs=abs]abschnitteaeste_line'
+ *   type: FEATURE_REF
+ *   embed: ALWAYS
+ *   label: Abschnitt/Ast
+ *   description: 16-stellige Kennung des Abschnittes oder Astes
+ *   refType: abschnitteaeste
+ *   properties:
+ *     id:
+ *       type: STRING
+ *       sourcePath: abs
+ * ```
+ * </code>
+ * @langDe Feature-Referenzen können auch inline eingebettet werden, anstatt einen Verweis/Link zu
+ *     erstellen. Um die referenzierten Features immer einzubetten, wird die Option `embed` im
+ *     Feature-Schema der Feature-Referenz auf `ALWAYS` gesetzt.
+ *     <p>#### Konfiguration
+ *     <p>Der `sourcePath` der Eigenschaft muss beim referenzierten Feature enden, d.h. zumindest
+ *     die Eigenschaft `id` der Referenz muss explizit angegeben werden.
+ *     <p>Im folgenden Beispiel ist die Spalte `abs` der Fremdschlüssel des referenzierten Objekts
+ *     in der Objektart `abschnitteaeste`:
+ *     <p><code>
+ * ```yaml
+ * abs:
+ *   sourcePath: '[abs=abs]abschnitteaeste_line'
+ *   type: FEATURE_REF
+ *   embed: ALWAYS
+ *   label: Abschnitt/Ast
+ *   description: 16-stellige Kennung des Abschnittes oder Astes
+ *   refType: abschnitteaeste
+ *   properties:
+ *     id:
+ *       type: STRING
+ *       sourcePath: abs
+ * ```
+ * </code>
+ */
 public class FeatureRefEmbedder implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureRefEmbedder.class);

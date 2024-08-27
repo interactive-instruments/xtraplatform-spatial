@@ -280,14 +280,15 @@ public interface FeatureSchema
   Optional<String> getRefKeyTemplate();
 
   /**
-   * FIXME: describe constraints
-   *
    * @langEn For a property of type `FEATURE_REF` or `FEATURE_REF_ARRAY` where the target is always
    *     a feature of another type in the same provider, the value will be embedded, not referenced,
-   *     if the value is `ALWAYS`.
+   *     if the value is `ALWAYS`. The `sourcePath` of the property must end at the referenced
+   *     feature; that is, at least the `id` property of the reference must be declared explicitly.
    * @langDe Für eine Feature-Eigenschaft des Typs `FEATURE_REF` oder `FEATURE_REF_ARRAY`, bei der
    *     das Ziel immer ein Feature einer anderen Objektart im selben Provider ist, wird der Wert
-   *     eingebettet, nicht referenziert, wenn der Wert `ALWAYS` ist.
+   *     eingebettet, nicht referenziert, wenn der Wert `ALWAYS` ist. Der `sourcePath` der
+   *     Eigenschaft muss beim referenzierten Feature enden, d.h. zumindest die Eigenschaft `id` der
+   *     Referenz muss explizit angegeben werden.
    */
   @Override
   Optional<Embed> getEmbed();
