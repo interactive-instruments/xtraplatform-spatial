@@ -435,7 +435,9 @@ public class TileProviderFeatures extends AbstractTileProvider<TileProviderFeatu
                 new SimpleImmutableEntry<>(
                     entry.getKey(),
                     Range.closed(
-                        entry.getValue().lowerEndpoint() + delta,
+                        entry.getValue().lowerEndpoint() == 0
+                            ? entry.getValue().lowerEndpoint()
+                            : entry.getValue().lowerEndpoint() + delta,
                         entry.getValue().upperEndpoint() + delta)))
         .collect(MapStreams.toMap());
   }

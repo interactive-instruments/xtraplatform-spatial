@@ -162,7 +162,7 @@ class TileStorePlain implements TileStore {
               path(
                   tileset,
                   tileMatrixSet,
-                  Integer.parseInt(limits.getTileMatrix()),
+                  Math.max(0, Integer.parseInt(limits.getTileMatrix())),
                   limits.getMinTileRow(),
                   limits.getMinTileCol()),
               true);

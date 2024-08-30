@@ -366,7 +366,7 @@ public class TileStoreMbTiles implements TileStore {
           tileSets
               .get(key(tileset, tileMatrixSet))
               .getStorageInfo(
-                  Integer.parseInt(limits.getTileMatrix()),
+                  Math.max(0, Integer.parseInt(limits.getTileMatrix())),
                   limits.getMinTileRow(),
                   limits.getMinTileCol()));
     }

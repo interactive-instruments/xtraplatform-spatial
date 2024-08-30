@@ -21,6 +21,7 @@ import de.ii.xtraplatform.tiles.domain.TileSeedingJob;
 import de.ii.xtraplatform.tiles.domain.TileSeedingJobSet;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -92,11 +93,10 @@ public class VectorSeedingJobProcessor implements JobProcessor<TileSeedingJob, T
         return JobResult.onHold(); // early return
       }
 
-      final int[] last = {0};
+      AtomicInteger last = new AtomicInteger(0);
       Consumer<Integer> updateProgress =
           (current) -> {
-            int delta = current - last[0];
-            last[0] = current;
+            int delta = current - last.getAndSet(current);
 
             job.update(delta);
             jobSet.update(delta);
