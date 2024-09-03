@@ -38,7 +38,11 @@ public interface FeatureQueries {
 
   // TODO: move to FeatureProvider2 or FeatureMetadata
   FeatureSchema getQueryablesSchema(
-      FeatureSchema schema, List<String> included, List<String> excluded, String pathSeparator);
+      FeatureSchema schema,
+      List<String> included,
+      List<String> excluded,
+      String pathSeparator,
+      boolean cleanupKeys);
 
   // TODO: move to FeatureProvider2 or FeatureMetadata
   FeatureSchema getSortablesSchema(

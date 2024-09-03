@@ -1212,10 +1212,14 @@ public class FeatureProviderSql
 
   @Override
   public FeatureSchema getQueryablesSchema(
-      FeatureSchema schema, List<String> included, List<String> excluded, String pathSeparator) {
+      FeatureSchema schema,
+      List<String> included,
+      List<String> excluded,
+      String pathSeparator,
+      boolean cleanupKeys) {
     Predicate<String> excludeConnectors = path -> path.matches(".+?\\[[^=\\]]+].+");
     OnlyQueryables queryablesSelector =
-        new OnlyQueryables(included, excluded, pathSeparator, excludeConnectors);
+        new OnlyQueryables(included, excluded, pathSeparator, excludeConnectors, cleanupKeys);
 
     return schema.accept(queryablesSelector);
   }
