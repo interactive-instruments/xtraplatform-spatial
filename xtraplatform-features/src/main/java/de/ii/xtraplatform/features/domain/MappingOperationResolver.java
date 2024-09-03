@@ -7,6 +7,8 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import static de.ii.xtraplatform.features.domain.FeatureSchema.IS_PROPERTY;
+
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.transform.ImmutablePropertyTransformation;
 import java.util.LinkedHashMap;
@@ -346,7 +348,8 @@ public class MappingOperationResolver implements TypesResolver {
       return builder.build();
     }
 
-    if (type.getType() == Type.OBJECT_ARRAY) {
+    if (type.getType() == Type.OBJECT_ARRAY
+        || (type.getType() == Type.OBJECT && type.getFullPath().isEmpty())) {
       String basePath = type.getSourcePath().map(p -> p + "/").orElse("");
 
       ImmutableFeatureSchema.Builder builder =
@@ -369,7 +372,8 @@ public class MappingOperationResolver implements TypesResolver {
               new ImmutableFeatureSchema.Builder()
                   .from(prop)
                   .sourcePath(basePath2 + prop.getSourcePath().orElse(""))
-                  .path(List.of(i + "_" + prop.getName())));
+                  .path(List.of(i + "_" + prop.getName()))
+                  .putAdditionalInfo(IS_PROPERTY, "true"));
         }
       }
 

@@ -423,4 +423,38 @@ class FeatureSchemaFixtures {
                                     .build(),
                     ]))
             .build()
+
+    static FeatureSchema CONCAT_ROOT = new ImmutableFeatureSchema.Builder()
+            .name("administrativeunit")
+            .type(Type.OBJECT_ARRAY)
+            .concat([
+                    new ImmutableFeatureSchema.Builder()
+                            .name("administrativeunit")
+                            .sourcePath("/o73005{sortKey=sch}")
+                            .putProperties2("id", new ImmutableFeatureSchema.Builder()
+                                    .sourcePath("_id")
+                                    .type(Type.INTEGER)
+                                    .role(SchemaBase.Role.ID))
+                            .putProperties2("geometry", new ImmutableFeatureSchema.Builder()
+                                    .sourcePath("[sch=ags]verwaltungseinheit/geometrie")
+                                    .type(Type.GEOMETRY)
+                                    .role(SchemaBase.Role.PRIMARY_GEOMETRY))
+                            .build(),
+                    new ImmutableFeatureSchema.Builder()
+                            .name("administrativeunit")
+                            .sourcePath("/o73004{sortKey=sch}")
+                            .putProperties2("id", new ImmutableFeatureSchema.Builder()
+                                    .sourcePath("_id")
+                                    .type(Type.INTEGER)
+                                    .role(SchemaBase.Role.ID))
+                            .putProperties2("upperLevelUnit", new ImmutableFeatureSchema.Builder()
+                                    .type(Type.OBJECT)
+                                    .name("upperLevelUnit")
+                                    .sourcePath("[sch=ags]verwaltungseinheit")
+                                    .putProperties2("href", new ImmutableFeatureSchema.Builder()
+                                            .sourcePath("uebergobjekt")
+                                            .type(Type.STRING)))
+                            .build(),
+            ])
+            .build()
 }

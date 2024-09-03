@@ -70,6 +70,8 @@ public interface FeatureSchema
 
   Logger LOGGER = LoggerFactory.getLogger(FeatureSchema.class);
 
+  String IS_PROPERTY = "IS_PROPERTY";
+
   @JsonIgnore
   @Override
   String getName();
@@ -535,7 +537,8 @@ public interface FeatureSchema
   default boolean isFeature() {
     return isObject()
         && (!getEffectiveSourcePaths().isEmpty()
-            && getEffectiveSourcePaths().get(0).startsWith("/"));
+            && getEffectiveSourcePaths().get(0).startsWith("/"))
+        && !getAdditionalInfo().containsKey(IS_PROPERTY);
   }
 
   @JsonIgnore
@@ -665,11 +668,12 @@ public interface FeatureSchema
   @Value.Check
   default void checkMappingOperations() {
     Preconditions.checkState(
-        getConcat().isEmpty() || isArray(),
+        getConcat().isEmpty() || isArray() || getFullPath().isEmpty(),
         "Concat may only be used with array types. Found: %s. Path: %s.",
         getType(),
         getFullPathAsString());
 
+    // TODO
     Preconditions.checkState(
         getConcat().isEmpty()
             || getConcat().stream().allMatch(s -> s.getTransformations().isEmpty()),

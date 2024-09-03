@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,7 +107,7 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
                         entry.getKey(),
                         new ImmutableSchemaMapping.Builder()
                             .from(entry.getValue())
-                            .dynamicTransformer(
+                            .dynamicTransformers(
                                 sliceTransformerChains
                                         .get(entry.getKey())
                                         .has(PropertyTransformations.WILDCARD)
@@ -117,10 +118,12 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
                                         .filter(
                                             transformer ->
                                                 transformer
-                                                    instanceof FeaturePropertyTransformerFlatten)
+                                                    instanceof FeaturePropertyTransformerFlatten
+                                            /*|| transformer
+                                            instanceof FeaturePropertyTransformerConcat*/ )
                                         .map(flatten -> (DynamicTargetSchemaTransformer) flatten)
-                                        .findFirst()
-                                    : Optional.empty())
+                                        .collect(Collectors.toList())
+                                    : List.of())
                             .targetSchema(
                                 entry
                                     .getValue()

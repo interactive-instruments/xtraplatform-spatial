@@ -100,7 +100,8 @@ public class SqlPathParser {
     String JOINED_TABLE =
         String.format(
             "%s(?<%s>%s)(?<%s>%s)?", JOIN, MatcherGroups.TABLE, TABLE, MatcherGroups.FLAGS, FLAGS);
-    String JOINED_TABLE_PLAIN = String.format("(?:%s)(?:%s)(?:%s)?", JOIN_PLAIN, TABLE, FLAGS);
+    String ROOT_OR_JOINED_TABLE_PLAIN =
+        String.format("(?:%s|%s)(?:%s)(?:%s)?", Tokens.PATH_SEPARATOR, JOIN_PLAIN, TABLE, FLAGS);
     String CONNECTED_COLUMN =
         String.format(
             "%s(?<%s>%s)%s(?<%s>%s)(?<%s>%s)?",
@@ -116,7 +117,7 @@ public class SqlPathParser {
         String.format(
             "(?<%s>(?:%s%s)*)(?<%s>%s)(?<%s>%s)?",
             MatcherGroups.PATH,
-            JOINED_TABLE_PLAIN,
+            ROOT_OR_JOINED_TABLE_PLAIN,
             Tokens.PATH_SEPARATOR,
             MatcherGroups.COLUMNS,
             COLUMN,
@@ -164,6 +165,12 @@ public class SqlPathParser {
     this.cql = cql;
     this.junctionTableMatcher = defaults.getJunctionTablePattern().map(Pattern::compile);
     this.connectors = connectors;
+  }
+
+  public boolean hasRootPath(String path) {
+    Matcher matcher = Patterns.ROOT_TABLE.matcher(path);
+
+    return matcher.find() && matcher.start() == 0;
   }
 
   public SqlPath parseColumnPath(String path) {
@@ -235,7 +242,7 @@ public class SqlPathParser {
   public SqlPath parseTablePath(String path) {
     Matcher matcher = Patterns.ROOT_TABLE.matcher(path);
 
-    if (matcher.find()) {
+    if (matcher.matches()) {
       return parseTable(matcher, false);
     }
 
@@ -253,7 +260,13 @@ public class SqlPathParser {
 
   private List<SqlPath> parseTables(String tablePath) {
     List<SqlPath> tables = new ArrayList<>();
-    Matcher tableMatcher = Patterns.JOINED_TABLE.matcher(tablePath);
+    Matcher tableMatcher = Patterns.ROOT_TABLE.matcher(tablePath);
+
+    while (tableMatcher.find()) {
+      tables.add(parseTable(tableMatcher, false));
+    }
+
+    tableMatcher = Patterns.JOINED_TABLE.matcher(tablePath);
 
     while (tableMatcher.find()) {
       tables.add(parseTable(tableMatcher, true));
@@ -424,6 +437,9 @@ public class SqlPathParser {
     }
 
     if (paths.size() == 2) {
+      if (!paths.get(1).getJoin().isPresent()) {
+        return List.of();
+      }
       return IntStream.range(1, paths.size())
           .mapToObj(i -> toRelation(paths.get(i - 1), paths.get(i)))
           .collect(Collectors.toList());
@@ -440,7 +456,13 @@ public class SqlPathParser {
 
   private List<SqlPath> getAllTables(SqlPath parentPath, SqlPath path) {
     ImmutableList.Builder<SqlPath> pathsBuilder =
-        new ImmutableList.Builder<SqlPath>().add(parentPath).addAll(path.getParentTables());
+        new ImmutableList.Builder<SqlPath>().add(parentPath);
+
+    for (SqlPath parentTable : path.getParentTables()) {
+      if (!Objects.equals(parentTable, parentPath)) {
+        pathsBuilder.add(parentTable);
+      }
+    }
 
     if (path.isBranch()) {
       pathsBuilder.add(path);
