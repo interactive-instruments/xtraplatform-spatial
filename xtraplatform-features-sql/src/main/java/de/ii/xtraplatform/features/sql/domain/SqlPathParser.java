@@ -10,16 +10,18 @@ package de.ii.xtraplatform.features.sql.domain;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.base.domain.util.Tuple;
 import de.ii.xtraplatform.cql.domain.Cql;
 import de.ii.xtraplatform.cql.domain.Cql.Format;
+import de.ii.xtraplatform.features.domain.DecoderFactory;
 import de.ii.xtraplatform.features.domain.ImmutableTuple;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlPath.Builder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -103,7 +105,7 @@ public class SqlPathParser {
     String JOINED_TABLE_PLAIN = String.format("(?:%s)(?:%s)(?:%s)?", JOIN_PLAIN, TABLE, FLAGS);
     String CONNECTED_COLUMN =
         String.format(
-            "%s(?<%s>%s)%s(?<%s>%s)(?<%s>%s)?",
+            "%s(?<%s>%s)%s(?<%s>%s)?(?<%s>%s)?",
             Pattern.quote(Tokens.JOIN_START),
             MatcherGroups.CONNECTOR,
             IDENTIFIER,
@@ -157,9 +159,9 @@ public class SqlPathParser {
   private final Cql cql;
   // TODO: remove
   private final Optional<Pattern> junctionTableMatcher;
-  private final Set<String> connectors;
+  private final Map<String, DecoderFactory> connectors;
 
-  public SqlPathParser(SqlPathDefaults defaults, Cql cql, Set<String> connectors) {
+  public SqlPathParser(SqlPathDefaults defaults, Cql cql, Map<String, DecoderFactory> connectors) {
     this.defaults = defaults;
     this.cql = cql;
     this.junctionTableMatcher = defaults.getJunctionTablePattern().map(Pattern::compile);
@@ -302,29 +304,34 @@ public class SqlPathParser {
 
   private SqlPath parseConnectedColumn(Matcher connectedMatcher, String path) {
     String connector = connectedMatcher.group(MatcherGroups.CONNECTOR.name());
-    String column = connectedMatcher.group(MatcherGroups.COLUMNS.name());
+    String column =
+        Objects.requireNonNullElse(connectedMatcher.group(MatcherGroups.COLUMNS.name()), "EXPR");
 
-    if (!connectors.contains(connector)) {
+    if (!connectors.containsKey(connector)) {
       throw new IllegalArgumentException(
           "Invalid sourcePath connector in provider configuration: " + path);
     }
 
-    Builder builder =
-        new ImmutableSqlPath.Builder().name(column).addColumns(column).connector(connector);
-
     String flags =
         Optional.ofNullable(connectedMatcher.group(MatcherGroups.FLAGS.name())).orElse("");
 
-    builder
-        .sortKey(getSortKey(flags))
-        .sortKeyUnique(getSortKeyUnique(flags))
-        .primaryKey(getPrimaryKey(flags))
-        .junction(false);
+    Tuple<String, String> columnAndPath =
+        connectors.get(connector).parseSourcePath(path, column, flags, connectedMatcher.group(0));
+    String parsedColumn = columnAndPath.first();
+    String pathInConnector = columnAndPath.second();
 
-    String connectorSpec = connectedMatcher.group(0);
-    String pathInConnector = path.substring(path.indexOf(connectorSpec) + connectorSpec.length());
+    Builder builder =
+        new ImmutableSqlPath.Builder()
+            .name(parsedColumn)
+            .addColumns(parsedColumn)
+            .connector(connector)
+            .sortKey(getSortKey(flags))
+            .sortKeyUnique(getSortKeyUnique(flags))
+            .primaryKey(getPrimaryKey(flags))
+            .junction(false);
+
     if (!pathInConnector.isEmpty()) {
-      builder.pathInConnector(pathInConnector.substring(1).replace('/', '.'));
+      builder.pathInConnector(pathInConnector);
     }
 
     return builder.build();

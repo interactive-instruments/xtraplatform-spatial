@@ -15,6 +15,7 @@ import de.ii.xtraplatform.features.domain.FeatureSchemaFixtures
 import de.ii.xtraplatform.features.domain.MappingOperationResolver
 import de.ii.xtraplatform.features.domain.SortKey
 import de.ii.xtraplatform.features.domain.Tuple
+import de.ii.xtraplatform.features.json.app.DecoderFactoryJson
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlPathDefaults
 import de.ii.xtraplatform.features.sql.domain.SchemaSql
 import de.ii.xtraplatform.features.sql.domain.SqlDialectPgis
@@ -39,7 +40,7 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
     def setupSpec() {
         def defaults = new ImmutableSqlPathDefaults.Builder().build()
         def cql = new CqlImpl()
-        def pathParser = new SqlPathParser(defaults, cql, Set.of("JSON"))
+        def pathParser = new SqlPathParser(defaults, cql, Map.of("JSON", new DecoderFactoryJson()))
         schemaDeriver = new QuerySchemaDeriver(pathParser)
         mappingOperationResolver = new MappingOperationResolver()
     }

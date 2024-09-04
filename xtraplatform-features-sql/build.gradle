@@ -35,6 +35,7 @@ dependencies {
     embeddedFlatExport libs.sqlite
 
     testImplementation 'de.interactive_instruments:xtraplatform-proj'
+    testImplementation project(":xtraplatform-features-json")
     testImplementation(testFixtures(project(":xtraplatform-cql")))
     testImplementation(testFixtures(project(":xtraplatform-features")))
 }

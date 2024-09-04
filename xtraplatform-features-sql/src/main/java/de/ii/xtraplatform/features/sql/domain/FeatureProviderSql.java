@@ -36,8 +36,8 @@ import de.ii.xtraplatform.features.domain.AggregateStatsReader;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.DatasetChangeListener;
-import de.ii.xtraplatform.features.domain.Decoder;
 import de.ii.xtraplatform.features.domain.DecoderFactories;
+import de.ii.xtraplatform.features.domain.DecoderFactory;
 import de.ii.xtraplatform.features.domain.FeatureChangeListener;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
@@ -111,12 +111,9 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.Set;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import javax.ws.rs.core.MediaType;
 import org.postgresql.util.PSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -305,7 +302,7 @@ public class FeatureProviderSql
   private final CrsInfo crsInfo;
   private final Cql cql;
   private final SqlDbmsAdapters dbmsAdapters;
-  private final Map<String, Supplier<Decoder>> subdecoders;
+  private final Map<String, DecoderFactory> subdecoders;
 
   private final de.ii.xtraplatform.cache.domain.Cache cache;
 
@@ -333,6 +330,36 @@ public class FeatureProviderSql
       VolatileRegistry volatileRegistry,
       Cache cache,
       @Assisted FeatureProviderDataV2 data) {
+    this(
+        crsTransformerFactory,
+        crsInfo,
+        cql,
+        connectorFactory,
+        dbmsAdapters,
+        reactive,
+        valueStore,
+        extensionRegistry,
+        decoderFactories,
+        volatileRegistry,
+        cache,
+        data,
+        decoderFactories.getConnectorDecoders());
+  }
+
+  protected FeatureProviderSql(
+      CrsTransformerFactory crsTransformerFactory,
+      CrsInfo crsInfo,
+      Cql cql,
+      ConnectorFactory connectorFactory,
+      SqlDbmsAdapters dbmsAdapters,
+      Reactive reactive,
+      ValueStore valueStore,
+      ProviderExtensionRegistry extensionRegistry,
+      DecoderFactories decoderFactories,
+      VolatileRegistry volatileRegistry,
+      Cache cache,
+      FeatureProviderDataV2 data,
+      Map<String, DecoderFactory> subdecoders) {
     super(
         connectorFactory,
         reactive,
@@ -347,11 +374,7 @@ public class FeatureProviderSql
     this.cql = cql;
     this.dbmsAdapters = dbmsAdapters;
     this.cache = cache.withPrefix(getEntityType(), getId());
-
-    this.subdecoders =
-        Map.of(
-            "JSON",
-            () -> decoderFactories.createDecoder(MediaType.APPLICATION_JSON_TYPE).orElseThrow());
+    this.subdecoders = subdecoders;
   }
 
   private static PathParserSql createPathParser2(SqlPathDefaults sqlPathDefaults, Cql cql) {
@@ -360,8 +383,8 @@ public class FeatureProviderSql
   }
 
   private static SqlPathParser createPathParser3(
-      SqlPathDefaults sqlPathDefaults, Cql cql, Set<String> connectors) {
-    return new SqlPathParser(sqlPathDefaults, cql, connectors);
+      SqlPathDefaults sqlPathDefaults, Cql cql, Map<String, DecoderFactory> subdecoders) {
+    return new SqlPathParser(sqlPathDefaults, cql, subdecoders);
   }
 
   @Override
@@ -381,8 +404,7 @@ public class FeatureProviderSql
     this.sourceSchemaValidator =
         new SourceSchemaValidatorSql(validationSchemas, this::getSqlClient);
 
-    this.pathParser3 =
-        createPathParser3(getData().getSourcePathDefaults(), cql, subdecoders.keySet());
+    this.pathParser3 = createPathParser3(getData().getSourcePathDefaults(), cql, subdecoders);
     QuerySchemaDeriver querySchemaDeriver = new QuerySchemaDeriver(pathParser3);
     this.tableSchemas =
         getData().getTypes().entrySet().stream()

@@ -26,4 +26,24 @@ public interface Decoder extends AutoCloseable {
             FeatureSchema, SchemaMapping, ModifiableContext<FeatureSchema, SchemaMapping>>
         downstream();
   }
+
+  static Decoder noop() {
+    return new Decoder() {
+      @Override
+      public void decode(byte[] data, Pipeline pipeline) {
+        boolean isValues = pipeline.context().schema().filter(FeatureSchema::isValue).isPresent();
+        boolean isSingleValue =
+            isValues && pipeline.context().schema().filter(FeatureSchema::isArray).isEmpty();
+
+        if (!isSingleValue) {
+          throw new IllegalArgumentException("Only single values are allowed in this context");
+        }
+
+        pipeline.downstream().onValue(pipeline.context());
+      }
+
+      @Override
+      public void close() {}
+    };
+  }
 }

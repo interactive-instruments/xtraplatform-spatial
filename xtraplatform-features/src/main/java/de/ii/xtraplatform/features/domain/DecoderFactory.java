@@ -8,6 +8,8 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.github.azahnen.dagger.annotations.AutoMultiBind;
+import de.ii.xtraplatform.base.domain.util.Tuple;
+import java.util.Optional;
 import javax.ws.rs.core.MediaType;
 
 // TODO: only for byte decoders?
@@ -34,4 +36,13 @@ public interface DecoderFactory {
   MediaType getMediaType();
 
   Decoder createDecoder();
+
+  default Optional<String> getConnectorString() {
+    return Optional.empty();
+  }
+
+  default de.ii.xtraplatform.base.domain.util.Tuple<String, String> parseSourcePath(
+      String path, String column, String flags, String connectorSpec) {
+    return Tuple.of(column, "");
+  }
 }
