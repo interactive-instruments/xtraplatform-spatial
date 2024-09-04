@@ -16,6 +16,7 @@ import de.ii.xtraplatform.cql.domain.Cql.Format;
 import de.ii.xtraplatform.features.domain.DecoderFactory;
 import de.ii.xtraplatform.features.domain.ImmutableTuple;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlPath.Builder;
+import de.ii.xtraplatform.features.sql.domain.SqlPath.JoinType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -48,7 +49,8 @@ public class SqlPathParser {
     SORTKEYUNIQUE,
     PRIMARYKEY,
     FILTER,
-    CONNECTOR
+    CONNECTOR,
+    JOINTYPE
   }
 
   private interface Tokens {
@@ -75,6 +77,8 @@ public class SqlPathParser {
     String FILTER_FLAG = String.format("\\{filter=(?<%s>.+?)\\}", MatcherGroups.FILTER);
     // TODO: remove
     String JUNCTION_FLAG = "\\{junction\\}";
+    String JOIN_TYPE_FLAG =
+        String.format("\\{joinType=(?<%s>INNER|LEFT|RIGHT|FULL)\\}", MatcherGroups.JOINTYPE);
     String COLUMN =
         String.format("%s(?:%s%s)*", IDENTIFIER, Tokens.MULTI_COLUMN_SEPARATOR, IDENTIFIER);
     String JOIN =
@@ -145,6 +149,8 @@ public class SqlPathParser {
     Pattern FILTER_FLAG = Pattern.compile(PatternStrings.FILTER_FLAG);
 
     Pattern PRIMARY_KEY_FLAG = Pattern.compile(PatternStrings.PRIMARY_KEY_FLAG);
+
+    Pattern JOIN_TYPE_FLAG = Pattern.compile(PatternStrings.JOIN_TYPE_FLAG);
   }
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SqlPathParser.class);
@@ -282,14 +288,17 @@ public class SqlPathParser {
 
     Builder builder = new ImmutableSqlPath.Builder().name(table);
 
+    String flags = Optional.ofNullable(tableMatcher.group(MatcherGroups.FLAGS.name())).orElse("");
+
     if (hasJoin) {
       String sourceField = tableMatcher.group(MatcherGroups.SOURCEFIELD.name());
       String targetField = tableMatcher.group(MatcherGroups.TARGETFIELD.name());
 
-      builder.name(table).join(ImmutableTuple.of(sourceField, targetField));
+      builder
+          .name(table)
+          .join(ImmutableTuple.of(sourceField, targetField))
+          .joinType(getJoinType(flags));
     }
-
-    String flags = Optional.ofNullable(tableMatcher.group(MatcherGroups.FLAGS.name())).orElse("");
 
     builder
         .sortKey(getSortKey(flags))
@@ -378,6 +387,16 @@ public class SqlPathParser {
     }
 
     return true;
+  }
+
+  public JoinType getJoinType(String flags) {
+    Matcher matcher = Patterns.JOIN_TYPE_FLAG.matcher(flags);
+
+    if (matcher.find()) {
+      return JoinType.valueOf(matcher.group(MatcherGroups.JOINTYPE.name()));
+    }
+
+    return JoinType.INNER;
   }
 
   public String getPrimaryKey(String flags) {
@@ -497,6 +516,7 @@ public class SqlPathParser {
         .targetContainer(target.getName())
         .targetField(targetField)
         .targetFilter(target.getFilterString())
+        .joinType(target.getJoinType().orElse(JoinType.INNER))
         .build();
   }
 
@@ -524,6 +544,7 @@ public class SqlPathParser {
         .targetContainer(target.getName())
         .targetField(targetField)
         .targetFilter(target.getFilterString())
+        .joinType(target.getJoinType().orElse(JoinType.INNER))
         .build();
   }
 }
