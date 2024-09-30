@@ -180,8 +180,6 @@ import org.threeten.extra.Interval;
  *     table from the parent object, `fk` is the foreign key of the joining table and `tab` is the
  *     name of the joining table. Example from above: `[oid=kita_fk]plaetze`. When a junction table
  *     should be used, two such joins are concatenated with "/", e.g. `[id=fka]a_2_b/[fkb=id]tab_b`.
- *     To use a different join type than the default `INNER`, for example `{joinType=LEFT}` can be
- *     appended to the join expression
  *     <p>Rows for a table can be filtered by adding `{filter=expression}` after the table name,
  *     where `expression` is a [CQL2 Text](https://docs.ogc.org/is/21-065r1/21-065r1.html#cql2-text)
  *     expression. For details see the building block [Filter /
@@ -223,9 +221,7 @@ import org.threeten.extra.Interval;
  *     Tabelle aus dem übergeordneten Schemaobjekt ist, `fk` der Fremdschlüssel aus der über den
  *     Join angebundenen Tabelle und `tab` der Tabellenname. Siehe `[oid=kita_fk]plaetze` in dem
  *     Beispiel oben. Bei der Verwendung einer Zwischentabelle werden zwei dieser Joins
- *     aneinandergehängt, z.B. `[id=fka]a_2_b/[fkb=id]tab_b`. Um einen anderen als den
- *     Standard-Join-Typ `INNER` zu werden, kann z.B. `{joinType=LEFT}` nach dem Join-Ausdruck
- *     angegeben werden.
+ *     aneinandergehängt, z.B. `[id=fka]a_2_b/[fkb=id]tab_b`.
  *     <p>Auf einer Tabelle (der Haupttabelle eines Features oder einer über Join-angebundenen
  *     Tabelle) kann zusätzlich ein einschränkender Filter durch den Zusatz `{filter=ausdruck}`
  *     angegeben werden, wobei `ausdruck` das Selektionskriertium in [CQL2
