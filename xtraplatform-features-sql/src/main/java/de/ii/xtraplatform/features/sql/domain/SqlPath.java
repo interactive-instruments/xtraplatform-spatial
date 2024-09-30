@@ -19,11 +19,20 @@ import org.immutables.value.Value;
 @Value.Immutable
 public interface SqlPath extends SourcePath {
 
+  enum JoinType {
+    INNER,
+    LEFT,
+    RIGHT,
+    FULL
+  }
+
   String getName();
 
   List<SqlPath> getParentTables();
 
   Optional<Tuple<String, String>> getJoin();
+
+  Optional<JoinType> getJoinType();
 
   Optional<String> getConnector();
 

@@ -221,6 +221,12 @@ public class SqlQueryTemplatesDeriver
                               return sqlDialect.applyToDate(name, column.getFormat());
                             return sqlDialect.applyToDatetime(name, column.getFormat());
                           }
+                          if (column.isExpression()) {
+                            return sqlDialect.applyToExpression(
+                                attributeContainerAlias,
+                                column.getName(),
+                                column.getSubDecoderPaths());
+                          }
 
                           return name;
                         }))

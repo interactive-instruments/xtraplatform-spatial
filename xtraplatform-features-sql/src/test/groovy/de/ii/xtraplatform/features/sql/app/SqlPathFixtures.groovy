@@ -7,11 +7,12 @@
  */
 package de.ii.xtraplatform.features.sql.app
 
-import de.ii.xtraplatform.cql.domain.CqlFilter
+
 import de.ii.xtraplatform.cql.domain.Eq
 import de.ii.xtraplatform.cql.domain.ScalarLiteral
 import de.ii.xtraplatform.features.domain.ImmutableTuple
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlPath
+import de.ii.xtraplatform.features.sql.domain.SqlPath
 
 class SqlPathFixtures {
 
@@ -29,14 +30,17 @@ class SqlPathFixtures {
     static BRANCH_TABLE = baseTable()
             .name("explorationsite")
             .join(ImmutableTuple.of("id", "boreholepath_fk"))
+            .joinType(SqlPath.JoinType.INNER)
             .build()
 
     static BRANCH_TABLES = baseTable()
             .name("task")
             .join(ImmutableTuple.of("task_fk", "id"))
+            .joinType(SqlPath.JoinType.INNER)
             .parentTables([baseTable()
                                    .name("explorationsite_task")
                                    .join(ImmutableTuple.of("id", "explorationsite_fk"))
+                                   .joinType(SqlPath.JoinType.INNER)
                                    .build()])
             .build()
 
@@ -53,24 +57,28 @@ class SqlPathFixtures {
             .parentTables([baseTable()
                                    .name("externalprovider_externalprovidername")
                                    .join(ImmutableTuple.of("id", "externalprovider_fk"))
+                                   .joinType(SqlPath.JoinType.INNER)
                                    .build()])
             .build()
 
     static CUSTOM_SORT_KEY = baseTable()
             .name("externalprovider_externalprovidername")
             .join(ImmutableTuple.of("id", "externalprovider_fk"))
+            .joinType(SqlPath.JoinType.INNER)
             .sortKey("oid")
             .build()
 
     static CUSTOM_PRIMARY_KEY = baseTable()
             .name("externalprovider_externalprovidername")
             .join(ImmutableTuple.of("id", "externalprovider_fk"))
+            .joinType(SqlPath.JoinType.INNER)
             .primaryKey("oid")
             .build()
 
     static CUSTOM_FILTER = baseTable()
             .name("externalprovider_externalprovidername")
             .join(ImmutableTuple.of("id", "externalprovider_fk"))
+            .joinType(SqlPath.JoinType.INNER)
             .filter(Eq.of("category", ScalarLiteral.of(1)))
             .filterString("category=1")
             .build()
@@ -78,6 +86,7 @@ class SqlPathFixtures {
     static MULTIPLE_FLAGS = baseTable()
             .name("externalprovider_externalprovidername")
             .join(ImmutableTuple.of("id", "externalprovider_fk"))
+            .joinType(SqlPath.JoinType.INNER)
             .sortKey("oid")
             .primaryKey("oid")
             .filter(Eq.of("category", ScalarLiteral.of(1)))

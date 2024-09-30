@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.sql.app;
 
 import de.ii.xtraplatform.features.sql.domain.SchemaSql;
+import de.ii.xtraplatform.features.sql.domain.SqlPath.JoinType;
 import de.ii.xtraplatform.features.sql.domain.SqlRelation;
 import java.util.ArrayList;
 import java.util.List;
@@ -121,6 +122,7 @@ public class JoinGenerator {
               relation.getSourceContainer(),
               sourceAlias,
               relation.getSourceField(),
+              JoinType.INNER,
               sqlFilter,
               sourceFilter));
       joins.add(
@@ -131,6 +133,7 @@ public class JoinGenerator {
               relation.getJunctionSource().get(),
               junctionAlias,
               relation.getJunctionTarget().get(),
+              relation.getJoinType(),
               sqlFilter,
               Optional.empty()));
 
@@ -147,6 +150,7 @@ public class JoinGenerator {
               relation.getSourceContainer(),
               sourceAlias,
               relation.getSourceField(),
+              relation.getJoinType(),
               sqlFilter,
               sourceFilter));
     }
@@ -161,27 +165,30 @@ public class JoinGenerator {
       String sourceContainer,
       String sourceAlias,
       String sourceField,
+      JoinType joinType,
       Optional<String> sqlFilter,
       Optional<String> sourceFilter) {
     String additionalFilter = sqlFilter.map(s -> " AND (" + s + ")").orElse("");
     String targetTable = targetContainer;
+    String type = joinType == JoinType.INNER ? "" : joinType.name() + " ";
 
     if (additionalFilter.contains(FilterEncoderSql.ROW_NUMBER)) {
       String sourceFilterPart =
           sourceFilter.isPresent() ? String.format(" WHERE %s ORDER BY 1", sourceFilter.get()) : "";
       targetTable =
           String.format(
-              "(SELECT A.%1$s AS A%1$s, B.*, %6$s() OVER (PARTITION BY B.%2$s ORDER BY B.%2$s) AS %6$s FROM %3$s A JOIN %4$s B ON (A.%1$s=B.%2$s)%5$s)",
+              "(SELECT A.%1$s AS A%1$s, B.*, %6$s() OVER (PARTITION BY B.%2$s ORDER BY B.%2$s) AS %6$s FROM %3$s A %7$sJOIN %4$s B ON (A.%1$s=B.%2$s)%5$s)",
               sourceField,
               targetField,
               sourceContainer,
               targetContainer,
               sourceFilterPart,
-              FilterEncoderSql.ROW_NUMBER);
+              FilterEncoderSql.ROW_NUMBER,
+              type);
     }
 
     return String.format(
-        "JOIN %1$s %2$s ON (%4$s.%5$s=%2$s.%3$s%6$s)",
-        targetTable, targetAlias, targetField, sourceAlias, sourceField, additionalFilter);
+        "%7$sJOIN %1$s %2$s ON (%4$s.%5$s=%2$s.%3$s%6$s)",
+        targetTable, targetAlias, targetField, sourceAlias, sourceField, additionalFilter, type);
   }
 }

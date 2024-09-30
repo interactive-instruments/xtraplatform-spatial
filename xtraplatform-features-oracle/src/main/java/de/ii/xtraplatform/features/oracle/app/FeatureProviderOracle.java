@@ -36,6 +36,7 @@ import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.SqlRow;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.values.domain.ValueStore;
+import java.util.Map;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -139,7 +140,8 @@ public class FeatureProviderOracle extends FeatureProviderSql {
         decoderFactories,
         volatileRegistry,
         cache,
-        data);
+        data,
+        Map.of());
   }
 
   @Override

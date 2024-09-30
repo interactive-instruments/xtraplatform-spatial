@@ -8,13 +8,18 @@
 package de.ii.xtraplatform.features.sql.app
 
 import de.ii.xtraplatform.cql.app.CqlImpl
+import de.ii.xtraplatform.features.domain.Decoder
+import de.ii.xtraplatform.features.domain.DecoderFactory
 import de.ii.xtraplatform.features.domain.FeatureSchemaFixtures
 import de.ii.xtraplatform.features.domain.MappingOperationResolver
+import de.ii.xtraplatform.features.json.app.DecoderFactoryJson
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlPathDefaults
 import de.ii.xtraplatform.features.sql.domain.SchemaSql
 import de.ii.xtraplatform.features.sql.domain.SqlPathParser
 import spock.lang.Shared
 import spock.lang.Specification
+
+import javax.ws.rs.core.MediaType
 
 class QuerySchemaDeriverSpec extends Specification {
 
@@ -26,7 +31,7 @@ class QuerySchemaDeriverSpec extends Specification {
     def setupSpec() {
         def defaults = new ImmutableSqlPathDefaults.Builder().build()
         def cql = new CqlImpl()
-        def pathParser = new SqlPathParser(defaults, cql, Set.of("JSON"))
+        def pathParser = new SqlPathParser(defaults, cql, Map.of("JSON", new DecoderFactoryJson()))
         schemaDeriver = new QuerySchemaDeriver(pathParser)
         mappingOperationResolver = new MappingOperationResolver()
     }
@@ -44,7 +49,7 @@ class QuerySchemaDeriverSpec extends Specification {
         where:
 
         casename                                     | source                                                    || expected
-        "value array"                                | FeatureSchemaFixtures.VALUE_ARRAY || QuerySchemaFixtures.VALUE_ARRAY
+        "value array"                                | FeatureSchemaFixtures.VALUE_ARRAY                         || QuerySchemaFixtures.VALUE_ARRAY
         "object array"                               | FeatureSchemaFixtures.OBJECT_ARRAY                        || QuerySchemaFixtures.OBJECT_ARRAY
         "merge"                                      | FeatureSchemaFixtures.MERGE                               || QuerySchemaFixtures.MERGE
         "self joins"                                 | FeatureSchemaFixtures.SELF_JOINS                          || QuerySchemaFixtures.SELF_JOINS

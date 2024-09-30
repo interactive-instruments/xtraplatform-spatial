@@ -43,19 +43,12 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
 
   @Override
   public List<SqlPath> parseSourcePaths(FeatureSchema sourceSchema, List<List<SqlPath>> parents) {
-    Optional<String> inConnector =
+    boolean inConnector =
         parents.stream()
-            .map(
-                list ->
-                    list.stream()
-                        .filter(p -> p.getConnector().isPresent())
-                        .findFirst()
-                        .map(p -> p.getConnector().get()))
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .findFirst();
+            .map(list -> list.stream().filter(p -> p.getConnector().isPresent()).findFirst())
+            .anyMatch(Optional::isPresent);
 
-    if (inConnector.filter("JSON"::equals).isPresent()) {
+    if (inConnector) {
       return sourceSchema.getEffectiveSourcePaths().stream()
           .map(pathParser::parseColumnPath)
           .collect(Collectors.toList());
@@ -479,6 +472,10 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
             .subDecoder(connector)
             .subDecoderPaths(subDecoderPaths)
             .subDecoderTypes(subDecoderTypes)
+            .isExpression(
+                connector.isPresent()
+                    && Objects.equals(
+                        connector.get(), DecoderFactorySqlExpression.CONNECTOR_STRING))
             .properties(connector.isPresent() ? List.of() : newVisitedProperties2)
             .constantValue(targetSchema.getConstantValue())
             .forcePolygonCCW(
