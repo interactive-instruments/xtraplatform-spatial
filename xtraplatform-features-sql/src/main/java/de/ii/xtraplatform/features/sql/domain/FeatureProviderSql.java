@@ -1235,7 +1235,7 @@ public class FeatureProviderSql
   @Override
   public FeatureSchema getQueryablesSchema(
       FeatureSchema schema, List<String> included, List<String> excluded, String pathSeparator) {
-    Predicate<String> excludeConnectors = path -> path.matches(".+?\\[[^=\\]]+].+");
+    Predicate<String> excludeConnectors = path -> path.matches(".*?\\[[^=\\]]+].+");
     OnlyQueryables queryablesSelector =
         new OnlyQueryables(included, excluded, pathSeparator, excludeConnectors);
 
@@ -1245,7 +1245,7 @@ public class FeatureProviderSql
   @Override
   public FeatureSchema getSortablesSchema(
       FeatureSchema schema, List<String> included, List<String> excluded, String pathSeparator) {
-    Predicate<String> excludeConnectors = path -> path.matches(".+?\\[[^=\\]]+].+");
+    Predicate<String> excludeConnectors = path -> path.matches(".*?\\[[^=\\]]+].+");
     OnlySortables sortablesSelector =
         new OnlySortables(included, excluded, pathSeparator, excludeConnectors);
 
