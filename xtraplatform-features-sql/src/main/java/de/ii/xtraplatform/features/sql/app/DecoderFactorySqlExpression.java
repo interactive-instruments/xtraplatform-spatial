@@ -23,7 +23,7 @@ import javax.ws.rs.core.MediaType;
 @AutoBind
 public class DecoderFactorySqlExpression implements DecoderFactory {
 
-  public static final MediaType MEDIA_TYPE = MediaType.valueOf("application/sql+expression");
+  public static final MediaType MEDIA_TYPE = MediaType.valueOf("application/vnd.ldproxy.sql-expression");
   public static final String CONNECTOR_STRING = "EXPRESSION";
   private static final Pattern SQL_FLAG = Pattern.compile("\\{sql=(?<SQL>.+?)\\}");
 
