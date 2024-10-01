@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.sql.app;
 
 import de.ii.xtraplatform.features.domain.Decoder;
+import de.ii.xtraplatform.features.domain.DecoderFactory;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
@@ -29,7 +30,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +46,7 @@ public class FeatureDecoderSql
   private final List<List<String>> mainTablePaths;
   private final FeatureStoreMultiplicityTracker multiplicityTracker;
   private final boolean isSingleFeature;
-  private final Map<String, Supplier<Decoder>> subDecoderFactories;
+  private final Map<String, DecoderFactory> subDecoderFactories;
   private final Map<String, Decoder> subDecoders;
 
   private boolean started;
@@ -62,7 +62,7 @@ public class FeatureDecoderSql
       Map<String, SchemaMapping> mappings,
       List<SchemaSql> tableSchemas,
       Query query,
-      Map<String, Supplier<Decoder>> subDecoderFactories) {
+      Map<String, DecoderFactory> subDecoderFactories) {
     this.mappings = mappings;
     this.query = query;
 
@@ -89,7 +89,8 @@ public class FeatureDecoderSql
         new NestingTracker(getDownstream(), context, mainTablePaths, false, false, false);
 
     // TODO: pass context and downstream
-    subDecoderFactories.forEach((connector, factory) -> subDecoders.put(connector, factory.get()));
+    subDecoderFactories.forEach(
+        (connector, factory) -> subDecoders.put(connector, factory.createDecoder()));
   }
 
   @Override

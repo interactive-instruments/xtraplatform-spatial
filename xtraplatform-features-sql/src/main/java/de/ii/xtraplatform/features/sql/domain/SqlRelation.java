@@ -9,6 +9,7 @@ package de.ii.xtraplatform.features.sql.domain;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import de.ii.xtraplatform.features.sql.domain.SqlPath.JoinType;
 import java.util.List;
 import java.util.Optional;
 import org.immutables.value.Value;
@@ -47,6 +48,11 @@ public interface SqlRelation {
   Optional<String> getJunctionTarget();
 
   Optional<String> getJunctionFilter();
+
+  @Value.Default
+  default JoinType getJoinType() {
+    return JoinType.INNER;
+  }
 
   @Value.Check
   default void check() {

@@ -75,6 +75,9 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
         if ((!wildcard && !included.contains(path)) || excluded.contains(path)) {
           return null;
         }
+        if (excludePathMatcher.test(schema.getSourcePath().orElse(""))) {
+          return null;
+        }
       } else if (!schema.isObject()
           || (!parents.isEmpty() && visitedProperties.stream().noneMatch(Objects::nonNull))) {
         return null;
