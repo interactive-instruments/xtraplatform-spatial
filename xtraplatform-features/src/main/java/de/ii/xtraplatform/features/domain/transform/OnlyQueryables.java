@@ -70,7 +70,7 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
       }
 
       if (schema.queryable()) {
-        String path = schema.getFullPathAsString(pathSeparator);
+        String path = cleanupPaths(schema).getFullPathAsString(pathSeparator);
         // ignore property, if it is not included (by default or explicitly) or if it is excluded
         if ((!wildcard && !included.contains(path)) || excluded.contains(path)) {
           return null;
@@ -86,7 +86,7 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
       Map<String, FeatureSchema> visitedPropertiesMap =
           visitedProperties.stream()
               .filter(Objects::nonNull)
-              .map(this::cleanupPaths)
+              .map(this::cleanupPathsIfDesired)
               .map(
                   property ->
                       new SimpleImmutableEntry<>(
@@ -95,28 +95,21 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
                   ImmutableMap.toImmutableMap(
                       Entry::getKey, Entry::getValue, (first, second) -> second));
 
+      List<FeatureSchema> visitedConcat =
+          schema.getConcat().stream()
+              .map(concatSchema -> concatSchema.accept(this, parents))
+              .collect(Collectors.toList());
+
       return new Builder()
           .from(adjustType(parents, schema))
           .propertyMap(visitedPropertiesMap)
+          .concat(visitedConcat)
           .build();
     }
 
-    private FeatureSchema cleanupPaths(FeatureSchema property) {
-      if (cleanupKeys
-          && (property.getPath().stream().anyMatch(elem -> elem.matches("^([0-9]+)_.*"))
-              || property.getParentPath().stream()
-                  .anyMatch(elem -> elem.matches("^([0-9]+)_.*")))) {
-        return new ImmutableFeatureSchema.Builder()
-            .from(property)
-            .path(
-                property.getPath().stream()
-                    .map(elem -> elem.replaceAll("^([0-9]+)_", ""))
-                    .collect(Collectors.toList()))
-            .parentPath(
-                property.getParentPath().stream()
-                    .map(elem -> elem.replaceAll("^([0-9]+)_", ""))
-                    .collect(Collectors.toList()))
-            .build();
+    private FeatureSchema cleanupPathsIfDesired(FeatureSchema property) {
+      if (cleanupKeys) {
+        return cleanupPaths(property);
       }
       return property;
     }
@@ -157,5 +150,23 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
       return (parent.isMultiSource() && !parent.isFeature())
           || excludePathMatcher.test(parent.getSourcePath().orElse(""));
     }
+  }
+
+  static FeatureSchema cleanupPaths(FeatureSchema property) {
+    if ((property.getPath().stream().anyMatch(elem -> elem.matches("^([0-9]+)_.*"))
+        || property.getParentPath().stream().anyMatch(elem -> elem.matches("^([0-9]+)_.*")))) {
+      return new ImmutableFeatureSchema.Builder()
+          .from(property)
+          .path(
+              property.getPath().stream()
+                  .map(elem -> elem.replaceAll("^([0-9]+)_", ""))
+                  .collect(Collectors.toList()))
+          .parentPath(
+              property.getParentPath().stream()
+                  .map(elem -> elem.replaceAll("^([0-9]+)_", ""))
+                  .collect(Collectors.toList()))
+          .build();
+    }
+    return property;
   }
 }

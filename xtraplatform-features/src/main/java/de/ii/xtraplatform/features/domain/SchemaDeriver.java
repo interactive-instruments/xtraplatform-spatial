@@ -52,7 +52,9 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
 
   private T deriveRootSchemas(FeatureSchema schema, List<T> visitedProperties) {
 
-    if (!schema.getConcat().isEmpty()) {
+    if (!schema.getConcat().isEmpty()
+        && visitedProperties.size()
+            == schema.getConcat().stream().mapToInt(s -> s.getProperties().size()).sum()) {
       List<T> schemas = new ArrayList<>();
       int k = 0;
 
@@ -87,7 +89,9 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
                 property ->
                     new SimpleEntry<>(
                         getNameWithoutRole(getPropertyName(property).get()), property))
-            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+            .collect(
+                ImmutableMap.toImmutableMap(
+                    Map.Entry::getKey, Map.Entry::getValue, (first, second) -> first));
 
     List<String> required =
         visitedProperties.stream()
