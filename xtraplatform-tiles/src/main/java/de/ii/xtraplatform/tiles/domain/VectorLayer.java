@@ -68,7 +68,7 @@ public interface VectorLayer {
             .map(
                 prop ->
                     new SimpleEntry<>(prop.getName(), VectorLayer.getTypeAsString(prop.getType())))
-            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
+            .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue, (a, b) -> a));
 
     return ImmutableVectorLayer.builder()
         .id(featureSchema.getName())

@@ -30,6 +30,7 @@ import de.ii.xtraplatform.crs.domain.OgcCrs;
 import de.ii.xtraplatform.entities.domain.EntityRegistry;
 import de.ii.xtraplatform.features.domain.FeatureProvider;
 import de.ii.xtraplatform.features.domain.FeatureProviderEntity;
+import de.ii.xtraplatform.features.domain.FeatureQueries;
 import de.ii.xtraplatform.features.domain.FeatureQuery;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureStream;
@@ -258,7 +259,8 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
             types,
             nativeCrs,
             getBounds(tileQuery),
-            tileQuery.getGenerationParametersTransient());
+            tileQuery.getGenerationParametersTransient(),
+            featureProvider.queries().get());
 
     return featureProvider.queries().get().getFeatureStream(featureQuery);
   }
@@ -399,7 +401,8 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
       Set<FeatureSchema> featureTypes,
       EpsgCrs nativeCrs,
       Optional<BoundingBox> bounds,
-      Optional<TileGenerationParametersTransient> userParameters) {
+      Optional<TileGenerationParametersTransient> userParameters,
+      FeatureQueries featureQueries) {
     String featureType = tileset.getFeatureType().orElse(tileset.getId());
     FeatureSchema featureSchema =
         featureTypes.stream()
@@ -413,6 +416,8 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
               "Tileset '%s' references feature type '%s', which does not exist.",
               tileset.getId(), featureType));
     }
+    FeatureSchema queryablesSchema =
+        featureQueries.getQueryablesSchema(featureSchema, List.of("*"), List.of(), ".", true);
 
     ImmutableFeatureQuery.Builder queryBuilder =
         ImmutableFeatureQuery.builder()
@@ -431,7 +436,7 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
           .forEach(filter -> queryBuilder.addFilters(cql.read(filter.getFilter(), Format.TEXT)));
     }
 
-    featureSchema
+    queryablesSchema
         .getPrimaryGeometry()
         .map(SchemaBase::getFullPathAsString)
         .ifPresentOrElse(
