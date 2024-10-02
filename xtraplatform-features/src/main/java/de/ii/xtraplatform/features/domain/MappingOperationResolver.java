@@ -101,9 +101,9 @@ import java.util.stream.Collectors;
  * | `FEATURE_REF `  |  `FEATURE_REF `  | Different `refType` can be used  |
  * </code>
  *     <p>#### Concat
- *     <p>If the values for an array property may come from more than one `sourcePath`, this allows
- *     to concatenate all available values.
- *     <p>##### Example
+ *     <p>If the values for an array property or the instances of a feature type may come from more
+ *     than one `sourcePath`, this allows to concatenate all available values.
+ *     <p>##### Examples
  *     <p><code>
  * ```yaml
  * foo:
@@ -120,6 +120,27 @@ import java.util.stream.Collectors;
  *         refType: bazn
  * ```
  * </code>
+ *     <p><code>
+ * ```yaml
+ * administrativeunit:
+ *   type: OBJECT
+ *   concat:
+ *   - sourcePath: "/au1"
+ *     type: OBJECT
+ *     properties:
+ *       id:
+ *         sourcePath: id1
+ *         type: STRING
+ *         role: ID
+ *   - sourcePath: "/au2"
+ *     type: OBJECT
+ *     properties:
+ *       id:
+ *         sourcePath: id2
+ *         type: STRING
+ *         role: ID
+ * ```
+ *     </code>
  *     <p>##### Type compatibility
  *     <p>Constraints on the types of inner properties depending on the type of the outer property
  *     are shown in the table below.
@@ -129,6 +150,7 @@ import java.util.stream.Collectors;
  * | `VALUE_ARRAY`  |  `VALUE_ARRAY`, `INTEGER`, `FLOAT`, `STRING`, `BOOLEAN`, `DATETIME`, `DATE`  |   |
  * | `OBJECT_ARRAY`  |  `OBJECT_ARRAY`, `OBJECT`  | Different `objectType` with different schemas can be used  |
  * | `FEATURE_REF_ARRAY `  |  `FEATURE_REF_ARRAY`, `FEATURE_REF `  | Different `refType` can be used  |
+ * | `OBJECT`  |  `OBJECT`  | Only for feature types  |
  * </code>
  * @langDe Mapping Operationen können notwendig sein, wenn die Quell- and Ziel-Schema-Struktur zu
  *     unterschiedlich sind.
