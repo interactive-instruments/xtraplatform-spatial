@@ -324,8 +324,8 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
 
     return new TileGenerationSchema() {
       @Override
-      public Optional<SimpleFeatureGeometry> getGeometryType() {
-        return featureSchema.getPrimaryGeometry().orElseThrow().getGeometryType();
+      public SimpleFeatureGeometry getGeometryType() {
+        return featureSchema.getEffectiveGeometryType();
       }
 
       @Override

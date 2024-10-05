@@ -56,11 +56,7 @@ public interface VectorLayer {
 
   static VectorLayer of(FeatureSchema featureSchema, Optional<MinMax> minMax) {
     String geometryType =
-        VectorLayer.getGeometryTypeAsString(
-            featureSchema
-                .getPrimaryGeometry()
-                .flatMap(FeatureSchema::getGeometryType)
-                .orElse(SimpleFeatureGeometry.ANY));
+        VectorLayer.getGeometryTypeAsString(featureSchema.getEffectiveGeometryType());
 
     Map<String, String> properties =
         featureSchema.getProperties().stream()
