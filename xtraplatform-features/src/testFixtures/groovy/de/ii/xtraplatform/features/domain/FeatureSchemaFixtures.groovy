@@ -10,6 +10,7 @@ package de.ii.xtraplatform.features.domain
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.io.Resources
 import de.ii.xtraplatform.features.domain.SchemaBase.Type
+import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry
 
 class FeatureSchemaFixtures {
 
@@ -438,6 +439,7 @@ class FeatureSchemaFixtures {
                             .putProperties2("geometry", new ImmutableFeatureSchema.Builder()
                                     .sourcePath("[sch=ags]verwaltungseinheit/geometrie")
                                     .type(Type.GEOMETRY)
+                                    .geometryType(SimpleFeatureGeometry.MULTI_POLYGON)
                                     .role(SchemaBase.Role.PRIMARY_GEOMETRY))
                             .build(),
                     new ImmutableFeatureSchema.Builder()
@@ -447,6 +449,11 @@ class FeatureSchemaFixtures {
                                     .sourcePath("_id")
                                     .type(Type.INTEGER)
                                     .role(SchemaBase.Role.ID))
+                            .putProperties2("geometry", new ImmutableFeatureSchema.Builder()
+                                    .sourcePath("[sch=ags]verwaltungseinheit/geometrie")
+                                    .type(Type.GEOMETRY)
+                                    .geometryType(SimpleFeatureGeometry.MULTI_POLYGON)
+                                    .role(SchemaBase.Role.PRIMARY_GEOMETRY))
                             .putProperties2("upperLevelUnit", new ImmutableFeatureSchema.Builder()
                                     .type(Type.OBJECT)
                                     .name("upperLevelUnit")
