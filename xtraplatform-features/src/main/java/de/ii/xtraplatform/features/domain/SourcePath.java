@@ -12,4 +12,6 @@ import java.util.List;
 public interface SourcePath {
 
   List<String> getFullPath();
+
+  List<String> getParentPath();
 }

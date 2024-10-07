@@ -7,6 +7,14 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import static de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry.ANY;
+import static de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry.LINE_STRING;
+import static de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry.MULTI_LINE_STRING;
+import static de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry.MULTI_POINT;
+import static de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry.MULTI_POLYGON;
+import static de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry.POINT;
+import static de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry.POLYGON;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -290,6 +298,28 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @JsonIgnore
   @Value.Derived
   @Value.Auxiliary
+  default List<T> getIdProperties() {
+    if (!getSourcePaths().isEmpty()) {
+      return getSourcePaths().stream()
+          .map(
+              path ->
+                  getAllNestedProperties().stream()
+                      .filter(
+                          property ->
+                              property.getSourcePath().filter(p -> p.startsWith(path)).isPresent())
+                      .filter(SchemaBase::isId)
+                      .findFirst())
+          .filter(Optional::isPresent)
+          .map(Optional::get)
+          .collect(Collectors.toList());
+    }
+
+    return getIdProperty().stream().collect(Collectors.toList());
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
   default Optional<T> getPrimaryGeometry() {
     return getAllNestedProperties().stream()
         .filter(SchemaBase::isPrimaryGeometry)
@@ -304,6 +334,88 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     return getAllObjects().stream()
         .filter(schema -> schema.getProperties().stream().anyMatch(SchemaBase::isPrimaryGeometry))
         .findFirst();
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default List<T> getPrimaryGeometries() {
+    if (!getSourcePaths().isEmpty()) {
+      return getSourcePaths().stream()
+          .map(
+              path ->
+                  getAllNestedProperties().stream()
+                      .filter(
+                          property ->
+                              property.getSourcePath().filter(p -> p.startsWith(path)).isPresent())
+                      .filter(SchemaBase::isPrimaryGeometry)
+                      .findFirst()
+                      .or(
+                          () ->
+                              getAllNestedProperties().stream()
+                                  .filter(
+                                      property ->
+                                          property
+                                              .getSourcePath()
+                                              .filter(p -> p.startsWith(path))
+                                              .isPresent())
+                                  .filter(SchemaBase::isSpatial)
+                                  .findFirst()))
+          .filter(Optional::isPresent)
+          .map(Optional::get)
+          .collect(Collectors.toList());
+    }
+
+    return getPrimaryGeometry().stream().collect(Collectors.toList());
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default List<SimpleFeatureGeometry> getGeometryTypes() {
+    return getPrimaryGeometries().stream()
+        .map(SchemaBase::getGeometryType)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .distinct()
+        .collect(Collectors.toList());
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default SimpleFeatureGeometry getEffectiveGeometryType() {
+    return getGeometryTypes().stream().reduce((a, b) -> ANY).orElse(ANY);
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default Optional<Integer> getEffectiveGeometryDimension() {
+    switch (getGeometryTypes().stream()
+        .reduce(
+            (a, b) -> {
+              if (a == POINT && b == MULTI_POINT) return MULTI_POINT;
+              if (b == POINT && a == MULTI_POINT) return MULTI_POINT;
+              if (a == LINE_STRING && b == MULTI_LINE_STRING) return MULTI_LINE_STRING;
+              if (b == LINE_STRING && a == MULTI_LINE_STRING) return MULTI_LINE_STRING;
+              if (a == POLYGON && b == MULTI_POLYGON) return MULTI_POLYGON;
+              if (b == POLYGON && a == MULTI_POLYGON) return MULTI_POLYGON;
+              return ANY;
+            })
+        .orElse(ANY)) {
+      case POINT:
+      case MULTI_POINT:
+        return Optional.of(0);
+      case LINE_STRING:
+      case MULTI_LINE_STRING:
+        return Optional.of(1);
+      case POLYGON:
+      case MULTI_POLYGON:
+        return Optional.of(2);
+      default:
+        return Optional.empty();
+    }
   }
 
   @JsonIgnore
@@ -327,6 +439,39 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     return getAllObjects().stream()
         .filter(schema -> schema.getProperties().stream().anyMatch(SchemaBase::isPrimaryInstant))
         .findFirst();
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default List<T> getPrimaryInstants() {
+    if (!getSourcePaths().isEmpty()) {
+      return getSourcePaths().stream()
+          .map(
+              path ->
+                  getAllNestedProperties().stream()
+                      .filter(
+                          property ->
+                              property.getSourcePath().filter(p -> p.startsWith(path)).isPresent())
+                      .filter(SchemaBase::isPrimaryInstant)
+                      .findFirst()
+                      .or(
+                          () ->
+                              getAllNestedProperties().stream()
+                                  .filter(
+                                      property ->
+                                          property
+                                              .getSourcePath()
+                                              .filter(p -> p.startsWith(path))
+                                              .isPresent())
+                                  .filter(SchemaBase::isTemporal)
+                                  .findFirst()))
+          .filter(Optional::isPresent)
+          .map(Optional::get)
+          .collect(Collectors.toList());
+    }
+
+    return getPrimaryInstant().stream().collect(Collectors.toList());
   }
 
   @JsonIgnore
@@ -366,6 +511,46 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @JsonIgnore
   @Value.Derived
   @Value.Auxiliary
+  default List<Tuple<T, T>> getPrimaryIntervals() {
+    if (!getSourcePaths().isEmpty()) {
+      return getSourcePaths().stream()
+          .map(
+              path -> {
+                Optional<T> start =
+                    getAllNestedProperties().stream()
+                        .filter(
+                            property ->
+                                property
+                                    .getSourcePath()
+                                    .filter(p -> p.startsWith(path))
+                                    .isPresent())
+                        .filter(SchemaBase::isPrimaryIntervalStart)
+                        .findFirst();
+                Optional<T> end =
+                    getAllNestedProperties().stream()
+                        .filter(
+                            property ->
+                                property
+                                    .getSourcePath()
+                                    .filter(p -> p.startsWith(path))
+                                    .isPresent())
+                        .filter(SchemaBase::isPrimaryIntervalEnd)
+                        .findFirst();
+                return start.isPresent() && end.isPresent()
+                    ? Optional.of(Tuple.of(start.get(), end.get()))
+                    : Optional.<Tuple<T, T>>empty();
+              })
+          .filter(Optional::isPresent)
+          .map(Optional::get)
+          .collect(Collectors.toList());
+    }
+
+    return getPrimaryInterval().stream().collect(Collectors.toList());
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
   default Optional<T> getSecondaryGeometry() {
     return getAllNestedProperties().stream().filter(SchemaBase::isSecondaryGeometry).findFirst();
   }
@@ -377,6 +562,28 @@ public interface SchemaBase<T extends SchemaBase<T>> {
     return getAllObjects().stream()
         .filter(schema -> schema.getProperties().stream().anyMatch(SchemaBase::isSecondaryGeometry))
         .findFirst();
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default List<T> getSecondaryGeometries() {
+    if (!getSourcePaths().isEmpty()) {
+      return getSourcePaths().stream()
+          .map(
+              path ->
+                  getAllNestedProperties().stream()
+                      .filter(
+                          property ->
+                              property.getSourcePath().filter(p -> p.startsWith(path)).isPresent())
+                      .filter(SchemaBase::isSecondaryGeometry)
+                      .findFirst())
+          .filter(Optional::isPresent)
+          .map(Optional::get)
+          .collect(Collectors.toList());
+    }
+
+    return getPrimaryGeometry().stream().collect(Collectors.toList());
   }
 
   @JsonIgnore

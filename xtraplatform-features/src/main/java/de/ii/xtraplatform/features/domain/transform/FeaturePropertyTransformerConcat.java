@@ -15,11 +15,12 @@ import de.ii.xtraplatform.features.domain.FeatureTokenType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import org.immutables.value.Value;
 
 @Value.Immutable
 public abstract class FeaturePropertyTransformerConcat
-    implements FeaturePropertyTokenSliceTransformer {
+    implements FeaturePropertyTokenSliceTransformer, DynamicTargetSchemaTransformer {
 
   private static final String TYPE = "CONCAT";
 
@@ -133,4 +134,22 @@ public abstract class FeaturePropertyTransformerConcat
       int start,
       int end,
       List<Object> result) {}
+
+  @Override
+  public boolean isApplicableDynamic(List<String> path) {
+    return path.stream().anyMatch(elem -> elem.matches("(?:^|\\.)[0-9]+_.+"));
+  }
+
+  @Override
+  public List<String> transformPathDynamic(List<String> path) {
+    return path.stream()
+        .map(elem -> elem.replaceFirst("^([0-9]+)_", ""))
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public List<FeatureSchema> transformSchemaDynamic(
+      List<FeatureSchema> schemas, List<String> path) {
+    return schemas;
+  }
 }

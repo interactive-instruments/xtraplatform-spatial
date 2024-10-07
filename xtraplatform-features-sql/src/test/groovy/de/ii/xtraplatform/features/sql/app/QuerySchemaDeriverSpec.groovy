@@ -65,6 +65,8 @@ class QuerySchemaDeriverSpec extends Specification {
         "merge connector"                            | FeatureSchemaFixtures.CONNECTOR_MERGE                     || QuerySchemaFixtures.CONNECTOR_MERGE
         "object connector"                           | FeatureSchemaFixtures.CONNECTOR_OBJECT                    || QuerySchemaFixtures.CONNECTOR_OBJECT
         "merge object connector"                     | FeatureSchemaFixtures.CONNECTOR_MERGE_OBJECT              || QuerySchemaFixtures.CONNECTOR_MERGE_OBJECT
+        "concat object arrays"                       | FeatureSchemaFixtures.CONCAT_OBJECT_ARRAYS                || QuerySchemaFixtures.CONCAT_OBJECT_ARRAYS
+        "concat root objects"                        | FeatureSchemaFixtures.CONCAT_ROOT                         || QuerySchemaFixtures.CONCAT_ROOT
     }
 
 

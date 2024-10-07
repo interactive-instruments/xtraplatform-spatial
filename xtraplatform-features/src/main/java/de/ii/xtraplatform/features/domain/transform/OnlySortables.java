@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class OnlySortables implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
 
@@ -69,7 +70,7 @@ public class OnlySortables implements SchemaVisitorTopDown<FeatureSchema, Featur
       }
 
       if (schema.sortable()) {
-        String path = schema.getFullPathAsString(pathSeparator);
+        String path = OnlyQueryables.cleanupPaths(schema).getFullPathAsString(pathSeparator);
         // ignore property, if it is not included (by default or explicitly) or if it is excluded
         if ((!wildcard && !included.contains(path)) || excluded.contains(path)) {
           return null;
@@ -92,9 +93,15 @@ public class OnlySortables implements SchemaVisitorTopDown<FeatureSchema, Featur
                   ImmutableMap.toImmutableMap(
                       Entry::getKey, Entry::getValue, (first, second) -> second));
 
+      List<FeatureSchema> visitedConcat =
+          schema.getConcat().stream()
+              .map(concatSchema -> concatSchema.accept(this, parents))
+              .collect(Collectors.toList());
+
       return new ImmutableFeatureSchema.Builder()
           .from(schema)
           .propertyMap(visitedPropertiesMap)
+          .concat(visitedConcat)
           .build();
     }
   }

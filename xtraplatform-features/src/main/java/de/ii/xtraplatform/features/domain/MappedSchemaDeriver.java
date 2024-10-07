@@ -16,6 +16,44 @@ import java.util.stream.Stream;
 public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePath>
     extends SchemaVisitorTopDown<FeatureSchema, List<T>> {
 
+  static boolean endsWith(List<?> source, List<?> target) {
+    if (source.size() < target.size()) {
+      return false;
+    }
+
+    for (int i = 0; i < target.size(); i++) {
+      if (!Objects.equals(source.get(source.size() - target.size() + i), target.get(i))) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  static boolean intersects(List<?> source, List<?> target) {
+    if (source.isEmpty() || target.isEmpty()) {
+      return false;
+    }
+
+    int start = source.indexOf(target.get(0));
+
+    if (start == -1) {
+      return false;
+    }
+
+    for (int i = start; i < source.size(); i++) {
+      if (i - start >= target.size()) {
+        return false;
+      }
+
+      if (!Objects.equals(source.get(i), target.get(i - start))) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   @Override
   default List<T> visit(
       FeatureSchema schema, List<FeatureSchema> parents, List<List<T>> visitedProperties) {
@@ -28,11 +66,32 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
     List<T> properties =
         visitedProperties.stream().flatMap(Collection::stream).collect(Collectors.toList());
 
-    if (!currentPaths.isEmpty()) {
+    boolean isInConcat =
+        !parents.isEmpty()
+            && parents.get(parents.size() - 1).isObject()
+            && !parents.get(parents.size() - 1).getConcat().isEmpty();
+
+    boolean isVirtualObject =
+        isInConcat && schema.isObject() && parentPaths1.contains(currentPaths);
+
+    if (!currentPaths.isEmpty() && !isVirtualObject) {
       return parentPaths1.stream()
           .flatMap(
               parentPath ->
                   currentPaths.stream()
+                      .filter(
+                          currentPath -> {
+                            if (isInConcat) {
+                              List<String> fullParentPath =
+                                  parentPath.stream()
+                                      .flatMap(p -> p.getFullPath().stream())
+                                      .collect(Collectors.toList());
+                              if (!intersects(fullParentPath, currentPath.getParentPath())) {
+                                return false;
+                              }
+                            }
+                            return true;
+                          })
                       .map(
                           currentPath -> {
                             List<String> fullPath =
@@ -57,6 +116,17 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
 
     if (!parentPaths1.isEmpty()) {
       return parentPaths1.stream()
+          .filter(
+              parentPath -> {
+                if (isVirtualObject) {
+                  List<String> fullParentPath =
+                      parentPath.stream()
+                          .flatMap(p -> p.getFullPath().stream())
+                          .collect(Collectors.toList());
+                  return Objects.equals(parentPath, currentPaths);
+                }
+                return true;
+              })
           .flatMap(
               parentPath ->
                   merge(
@@ -85,7 +155,7 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
   default List<List<U>> getParentPaths(FeatureSchema current, List<List<U>> parents) {
     List<U> children = parseSourcePaths(current, parents);
 
-    if (parents.isEmpty()) {
+    if (parents.isEmpty() || hasRootPath(current)) {
       return children.stream().map(List::of).collect(Collectors.toList());
     }
 
@@ -105,6 +175,8 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
   }
 
   List<U> parseSourcePaths(FeatureSchema sourceSchema, List<List<U>> parents);
+
+  boolean hasRootPath(FeatureSchema sourceSchema);
 
   T create(
       FeatureSchema targetSchema,

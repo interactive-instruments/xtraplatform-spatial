@@ -54,10 +54,6 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
           .collect(Collectors.toList());
     }
 
-    if (sourceSchema.getType() == Type.OBJECT_ARRAY && !sourceSchema.getConcat().isEmpty()) {
-      return List.of();
-    }
-
     return sourceSchema.getEffectiveSourcePaths().stream()
         .map(
             sourcePath ->
@@ -65,6 +61,12 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                     ? pathParser.parseColumnPath(sourcePath)
                     : pathParser.parseTablePath(sourcePath))
         .collect(Collectors.toList());
+  }
+
+  @Override
+  public boolean hasRootPath(FeatureSchema sourceSchema) {
+    return !sourceSchema.getEffectiveSourcePaths().isEmpty()
+        && sourceSchema.getEffectiveSourcePaths().stream().allMatch(pathParser::hasRootPath);
   }
 
   @Override
@@ -431,6 +433,8 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
       } else if (type == Type.VALUE_ARRAY) {
         type = valueType.orElse(Type.STRING);
         valueType = Optional.empty();
+      } else if (targetSchema.isFeature() && type == Type.OBJECT_ARRAY) {
+        type = Type.OBJECT;
       }
     }
 

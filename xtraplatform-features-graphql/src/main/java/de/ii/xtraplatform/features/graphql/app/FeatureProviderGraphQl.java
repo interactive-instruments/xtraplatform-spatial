@@ -336,9 +336,13 @@ public class FeatureProviderGraphQl
 
   @Override
   public FeatureSchema getQueryablesSchema(
-      FeatureSchema schema, List<String> included, List<String> excluded, String pathSeparator) {
+      FeatureSchema schema,
+      List<String> included,
+      List<String> excluded,
+      String pathSeparator,
+      boolean cleanupKeys) {
     OnlyQueryables queryablesSelector =
-        new OnlyQueryables(included, excluded, pathSeparator, (path) -> false);
+        new OnlyQueryables(included, excluded, pathSeparator, (path) -> false, cleanupKeys);
 
     return schema.accept(queryablesSelector);
   }
