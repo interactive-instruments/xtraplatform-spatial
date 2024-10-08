@@ -1,0 +1,51 @@
+# schema references and feature refs are already resolved
+sourcePath: "/pfs_plan"
+type: OBJECT
+objectType: PFS_Plan
+properties:
+  oid:
+    sourcePath: id
+    type: STRING
+    role: ID
+  hatObjekt:
+    type: OBJECT_ARRAY
+    role: EMBEDDED_FEATURE
+    concat:
+      - sourcePath: '[_id=gehoertzuplan_pfs_plan_fk]bst_erdgasleitung'
+        properties:
+          id:
+            sourcePath: _id
+            type: INTEGER
+            role: ID
+          gehoertZuPlan:
+            type: OBJECT
+            refType: pfs_plan
+            properties:
+              type:
+                type: STRING
+                constantValue: pfs_plan
+              id:
+                sourcePath: gehoertzuplan_pfs_plan_fk
+                type: INTEGER
+              title:
+                sourcePath: gehoertzuplan_pfs_plan_fk
+                type: STRING
+      - sourcePath: '[_id=gehoertzuplan_pfs_plan_fk]bst_speicher'
+        properties:
+          id:
+            sourcePath: _id
+            type: INTEGER
+            role: ID
+          gehoertZuPlan:
+            type: OBJECT
+            refType: pfs_plan
+            properties:
+              type:
+                type: STRING
+                constantValue: pfs_plan
+              id:
+                sourcePath: gehoertzuplan_pfs_plan_fk
+                type: INTEGER
+              title:
+                sourcePath: gehoertzuplan_pfs_plan_fk
+                type: STRING
