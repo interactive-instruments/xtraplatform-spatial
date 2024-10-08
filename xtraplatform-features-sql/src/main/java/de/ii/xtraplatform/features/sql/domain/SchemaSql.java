@@ -48,6 +48,11 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
 
   Optional<String> getConstantValue();
 
+  @Value.Default
+  default boolean isExpression() {
+    return false;
+  }
+
   @Value.Derived
   default boolean isConstant() {
     return getConstantValue().isPresent();
@@ -60,7 +65,15 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
     List<String> path =
         getRelation().isEmpty()
             ? getSubDecoder().isPresent()
-                ? List.of(String.format("[%s]%s", getSubDecoder().get(), getName()))
+                ? List.of(
+                    String.format(
+                            "[%s]%s",
+                            getSubDecoder().get(),
+                            isExpression()
+                                ? String.format(
+                                    "{sql=%s}", getSubDecoderPaths().values().iterator().next())
+                                : getName())
+                        + getFilterString().map(filter -> "{filter=" + filter + "}").orElse(""))
                 : ImmutableList.of(
                     getName()
                         + getFilterString().map(filter -> "{filter=" + filter + "}").orElse(""))

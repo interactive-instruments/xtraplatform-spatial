@@ -41,7 +41,7 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
   public final T visit(
       FeatureSchema schema, List<FeatureSchema> parents, List<T> visitedProperties) {
     if (parents.isEmpty()) {
-      return deriveRootSchema(schema, visitedProperties);
+      return deriveRootSchemas(schema, visitedProperties);
     }
     if (schema.isValue() || schema.isFeatureRef()) {
       return deriveValueSchema(schema);
@@ -49,6 +49,34 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
 
     return deriveObjectSchemas(schema, visitedProperties);
   }
+
+  private T deriveRootSchemas(FeatureSchema schema, List<T> visitedProperties) {
+
+    if (!schema.getConcat().isEmpty()
+        && visitedProperties.size()
+            == schema.getConcat().stream().mapToInt(s -> s.getProperties().size()).sum()) {
+      List<T> schemas = new ArrayList<>();
+      int k = 0;
+
+      for (int i = 0; i < schema.getConcat().size(); i++) {
+        List<T> visitedProperties3 = new ArrayList<>();
+
+        if (!visitedProperties.isEmpty()) {
+          for (int j = 0; j < schema.getConcat().get(i).getProperties().size(); j++) {
+            visitedProperties3.add(visitedProperties.get(k++));
+          }
+        }
+
+        schemas.add(deriveRootSchema(schema.getConcat().get(i), visitedProperties3));
+      }
+
+      return mergeRootSchemas(schemas);
+    }
+
+    return deriveRootSchema(schema, visitedProperties);
+  }
+
+  protected abstract T mergeRootSchemas(List<T> rootSchemas);
 
   private T deriveRootSchema(FeatureSchema schema, List<T> visitedProperties) {
 
@@ -61,7 +89,9 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
                 property ->
                     new SimpleEntry<>(
                         getNameWithoutRole(getPropertyName(property).get()), property))
-            .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+            .collect(
+                ImmutableMap.toImmutableMap(
+                    Map.Entry::getKey, Map.Entry::getValue, (first, second) -> first));
 
     List<String> required =
         visitedProperties.stream()

@@ -110,7 +110,7 @@ public class SchemaToPathsVisitor<T extends SchemaBase<T>>
     }
 
     if (!useTargetPath
-        && schema.getType() == Type.OBJECT_ARRAY
+        && (schema.getType() == Type.OBJECT_ARRAY || schema.isFeature())
         && schema instanceof FeatureSchema
         && (!((FeatureSchema) schema).getConcat().isEmpty()
             || !((FeatureSchema) schema).getCoalesce().isEmpty())) {

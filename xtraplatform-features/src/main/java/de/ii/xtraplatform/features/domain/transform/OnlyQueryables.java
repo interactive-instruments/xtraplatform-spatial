@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
 
@@ -28,17 +29,20 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
   private final List<String> excluded;
   private final String pathSeparator;
   private final Predicate<String> excludePathMatcher;
+  private final boolean cleanupKeys;
 
   public OnlyQueryables(
       List<String> included,
       List<String> excluded,
       String pathSeparator,
-      Predicate<String> excludePathMatcher) {
+      Predicate<String> excludePathMatcher,
+      boolean cleanupKeys) {
     this.included = included;
     this.excluded = excluded;
     this.wildcard = included.contains("*");
     this.pathSeparator = pathSeparator;
     this.excludePathMatcher = excludePathMatcher;
+    this.cleanupKeys = cleanupKeys;
   }
 
   @Override
@@ -61,20 +65,17 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
     public FeatureSchema visit(
         FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
 
-      if (parents.stream()
-          .anyMatch(
-              parent ->
-                  parent.isMultiSource()
-                      || excludePathMatcher.test(parent.getSourcePath().orElse("")))) {
-        // if the parent has multiple source paths or its target path is excluded, no property can
-        // be a queryable
+      if (parents.stream().anyMatch(this::isParentExcluded)) {
         return null;
       }
 
       if (schema.queryable()) {
-        String path = schema.getFullPathAsString(pathSeparator);
+        String path = cleanupPaths(schema).getFullPathAsString(pathSeparator);
         // ignore property, if it is not included (by default or explicitly) or if it is excluded
         if ((!wildcard && !included.contains(path)) || excluded.contains(path)) {
+          return null;
+        }
+        if (excludePathMatcher.test(schema.getSourcePath().orElse(""))) {
           return null;
         }
       } else if (!schema.isObject()
@@ -85,6 +86,7 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
       Map<String, FeatureSchema> visitedPropertiesMap =
           visitedProperties.stream()
               .filter(Objects::nonNull)
+              .map(this::cleanupPathsIfDesired)
               .map(
                   property ->
                       new SimpleImmutableEntry<>(
@@ -93,10 +95,30 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
                   ImmutableMap.toImmutableMap(
                       Entry::getKey, Entry::getValue, (first, second) -> second));
 
+      List<FeatureSchema> visitedConcat =
+          schema.getConcat().stream()
+              .map(concatSchema -> concatSchema.accept(this, parents))
+              .collect(Collectors.toList());
+
       return new Builder()
           .from(adjustType(parents, schema))
           .propertyMap(visitedPropertiesMap)
+          .concat(visitedConcat)
           .build();
+    }
+
+    private FeatureSchema cleanupPathsIfDesired(FeatureSchema property) {
+      if (cleanupKeys) {
+        return cleanupPaths(property);
+      }
+      return property;
+    }
+
+    private String getKey(FeatureSchema property) {
+      return cleanupKeys
+          // TODO: separator
+          ? property.getFullPathAsString(pathSeparator).replaceAll("(^|\\.)([0-9]+)_", "$1")
+          : property.getFullPathAsString(pathSeparator);
     }
 
     private FeatureSchema adjustType(List<FeatureSchema> parents, FeatureSchema property) {
@@ -121,5 +143,30 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
           .valueType(property.getType())
           .build();
     }
+
+    private boolean isParentExcluded(FeatureSchema parent) {
+      // if the parent has multiple source paths or its target path is excluded, no property can
+      // be a queryable
+      return (parent.isMultiSource() && !parent.isFeature())
+          || excludePathMatcher.test(parent.getSourcePath().orElse(""));
+    }
+  }
+
+  static FeatureSchema cleanupPaths(FeatureSchema property) {
+    if ((property.getPath().stream().anyMatch(elem -> elem.matches("^([0-9]+)_.*"))
+        || property.getParentPath().stream().anyMatch(elem -> elem.matches("^([0-9]+)_.*")))) {
+      return new ImmutableFeatureSchema.Builder()
+          .from(property)
+          .path(
+              property.getPath().stream()
+                  .map(elem -> elem.replaceAll("^([0-9]+)_", ""))
+                  .collect(Collectors.toList()))
+          .parentPath(
+              property.getParentPath().stream()
+                  .map(elem -> elem.replaceAll("^([0-9]+)_", ""))
+                  .collect(Collectors.toList()))
+          .build();
+    }
+    return property;
   }
 }

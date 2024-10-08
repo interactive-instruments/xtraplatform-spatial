@@ -36,8 +36,8 @@ import de.ii.xtraplatform.features.domain.AggregateStatsReader;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.DatasetChangeListener;
-import de.ii.xtraplatform.features.domain.Decoder;
 import de.ii.xtraplatform.features.domain.DecoderFactories;
+import de.ii.xtraplatform.features.domain.DecoderFactory;
 import de.ii.xtraplatform.features.domain.FeatureChangeListener;
 import de.ii.xtraplatform.features.domain.FeatureCrs;
 import de.ii.xtraplatform.features.domain.FeatureEventHandler.ModifiableContext;
@@ -111,12 +111,9 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.Set;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import javax.ws.rs.core.MediaType;
 import org.postgresql.util.PSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -184,7 +181,7 @@ import org.threeten.extra.Interval;
  *     name of the joining table. Example from above: `[oid=kita_fk]plaetze`. When a junction table
  *     should be used, two such joins are concatenated with "/", e.g. `[id=fka]a_2_b/[fkb=id]tab_b`.
  *     <p>Rows for a table can be filtered by adding `{filter=expression}` after the table name,
- *     where `expression` is a [CQL2 Text](https://docs.ogc.org/is/21-065r1/21-065r1.html#cql2-text)
+ *     where `expression` is a [CQL2 Text](https://docs.ogc.org/is/21-065r2/21-065r2.html#cql2-text)
  *     expression. For details see the building block [Filter /
  *     CQL](../../services/building-blocks/filter.md), which provides the implementation but does
  *     not have to be enabled.
@@ -194,6 +191,9 @@ import org.threeten.extra.Interval;
  *     <p>A non-default sort key can be set by adding `{sortKey=columnName}` after the table name.
  *     If that sort key is not unique, add `{sortKeyUnique=false}`.
  *     <p>All table and column names must be unquoted identifiers.
+ *     <p>Arbitrary SQL expressions for values are supported, for example to apply function calls.
+ *     As an example, this `[EXPRESSION]{sql=$T$.length+55.5}` (instead of just `length`) would add
+ *     a fixed amount to the length column. The prefix `$T$` will be replaced with the table alias.
  *     <p>### Query Generation
  *     <p>Options for query generation.
  *     <p>{@docTable:queryGeneration}
@@ -225,7 +225,7 @@ import org.threeten.extra.Interval;
  *     <p>Auf einer Tabelle (der Haupttabelle eines Features oder einer über Join-angebundenen
  *     Tabelle) kann zusätzlich ein einschränkender Filter durch den Zusatz `{filter=ausdruck}`
  *     angegeben werden, wobei `ausdruck` das Selektionskriertium in [CQL2
- *     Text](https://docs.ogc.org/is/21-065r1/21-065r1.html#cql2-text) spezifiziert. Für Details
+ *     Text](https://docs.ogc.org/is/21-065r2/21-065r2.html#cql2-text) spezifiziert. Für Details
  *     siehe den Baustein [Filter / CQL](../../services/building-blocks/filter.md), welches die
  *     Implementierung bereitstellt, aber nicht aktiviert sein muss.
  *     <p>Wenn z.B. in dem Beispiel oben nur Angaben zur Belegungskapazität selektiert werden
@@ -237,6 +237,10 @@ import org.threeten.extra.Interval;
  *     <p>Ein vom Standard abweichender `primaryKey` kann durch den Zusatz von
  *     `{primaryKey=Spaltenname}` nach dem Tabellennamen angegeben werden.
  *     <p>Alle Tabellen- und Spaltennamen müssen "unquoted Identifier" sein.
+ *     <p>Beliebige SQL-Ausdrücke für Werte sind möglich, z.B. um Funktionsaufrufe anzuwenden. So
+ *     würde z.B. dieser Ausdruck `[EXPRESSION]{sql=$T$.length+55.5}` (anstatt nur `length`) einen
+ *     fixen Wert zur Längen-Spalte addieren. Der Präfix `$T$` wird durch den Tabellen-Alias
+ *     ersetzt.
  *     <p>### Query-Generierung
  *     <p>Optionen für die Query-Generierung in `queryGeneration`.
  *     <p>{@docTable:queryGeneration}
@@ -305,7 +309,7 @@ public class FeatureProviderSql
   private final CrsInfo crsInfo;
   private final Cql cql;
   private final SqlDbmsAdapters dbmsAdapters;
-  private final Map<String, Supplier<Decoder>> subdecoders;
+  private final Map<String, DecoderFactory> subdecoders;
 
   private final de.ii.xtraplatform.cache.domain.Cache cache;
 
@@ -333,6 +337,36 @@ public class FeatureProviderSql
       VolatileRegistry volatileRegistry,
       Cache cache,
       @Assisted FeatureProviderDataV2 data) {
+    this(
+        crsTransformerFactory,
+        crsInfo,
+        cql,
+        connectorFactory,
+        dbmsAdapters,
+        reactive,
+        valueStore,
+        extensionRegistry,
+        decoderFactories,
+        volatileRegistry,
+        cache,
+        data,
+        decoderFactories.getConnectorDecoders());
+  }
+
+  protected FeatureProviderSql(
+      CrsTransformerFactory crsTransformerFactory,
+      CrsInfo crsInfo,
+      Cql cql,
+      ConnectorFactory connectorFactory,
+      SqlDbmsAdapters dbmsAdapters,
+      Reactive reactive,
+      ValueStore valueStore,
+      ProviderExtensionRegistry extensionRegistry,
+      DecoderFactories decoderFactories,
+      VolatileRegistry volatileRegistry,
+      Cache cache,
+      FeatureProviderDataV2 data,
+      Map<String, DecoderFactory> subdecoders) {
     super(
         connectorFactory,
         reactive,
@@ -347,11 +381,7 @@ public class FeatureProviderSql
     this.cql = cql;
     this.dbmsAdapters = dbmsAdapters;
     this.cache = cache.withPrefix(getEntityType(), getId());
-
-    this.subdecoders =
-        Map.of(
-            "JSON",
-            () -> decoderFactories.createDecoder(MediaType.APPLICATION_JSON_TYPE).orElseThrow());
+    this.subdecoders = subdecoders;
   }
 
   private static PathParserSql createPathParser2(SqlPathDefaults sqlPathDefaults, Cql cql) {
@@ -360,8 +390,8 @@ public class FeatureProviderSql
   }
 
   private static SqlPathParser createPathParser3(
-      SqlPathDefaults sqlPathDefaults, Cql cql, Set<String> connectors) {
-    return new SqlPathParser(sqlPathDefaults, cql, connectors);
+      SqlPathDefaults sqlPathDefaults, Cql cql, Map<String, DecoderFactory> subdecoders) {
+    return new SqlPathParser(sqlPathDefaults, cql, subdecoders);
   }
 
   @Override
@@ -381,8 +411,7 @@ public class FeatureProviderSql
     this.sourceSchemaValidator =
         new SourceSchemaValidatorSql(validationSchemas, this::getSqlClient);
 
-    this.pathParser3 =
-        createPathParser3(getData().getSourcePathDefaults(), cql, subdecoders.keySet());
+    this.pathParser3 = createPathParser3(getData().getSourcePathDefaults(), cql, subdecoders);
     QuerySchemaDeriver querySchemaDeriver = new QuerySchemaDeriver(pathParser3);
     this.tableSchemas =
         getData().getTypes().entrySet().stream()
@@ -1212,10 +1241,14 @@ public class FeatureProviderSql
 
   @Override
   public FeatureSchema getQueryablesSchema(
-      FeatureSchema schema, List<String> included, List<String> excluded, String pathSeparator) {
-    Predicate<String> excludeConnectors = path -> path.matches(".+?\\[[^=\\]]+].+");
+      FeatureSchema schema,
+      List<String> included,
+      List<String> excluded,
+      String pathSeparator,
+      boolean cleanupKeys) {
+    Predicate<String> excludeConnectors = path -> path.matches(".*?\\[[^=\\]]+].+");
     OnlyQueryables queryablesSelector =
-        new OnlyQueryables(included, excluded, pathSeparator, excludeConnectors);
+        new OnlyQueryables(included, excluded, pathSeparator, excludeConnectors, cleanupKeys);
 
     return schema.accept(queryablesSelector);
   }
@@ -1223,7 +1256,7 @@ public class FeatureProviderSql
   @Override
   public FeatureSchema getSortablesSchema(
       FeatureSchema schema, List<String> included, List<String> excluded, String pathSeparator) {
-    Predicate<String> excludeConnectors = path -> path.matches(".+?\\[[^=\\]]+].+");
+    Predicate<String> excludeConnectors = path -> path.matches(".*?\\[[^=\\]]+].+");
     OnlySortables sortablesSelector =
         new OnlySortables(included, excluded, pathSeparator, excludeConnectors);
 

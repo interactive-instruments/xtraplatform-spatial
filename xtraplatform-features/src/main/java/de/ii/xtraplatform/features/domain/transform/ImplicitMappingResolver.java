@@ -17,6 +17,10 @@ import java.util.List;
 public class ImplicitMappingResolver implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
 
   public boolean needsResolving(FeatureSchema schema) {
+    if (schema.isFeature() && !schema.getConcat().isEmpty()) {
+      return false;
+    }
+    
     boolean isFeatureRefInConcat =
         (schema.isFeatureRef() && MappingOperationResolver.isConcatPath(schema.getPath()));
 

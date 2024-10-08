@@ -8,6 +8,7 @@
 package de.ii.xtraplatform.features.app;
 
 import com.github.azahnen.dagger.annotations.AutoBind;
+import com.google.common.collect.ImmutableMap;
 import dagger.Lazy;
 import de.ii.xtraplatform.features.domain.Decoder;
 import de.ii.xtraplatform.features.domain.DecoderFactories;
@@ -15,6 +16,7 @@ import de.ii.xtraplatform.features.domain.DecoderFactory;
 import de.ii.xtraplatform.features.domain.DecoderFactory.FeatureDecoderFactory;
 import de.ii.xtraplatform.features.domain.DecoderFactory.GeometryDecoderFactory;
 import de.ii.xtraplatform.features.domain.FeatureDecoder;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import javax.inject.Inject;
@@ -61,5 +63,13 @@ public class DecoderFactoriesImpl implements DecoderFactories {
         .filter(factory -> factory.getGeometryMediaType().equals(mediaType))
         .map(GeometryDecoderFactory::createGeometryDecoder)
         .findFirst();
+  }
+
+  @Override
+  public Map<String, DecoderFactory> getConnectorDecoders() {
+    return factories.get().stream()
+        .filter(factory -> factory.getConnectorString().isPresent())
+        .map(factory -> Map.entry(factory.getConnectorString().get(), factory))
+        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 }

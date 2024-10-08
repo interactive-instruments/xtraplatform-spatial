@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import java.util.Map;
 import java.util.Optional;
 import javax.ws.rs.core.MediaType;
 
@@ -17,4 +18,6 @@ public interface DecoderFactories {
   Optional<FeatureDecoder<byte[]>> createFeatureDecoder(MediaType mediaType);
 
   Optional<Decoder> createGeometryDecoder(MediaType mediaType);
+
+  Map<String, DecoderFactory> getConnectorDecoders();
 }

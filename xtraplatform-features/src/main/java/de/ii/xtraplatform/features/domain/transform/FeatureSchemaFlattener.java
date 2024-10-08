@@ -7,7 +7,6 @@
  */
 package de.ii.xtraplatform.features.domain.transform;
 
-import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
@@ -41,7 +40,7 @@ public class FeatureSchemaFlattener implements SchemaVisitorTopDown<FeatureSchem
     if (parents.isEmpty()) {
       Map<String, FeatureSchema> flatProperties =
           flattenProperties(visitedProperties, null, null).stream()
-              .map(property -> new SimpleEntry<>(property.getName(), property))
+              .map(property -> new SimpleEntry<>(flatIdentifier(property), property))
               .collect(
                   ImmutableMap.toImmutableMap(
                       Entry::getKey, Entry::getValue, (first, second) -> second));
@@ -93,11 +92,15 @@ public class FeatureSchemaFlattener implements SchemaVisitorTopDown<FeatureSchem
   }
 
   private List<String> flatPath(FeatureSchema property, String prefix) {
-    return Splitter.on(separator).splitToList(flatName(property, prefix));
+    return property.getFullPath();
   }
 
   private String flatLabel(FeatureSchema property, String prefix) {
     return prefix + property.getLabel().orElse(property.getName());
+  }
+
+  private String flatIdentifier(FeatureSchema property) {
+    return String.join(separator, property.getPath());
   }
 
   private Type flatType(FeatureSchema property) {

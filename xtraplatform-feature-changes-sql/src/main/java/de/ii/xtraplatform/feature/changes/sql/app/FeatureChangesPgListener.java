@@ -67,6 +67,10 @@ import org.slf4j.LoggerFactory;
  *     <p>Diese Erweiterung wird nicht benötigt, wenn Änderungen nur via
  *     [CRUD](../../../services/building-blocks/crud.md) vorgenommen werden oder wenn nach externen
  *     Updates eine neue Iteration der Datenbank verwendet wird.
+ * @limitationsEn Only feature types from an SQL feature provider with `dialect` `PGIS` and without
+ *     root concatenation are supported.
+ * @limitationsDe Es werden nur Objektarten von einem SQL-Feature-Provider mit `dialect` `PGIS` und
+ *     ohne Objekt-Konkatenation unterstützt.
  * @ref:propertyTable {@link
  *     de.ii.xtraplatform.feature.changes.sql.domain.ImmutableFeatureChangesPgConfiguration}
  * @ref:example {@link de.ii.xtraplatform.feature.changes.sql.domain.FeatureChangesPgConfiguration}

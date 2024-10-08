@@ -9,7 +9,6 @@ package de.ii.xtraplatform.tiles.app;
 
 import de.ii.xtraplatform.base.domain.LogContext;
 import de.ii.xtraplatform.blobs.domain.ResourceStore;
-import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import de.ii.xtraplatform.tiles.domain.Cache.Storage;
 import de.ii.xtraplatform.tiles.domain.ImmutableMbtilesMetadata;
 import de.ii.xtraplatform.tiles.domain.ImmutableVectorLayer;
@@ -366,7 +365,7 @@ public class TileStoreMbTiles implements TileStore {
           tileSets
               .get(key(tileset, tileMatrixSet))
               .getStorageInfo(
-                  Integer.parseInt(limits.getTileMatrix()),
+                  Math.max(0, Integer.parseInt(limits.getTileMatrix())),
                   limits.getMinTileRow(),
                   limits.getMinTileCol()));
     }
@@ -420,9 +419,7 @@ public class TileStoreMbTiles implements TileStore {
                     Collectors.toUnmodifiableMap(
                         Entry::getKey,
                         entry -> VectorLayer.getTypeAsString(entry.getValue().getType()))))
-        .geometryType(
-            VectorLayer.getGeometryTypeAsString(
-                generationSchema.getGeometryType().orElse(SimpleFeatureGeometry.ANY)))
+        .geometryType(VectorLayer.getGeometryTypeAsString(generationSchema.getGeometryType()))
         .build();
   }
 

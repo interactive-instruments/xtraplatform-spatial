@@ -8,7 +8,6 @@
 package de.ii.xtraplatform.features.domain;
 
 import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.features.domain.transform.DynamicTargetSchemaTransformer;
 import de.ii.xtraplatform.features.domain.transform.PropertyTransformation;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
@@ -22,7 +21,7 @@ import org.immutables.value.Value;
 @Value.Style(deepImmutablesDetection = true, builder = "new", attributeBuilderDetection = true)
 public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
 
-  Optional<DynamicTargetSchemaTransformer> getDynamicTransformer();
+  List<DynamicTargetSchemaTransformer> getDynamicTransformers();
 
   @Override
   default FeatureSchema schemaWithGeometryType(
@@ -32,14 +31,28 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
 
   @Override
   default List<FeatureSchema> getSchemasForTargetPath(List<String> path) {
-    if (getDynamicTransformer().isPresent()) {
-      DynamicTargetSchemaTransformer transformer = getDynamicTransformer().get();
-      if (transformer.isApplicableDynamic(path)) {
-        List<FeatureSchema> schemas =
-            getSchemasByTargetPath()
-                .getOrDefault(transformer.transformPathDynamic(path), ImmutableList.of());
+    if (!getDynamicTransformers().isEmpty()) {
+      List<String> transformedPath = path;
+      boolean transformed = false;
 
-        return transformer.transformSchemaDynamic(schemas, path);
+      for (DynamicTargetSchemaTransformer transformer : getDynamicTransformers()) {
+        if (transformer.isApplicableDynamic(transformedPath)) {
+          transformedPath = transformer.transformPathDynamic(transformedPath);
+          transformed = true;
+        }
+      }
+
+      if (transformed) {
+        List<FeatureSchema> transformedSchemas =
+            SchemaMappingBase.super.getSchemasForTargetPath(transformedPath);
+
+        for (DynamicTargetSchemaTransformer transformer : getDynamicTransformers()) {
+          if (transformer.isApplicableDynamic(path)) {
+            transformedSchemas = transformer.transformSchemaDynamic(transformedSchemas, path);
+          }
+        }
+
+        return transformedSchemas;
       }
     }
 
@@ -109,7 +122,7 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
   default String cleanPath(String path) {
     if (path.contains("{")) {
       int i = path.indexOf("{");
-      if (path.startsWith("filter", i + 1)) {
+      if (path.startsWith("filter", i + 1) || path.startsWith("sql", i + 1)) {
         return path.substring(0, i + 2) + cleanPath(path.substring(i + 2));
       }
       return path.substring(0, path.indexOf("{"));

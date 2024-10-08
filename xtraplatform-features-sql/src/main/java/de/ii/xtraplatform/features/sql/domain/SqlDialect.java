@@ -109,6 +109,10 @@ public interface SqlDialect {
     return ImmutableSet.of();
   }
 
+  default String applyToExpression(String table, String name, Map<String, String> subDecoderPaths) {
+    return name;
+  }
+
   Map<SpatialFunction, String> SPATIAL_OPERATORS =
       new ImmutableMap.Builder<SpatialFunction, String>()
           .put(SpatialFunction.S_EQUALS, "ST_Equals")
