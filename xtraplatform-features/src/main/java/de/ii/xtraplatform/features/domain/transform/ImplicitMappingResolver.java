@@ -20,7 +20,7 @@ public class ImplicitMappingResolver implements SchemaVisitorTopDown<FeatureSche
     if (schema.isFeature() && !schema.getConcat().isEmpty()) {
       return false;
     }
-    
+
     boolean isFeatureRefInConcat =
         (schema.isFeatureRef() && MappingOperationResolver.isConcatPath(schema.getPath()));
 
