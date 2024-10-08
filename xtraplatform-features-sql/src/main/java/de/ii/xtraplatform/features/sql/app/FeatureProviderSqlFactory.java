@@ -224,7 +224,9 @@ public class FeatureProviderSqlFactory
           normalizeImplicitMappings(
               normalizeFeatureRefs(
                   resolveMappingOperationsIfNecessary(
-                      embedFeatureRefs(applyLabelTemplate(resolveSchemasIfNecessary(data)))))));
+                      embedFeatureRefs(
+                          resolveMappingOperationsIfNecessary(
+                              true, applyLabelTemplate(resolveSchemasIfNecessary(data))))))));
     } catch (Throwable e) {
       LogContext.error(
           LOGGER, e, "Feature provider with id '{}' could not be started", data.getId());
@@ -259,7 +261,12 @@ public class FeatureProviderSqlFactory
   }
 
   private FeatureProviderSqlData resolveMappingOperationsIfNecessary(FeatureProviderSqlData data) {
-    MappingOperationResolver resolver = new MappingOperationResolver();
+    return resolveMappingOperationsIfNecessary(false, data);
+  }
+
+  private FeatureProviderSqlData resolveMappingOperationsIfNecessary(
+      boolean mergeOnly, FeatureProviderSqlData data) {
+    MappingOperationResolver resolver = new MappingOperationResolver(mergeOnly);
 
     if (resolver.needsResolving(data.getTypes())) {
       Map<String, FeatureSchema> types = resolver.resolve(data.getTypes());

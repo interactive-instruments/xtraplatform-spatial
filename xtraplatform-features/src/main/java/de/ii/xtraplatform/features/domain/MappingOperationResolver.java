@@ -305,6 +305,16 @@ public class MappingOperationResolver implements TypesResolver {
 
   private static final Pattern CONCAT_PATH_PATTERN = Pattern.compile("[0-9]+_.*");
 
+  private final boolean mergeOnly;
+
+  public MappingOperationResolver() {
+    this(false);
+  }
+
+  public MappingOperationResolver(boolean mergeOnly) {
+    this.mergeOnly = mergeOnly;
+  }
+
   public static boolean isConcatPath(String propertyPath) {
     return CONCAT_PATH_PATTERN.matcher(propertyPath).matches();
   }
@@ -323,6 +333,9 @@ public class MappingOperationResolver implements TypesResolver {
 
   @Override
   public boolean needsResolving(FeatureSchema type) {
+    if (mergeOnly) {
+      return hasMerge(type);
+    }
     return hasMerge(type) || hasConcat(type) || hasCoalesce(type);
   }
 
@@ -334,11 +347,11 @@ public class MappingOperationResolver implements TypesResolver {
       resolved = resolveMerge(type);
     }
 
-    if (hasConcat(type)) {
+    if (!mergeOnly && hasConcat(type)) {
       resolved = resolveConcat(type);
     }
 
-    if (hasCoalesce(type)) {
+    if (!mergeOnly && hasCoalesce(type)) {
       resolved = resolveCoalesce(type);
     }
 
