@@ -126,18 +126,14 @@ public interface SchemaSql extends SchemaBase<SchemaSql> {
     ImmutableList.Builder<String> keys = ImmutableList.builder();
     keys.addAll(getParentSortKeys());
 
-    SqlRelation previousRelation = null;
-
-    for (int i = 0; i < getRelation().size(); i++) {
-      SqlRelation relation = getRelation().get(i);
-      // add keys only for main table and target tables of M:N or 1:N relations
-      if (relation.getSourceSortKey().isPresent()
-          && (i > 0 && (previousRelation.isM2N() || previousRelation.isOne2N()))) {
+    for (int i = getParentSortKeys().size(); i < getRelation().size(); i++) {
+      if (getRelation().get(i).getSourceSortKey().isPresent()) {
         keys.add(
             String.format(
-                "%s.%s", relation.getSourceContainer(), relation.getSourceSortKey().get()));
+                "%s.%s",
+                getRelation().get(i).getSourceContainer(),
+                getRelation().get(i).getSourceSortKey().get()));
       }
-      previousRelation = relation;
     }
 
     if (getSortKey().isPresent()) {
