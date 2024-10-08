@@ -390,7 +390,7 @@ public class FeatureProviderSql
                 entry ->
                     Map.entry(
                         entry.getKey(),
-                        entry.getValue().accept(WITH_SCOPE_QUERIES).accept(querySchemaDeriver)))
+                        entry.getValue().accept(WITH_SCOPE_RETURNABLE).accept(querySchemaDeriver)))
             .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
     this.tableSchemasQueryables =
         getData().getTypes().entrySet().stream()

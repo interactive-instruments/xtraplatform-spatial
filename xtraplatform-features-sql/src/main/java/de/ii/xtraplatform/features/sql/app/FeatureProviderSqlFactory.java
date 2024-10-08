@@ -220,12 +220,11 @@ public class FeatureProviderSqlFactory
         data = featureProviderSqlAuto.generate(data, tables, ignore -> {});
       }
 
-      return embedFeatureRefs(
-          normalizeConstants(
-              normalizeImplicitMappings(
-                  normalizeFeatureRefs(
-                      resolveMappingOperationsIfNecessary(
-                          applyLabelTemplate(resolveSchemasIfNecessary(data)))))));
+      return normalizeConstants(
+          normalizeImplicitMappings(
+              normalizeFeatureRefs(
+                  resolveMappingOperationsIfNecessary(
+                      embedFeatureRefs(applyLabelTemplate(resolveSchemasIfNecessary(data)))))));
     } catch (Throwable e) {
       LogContext.error(
           LOGGER, e, "Feature provider with id '{}' could not be started", data.getId());

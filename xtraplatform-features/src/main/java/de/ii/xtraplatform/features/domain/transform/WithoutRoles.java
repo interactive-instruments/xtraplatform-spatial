@@ -7,15 +7,12 @@
  */
 package de.ii.xtraplatform.features.domain.transform;
 
-import com.google.common.collect.ImmutableMap;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.SchemaBase.Role;
 import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
-import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 
 public class WithoutRoles implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
@@ -27,13 +24,7 @@ public class WithoutRoles implements SchemaVisitorTopDown<FeatureSchema, Feature
       FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
 
     Map<String, FeatureSchema> visitedPropertiesMap =
-        visitedProperties.stream()
-            .map(
-                featureSchema ->
-                    new SimpleImmutableEntry<>(featureSchema.getFullPathAsString(), featureSchema))
-            .collect(
-                ImmutableMap.toImmutableMap(
-                    Entry::getKey, Entry::getValue, (first, second) -> second));
+        asMap(visitedProperties, FeatureSchema::getFullPathAsString);
 
     Optional<Role> embeddedRole =
         schema.getRole().filter(r -> r != Role.EMBEDDED_FEATURE).or(schema::getEmbeddedRole);

@@ -9,6 +9,7 @@ package de.ii.xtraplatform.features.domain.transform;
 
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema.Builder;
+import de.ii.xtraplatform.features.domain.MappingOperationResolver;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
 import java.util.List;
@@ -16,11 +17,15 @@ import java.util.List;
 public class ImplicitMappingResolver implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
 
   public boolean needsResolving(FeatureSchema schema) {
+    boolean isFeatureRefInConcat =
+        (schema.isFeatureRef() && MappingOperationResolver.isConcatPath(schema.getPath()));
+
     return ((schema.isObject() || schema.isArray()) && schema.getSourcePath().isEmpty())
         || (schema.isObject()
             && schema.getSourcePath().isPresent()
             && schema.getValueNames().isEmpty())
-        || schema.getType() == Type.VALUE_ARRAY;
+        || schema.getType() == Type.VALUE_ARRAY
+        || isFeatureRefInConcat;
   }
 
   @Override
