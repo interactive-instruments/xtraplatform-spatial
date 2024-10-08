@@ -12,4 +12,12 @@ import java.util.List;
 public interface SourcePath {
 
   List<String> getFullPath();
+
+  List<String> getParentPath();
+
+  boolean parentsIntersect(List<? extends SourcePath> parents);
+
+  <T extends SourcePath> List<T> parentsWithoutIntersection(List<T> parents);
+
+  <T extends SourcePath> T withoutParentIntersection(List<T> parents);
 }

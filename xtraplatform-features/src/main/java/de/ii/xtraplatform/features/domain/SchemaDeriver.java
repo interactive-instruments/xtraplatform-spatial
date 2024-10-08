@@ -94,19 +94,12 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
       int k = 0;
 
       for (int i = 0; i < schema.getConcat().size(); i++) {
-        /* FIXME I don't understand the code below and it leads to an IndexOutOfBoundsException
-                 (visitedProperties.size() is always 0 in my tests), so I have commented it out
-                 for now and replaced it with new code.
         List<T> visitedProperties3 = new ArrayList<>();
 
         for (int j = 0; j < schema.getConcat().get(i).getProperties().size(); j++) {
           visitedProperties3.add(visitedProperties.get(k++));
         }
-        */
-        List<T> visitedProperties3 =
-            schema.getConcat().get(i).getProperties().stream()
-                .map(p -> p.accept(this, List.of(schema)))
-                .collect(Collectors.toList());
+
         schemas.add(deriveObjectSchema(schema.getConcat().get(i), visitedProperties3, false));
       }
       T objectSchema =
@@ -123,17 +116,12 @@ public abstract class SchemaDeriver<T> implements SchemaVisitorTopDown<FeatureSc
       int k = 0;
 
       for (int i = 0; i < schema.getCoalesce().size(); i++) {
-        /* FIXME same as above
         List<T> visitedProperties3 = new ArrayList<>();
 
         for (int j = 0; j < schema.getCoalesce().get(i).getProperties().size(); j++) {
           visitedProperties3.add(visitedProperties.get(k++));
         }
-        */
-        List<T> visitedProperties3 =
-            schema.getCoalesce().get(i).getProperties().stream()
-                .map(p -> p.accept(this, List.of(schema)))
-                .collect(Collectors.toList());
+
         schemas.add(deriveObjectSchema(schema.getCoalesce().get(i), visitedProperties3, false));
       }
       T objectSchema =

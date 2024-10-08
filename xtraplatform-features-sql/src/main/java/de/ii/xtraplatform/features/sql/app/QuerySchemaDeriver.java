@@ -61,12 +61,6 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
           .collect(Collectors.toList());
     }
 
-    // FIXME This code excludes all concat object arrays from the response. However, removing it
-    //       still does not result in the proper SQL schema / response.
-    if (sourceSchema.getType() == Type.OBJECT_ARRAY && !sourceSchema.getConcat().isEmpty()) {
-      return List.of();
-    }
-
     return sourceSchema.getEffectiveSourcePaths().stream()
         .map(
             sourcePath ->
@@ -74,6 +68,11 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                     ? pathParser.parseColumnPath(sourcePath)
                     : pathParser.parseTablePath(sourcePath))
         .collect(Collectors.toList());
+  }
+
+  @Override
+  public boolean hasRootPath(FeatureSchema sourceSchema) {
+    return false;
   }
 
   @Override
