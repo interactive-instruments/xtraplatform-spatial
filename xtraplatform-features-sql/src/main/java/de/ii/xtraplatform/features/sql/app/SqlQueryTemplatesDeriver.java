@@ -355,6 +355,7 @@ public class SqlQueryTemplatesDeriver
       List<SortKey> additionalSortKeys) {
 
     final int[] i = {0};
+    final int[] j = {0};
     Stream<String> customSortKeys =
         additionalSortKeys.stream().map(sortKey -> getSortColumn(aliases.get(0), sortKey, i[0]++));
 
@@ -363,7 +364,12 @@ public class SqlQueryTemplatesDeriver
 
       List<String> parentSortKeys =
           parents.stream()
-              .flatMap(parent -> parent.getSortKeys(aliasesIterator, true, 0).stream())
+              .flatMap(
+                  parent -> {
+                    List<String> keys = parent.getSortKeys(aliasesIterator, true, j[0]);
+                    j[0] += keys.size();
+                    return keys.stream();
+                  })
               .collect(Collectors.toList());
 
       return Stream.of(

@@ -11,6 +11,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureTokenType;
+import de.ii.xtraplatform.features.domain.MappingOperationResolver;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.Tuple;
 import java.util.ArrayList;
@@ -517,15 +518,11 @@ public interface FeaturePropertyTokenSliceTransformer
   }
 
   static String clean(String propertyPath) {
-    if (needsClean(propertyPath)) {
-      return propertyPath.substring(propertyPath.indexOf("_") + 1);
-    }
-
-    return propertyPath;
+    return MappingOperationResolver.cleanConcatPath(propertyPath);
   }
 
   static boolean needsClean(String propertyPath) {
-    return propertyPath.matches("[0-9]+_.*");
+    return MappingOperationResolver.isConcatPath(propertyPath);
   }
 
   static String getValue(List<Object> slice, int valueIndex) {

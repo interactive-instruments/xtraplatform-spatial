@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -302,8 +303,39 @@ import java.util.stream.Collectors;
  */
 public class MappingOperationResolver implements TypesResolver {
 
+  private static final Pattern CONCAT_PATH_PATTERN = Pattern.compile("[0-9]+_.*");
+
+  private final boolean mergeOnly;
+
+  public MappingOperationResolver() {
+    this(false);
+  }
+
+  public MappingOperationResolver(boolean mergeOnly) {
+    this.mergeOnly = mergeOnly;
+  }
+
+  public static boolean isConcatPath(String propertyPath) {
+    return CONCAT_PATH_PATTERN.matcher(propertyPath).matches();
+  }
+
+  public static boolean isConcatPath(List<String> propertyPath) {
+    return propertyPath.stream().anyMatch(MappingOperationResolver::isConcatPath);
+  }
+
+  public static String cleanConcatPath(String propertyPath) {
+    if (isConcatPath(propertyPath)) {
+      return propertyPath.substring(propertyPath.indexOf("_") + 1);
+    }
+
+    return propertyPath;
+  }
+
   @Override
   public boolean needsResolving(FeatureSchema type) {
+    if (mergeOnly) {
+      return hasMerge(type);
+    }
     return hasMerge(type) || hasConcat(type) || hasCoalesce(type);
   }
 
@@ -315,11 +347,11 @@ public class MappingOperationResolver implements TypesResolver {
       resolved = resolveMerge(type);
     }
 
-    if (hasConcat(type)) {
+    if (!mergeOnly && hasConcat(type)) {
       resolved = resolveConcat(type);
     }
 
-    if (hasCoalesce(type)) {
+    if (!mergeOnly && hasCoalesce(type)) {
       resolved = resolveCoalesce(type);
     }
 
@@ -419,16 +451,20 @@ public class MappingOperationResolver implements TypesResolver {
       for (int i = 0; i < type.getConcat().size(); i++) {
         String basePath2 =
             basePath + type.getConcat().get(i).getSourcePath().map(p -> p + "/").orElse("");
+        String basePath2NoSlash =
+            basePath2.endsWith("/") ? basePath2.substring(0, basePath2.length() - 1) : basePath2;
 
-        builder.addSourcePaths(
-            basePath2.endsWith("/") ? basePath2.substring(0, basePath2.length() - 1) : basePath2);
+        builder.addSourcePaths(basePath2NoSlash);
 
         for (FeatureSchema prop : type.getConcat().get(i).getProperties()) {
           builder.putPropertyMap(
               i + "_" + prop.getName(),
               new ImmutableFeatureSchema.Builder()
                   .from(prop)
-                  .sourcePath(basePath2 + prop.getSourcePath().orElse(""))
+                  .sourcePath(
+                      prop.getSourcePath().isPresent()
+                          ? basePath2 + prop.getSourcePath().get()
+                          : basePath2NoSlash)
                   .path(List.of(i + "_" + prop.getName()))
                   .putAdditionalInfo(IS_PROPERTY, "true"));
         }

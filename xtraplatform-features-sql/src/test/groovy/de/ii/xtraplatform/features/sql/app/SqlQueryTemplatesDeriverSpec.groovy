@@ -116,8 +116,9 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
 
         where:
 
-        casename                                      | deriver | limit | offset | sortBy | filter | schema             || queries
-        "self join with nested duplicate and filters" | td      | 0     | 0      | []     | null   | "okstra_abschnitt" || "okstra_abschnitt"
+        casename                                      | deriver | limit | offset | sortBy | filter | schema                        || queries
+        "self join with nested duplicate and filters" | td      | 0     | 0      | []     | null   | "okstra_abschnitt"            || "okstra_abschnitt"
+        "embedded object with concat and backlink"               | td      | 0     | 0      | []     | null   | "pfs_plan-hatObjekt-embedded" || "pfs_plan-hatObjekt-embedded"
 
     }
 
@@ -132,7 +133,8 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
 
     static SchemaSql sqlSchema(String featureSchemaName, QuerySchemaDeriver schemaDeriver, MappingOperationResolver mappingOperationResolver) {
         def schema = FeatureSchemaFixtures.fromYaml(featureSchemaName)
-        List<SchemaSql> sqlSchema = schema.accept(mappingOperationResolver, List.of()).accept(schemaDeriver)
+        def schema2 = schema.accept(mappingOperationResolver, List.of())
+        List<SchemaSql> sqlSchema = schema2.accept(schemaDeriver)
         return sqlSchema.get(0)
     }
 

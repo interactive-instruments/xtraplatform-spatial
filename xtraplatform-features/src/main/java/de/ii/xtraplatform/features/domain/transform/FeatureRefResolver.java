@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -317,60 +318,73 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
 
     Map<String, FeatureSchema> visitedPropertiesMap =
         asMap(visitedProperties, FeatureSchema::getFullPathAsString);
+    List<FeatureSchema> visitedConcat = schema.getConcat();
+    List<FeatureSchema> visitedCoalesce = schema.getCoalesce();
 
     if (visitedProperties.stream().anyMatch(SchemaBase::isFeatureRef)) {
       visitedPropertiesMap =
           asMap(
               visitedProperties.stream()
-                  .flatMap(
-                      property -> {
-                        if (property.isFeatureRef()
-                            && (isStatic(property.getRefType())
-                                || property.getProperties().stream()
-                                    .anyMatch(
-                                        p ->
-                                            p.getName().equals("type")
-                                                && p.getSourcePath().isPresent()))) {
-                          Optional<FeatureSchema> idProperty =
-                              property.getProperties().stream()
-                                  .filter(Objects::nonNull)
-                                  .filter(p -> Objects.equals(p.getName(), FeatureRefResolver.ID))
-                                  .findFirst();
-                          if (idProperty.isPresent()) {
-                            return Stream.of(
-                                property,
-                                new Builder()
-                                    .name(property.getName() + "_" + QUERYABLE)
-                                    .addPath(property.getName() + "_" + QUERYABLE)
-                                    .parentPath(property.getParentPath())
-                                    .type(property.isArray() ? Type.VALUE_ARRAY : Type.VALUE)
-                                    .valueType(idProperty.get().getType())
-                                    .refType(property.getRefType().get())
-                                    .label(property.getLabel())
-                                    .description(property.getDescription())
-                                    .sourcePath(
-                                        property.getSourcePath().map(s -> s + "/").orElse("")
-                                            + idProperty.get().getSourcePath().orElse(""))
-                                    .excludedScopes(property.getExcludedScopes())
-                                    .addAllExcludedScopes(
-                                        Scope.allBut(Scope.QUERYABLE, Scope.SORTABLE))
-                                    .addTransformations(
-                                        new ImmutablePropertyTransformation.Builder()
-                                            .rename(property.getName())
-                                            .build())
-                                    .build());
-                          }
-                        }
-                        return Stream.of(property);
-                      })
+                  .flatMap(addQueryableDuplicateIfNecessary())
                   .collect(Collectors.toList()),
               FeatureSchema::getFullPathAsString);
+
+      visitedConcat =
+          visitedConcat.stream()
+              .map(concatSchema -> concatSchema.accept(this, parents))
+              .collect(Collectors.toList());
+      visitedCoalesce =
+          visitedCoalesce.stream()
+              .map(coalesceSchema -> coalesceSchema.accept(this, parents))
+              .collect(Collectors.toList());
     }
 
     return new ImmutableFeatureSchema.Builder()
         .from(schema)
         .propertyMap(visitedPropertiesMap)
+        .concat(visitedConcat)
+        .coalesce(visitedCoalesce)
         .build();
+  }
+
+  private static Function<FeatureSchema, Stream<? extends FeatureSchema>>
+      addQueryableDuplicateIfNecessary() {
+    return property -> {
+      if (property.isFeatureRef()
+          && (isStatic(property.getRefType())
+              || property.getProperties().stream()
+                  .anyMatch(p -> p.getName().equals("type") && p.getSourcePath().isPresent()))) {
+        Optional<FeatureSchema> idProperty =
+            property.getProperties().stream()
+                .filter(Objects::nonNull)
+                .filter(p -> Objects.equals(p.getName(), FeatureRefResolver.ID))
+                .findFirst();
+        if (idProperty.isPresent()) {
+          return Stream.of(
+              property,
+              new Builder()
+                  .name(property.getName() + "_" + QUERYABLE)
+                  .addPath(property.getPath().get(property.getPath().size() - 1) + "_" + QUERYABLE)
+                  .parentPath(property.getParentPath())
+                  .type(property.isArray() ? Type.VALUE_ARRAY : Type.VALUE)
+                  .valueType(idProperty.get().getType())
+                  .refType(property.getRefType().get())
+                  .label(property.getLabel())
+                  .description(property.getDescription())
+                  .sourcePath(
+                      property.getSourcePath().map(s -> s + "/").orElse("")
+                          + idProperty.get().getSourcePath().orElse(""))
+                  .excludedScopes(property.getExcludedScopes())
+                  .addAllExcludedScopes(Scope.allBut(Scope.QUERYABLE, Scope.SORTABLE))
+                  .addTransformations(
+                      new ImmutablePropertyTransformation.Builder()
+                          .rename(property.getName())
+                          .build())
+                  .build());
+        }
+      }
+      return Stream.of(property);
+    };
   }
 
   public List<FeatureSchema> resolveAll(

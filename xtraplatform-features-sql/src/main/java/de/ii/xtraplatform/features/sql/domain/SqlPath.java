@@ -8,9 +8,12 @@
 package de.ii.xtraplatform.features.sql.domain;
 
 import de.ii.xtraplatform.cql.domain.Cql2Expression;
+import de.ii.xtraplatform.features.domain.MappedSchemaDeriver;
 import de.ii.xtraplatform.features.domain.SourcePath;
 import de.ii.xtraplatform.features.domain.Tuple;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -107,5 +110,48 @@ public interface SqlPath extends SourcePath {
   default List<String> getFullPath() {
     return Stream.concat(getParentPath().stream(), Stream.of(asPath()))
         .collect(Collectors.toList());
+  }
+
+  @Override
+  default boolean parentsIntersect(List<? extends SourcePath> parents) {
+    List<String> fullParentPath =
+        parents.stream().flatMap(p -> p.getFullPath().stream()).collect(Collectors.toList());
+    boolean intersects = MappedSchemaDeriver.intersects(fullParentPath, getParentPath());
+
+    return intersects;
+  }
+
+  @Override
+  default <T extends SourcePath> List<T> parentsWithoutIntersection(List<T> parents) {
+    if (!parentsIntersect(parents)) {
+      return parents;
+    }
+    return parents.stream()
+        .filter(p -> !MappedSchemaDeriver.intersects(p.getFullPath(), getParentPath()))
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  default <T extends SourcePath> T withoutParentIntersection(List<T> parents) {
+    if (!parentsIntersect(parents)) {
+      return (T) this;
+    }
+
+    List<String> fullParentPath =
+        parents.stream().flatMap(p -> p.getFullPath().stream()).collect(Collectors.toList());
+
+    List<SqlPath> newParentTables = new ArrayList<>();
+
+    int start = fullParentPath.indexOf(getParentTables().get(0).asPath());
+
+    for (int i = 0; i < getParentTables().size(); i++) {
+      if (fullParentPath.size() > start
+          && Objects.equals(fullParentPath.get(start++), getParentTables().get(i).asPath())) {
+        continue;
+      }
+      newParentTables.add(getParentTables().get(i));
+    }
+
+    return (T) new ImmutableSqlPath.Builder().from(this).parentTables(newParentTables).build();
   }
 }

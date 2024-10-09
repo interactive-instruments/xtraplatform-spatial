@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class WithScope implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
 
@@ -37,7 +38,7 @@ public class WithScope implements SchemaVisitorTopDown<FeatureSchema, FeatureSch
       FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
 
     // always include ID property
-    if (!schema.hasOneOf(scopes) && !schema.isId()) {
+    if (!schema.hasOneOf(scopes) && !schema.isId() && !schema.isEmbeddedId()) {
       return null;
     }
 
@@ -50,10 +51,20 @@ public class WithScope implements SchemaVisitorTopDown<FeatureSchema, FeatureSch
             .collect(
                 ImmutableMap.toImmutableMap(
                     Entry::getKey, Entry::getValue, (first, second) -> second));
+    List<FeatureSchema> visitedConcat =
+        schema.getConcat().stream()
+            .map(concatSchema -> concatSchema.accept(this, parents))
+            .collect(Collectors.toList());
+    List<FeatureSchema> visitedCoalesce =
+        schema.getCoalesce().stream()
+            .map(coalesceSchema -> coalesceSchema.accept(this, parents))
+            .collect(Collectors.toList());
 
     return new ImmutableFeatureSchema.Builder()
         .from(schema)
         .propertyMap(visitedPropertiesMap)
+        .concat(visitedConcat)
+        .coalesce(visitedCoalesce)
         .build();
   }
 }
