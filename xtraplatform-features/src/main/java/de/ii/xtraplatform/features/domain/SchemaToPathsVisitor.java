@@ -130,7 +130,19 @@ public class SchemaToPathsVisitor<T extends SchemaBase<T>>
         .flatMap(
             path ->
                 Stream.concat(
-                    Stream.of(Map.entry(path, schema)),
+                    Stream.of(Map.entry(path, schema))
+                        .map(
+                            entry -> {
+                              if (useTargetPath
+                                  || !entry.getValue().isFeatureRef()
+                                  || !entry.getValue().isObject()
+                                  || !MappingOperationResolver.isConcatPath(
+                                      entry.getValue().getPath())) {
+                                return entry;
+                              }
+                              return Map.entry(
+                                  List.of("__EMPTY__", String.valueOf(counter)), entry.getValue());
+                            }),
                     visitedProperties.stream()
                         .flatMap(
                             map ->

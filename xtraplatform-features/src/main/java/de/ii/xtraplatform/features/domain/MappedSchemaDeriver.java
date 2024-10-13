@@ -54,6 +54,17 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
     return true;
   }
 
+  static <T> List<T> interlace(List<T> source, List<T> target) {
+    List<T> shortenedSource = source;
+
+    if (intersects(source, target)) {
+      int start = source.indexOf(target.get(0));
+      shortenedSource = source.subList(0, start);
+    }
+
+    return Stream.concat(shortenedSource.stream(), target.stream()).collect(Collectors.toList());
+  }
+
   @Override
   default List<T> visit(
       FeatureSchema schema, List<FeatureSchema> parents, List<List<T>> visitedProperties) {
@@ -72,7 +83,9 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
             && !parents.get(parents.size() - 1).getConcat().isEmpty();
 
     boolean isVirtualObject =
-        isInConcat && schema.isObject() && parentPaths1.contains(currentPaths);
+        isInConcat
+            && schema.isObject()
+            && parentPaths1.stream().anyMatch(parent -> endsWith(parent, currentPaths));
 
     if (!currentPaths.isEmpty() && !isVirtualObject) {
       return parentPaths1.stream()
@@ -81,23 +94,21 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
                   currentPaths.stream()
                       .filter(
                           currentPath -> {
-                            if (isInConcat) {
-                              List<String> fullParentPath =
-                                  parentPath.stream()
-                                      .flatMap(p -> p.getFullPath().stream())
-                                      .collect(Collectors.toList());
-                              if (!intersects(fullParentPath, currentPath.getParentPath())) {
-                                return false;
-                              }
+                            if (isInConcat && !currentPath.parentsIntersect(parentPath)) {
+                              return false;
                             }
                             return true;
                           })
                       .map(
                           currentPath -> {
+                            U finalCurrentPath =
+                                isInConcat
+                                    ? currentPath.withoutParentIntersection(parentPath)
+                                    : currentPath;
                             List<String> fullPath =
                                 Stream.concat(
                                         parentPath.stream().flatMap(p -> p.getFullPath().stream()),
-                                        currentPath.getFullPath().stream())
+                                        finalCurrentPath.getFullPath().stream())
                                     .collect(Collectors.toList());
                             List<T> matchingProperties =
                                 properties.stream()
@@ -109,33 +120,38 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
                                     .collect(Collectors.toList());
 
                             return create(
-                                schema, currentPath, matchingProperties, parentPath, nestedArray);
+                                schema,
+                                finalCurrentPath,
+                                matchingProperties,
+                                parentPath,
+                                nestedArray);
                           }))
           .collect(Collectors.toList());
     }
 
     if (!parentPaths1.isEmpty()) {
       return parentPaths1.stream()
-          .filter(
-              parentPath -> {
-                if (isVirtualObject) {
-                  List<String> fullParentPath =
-                      parentPath.stream()
-                          .flatMap(p -> p.getFullPath().stream())
-                          .collect(Collectors.toList());
-                  return Objects.equals(parentPath, currentPaths);
-                }
-                return true;
-              })
+          .filter(parentPath -> !isVirtualObject || endsWith(parentPath, currentPaths))
           .flatMap(
-              parentPath ->
-                  merge(
-                      schema,
-                      parentPath.isEmpty()
-                          ? List.of()
-                          : parentPath.get(parentPath.size() - 1).getFullPath(),
-                      properties)
-                      .stream())
+              parentPath -> {
+                List<String> fullParentPath =
+                    parentPath.stream()
+                        .flatMap(p -> p.getFullPath().stream())
+                        .collect(Collectors.toList());
+                List<T> matchingProperties =
+                    isVirtualObject
+                        ? properties.stream()
+                            .filter(prop -> Objects.equals(prop.getParentPath(), fullParentPath))
+                            .collect(Collectors.toList())
+                        : properties;
+                return merge(
+                    schema,
+                    parentPath.isEmpty()
+                        ? List.of()
+                        : parentPath.get(parentPath.size() - 1).getFullPath(),
+                    matchingProperties)
+                    .stream();
+              })
           .collect(Collectors.toList());
     }
 
@@ -144,8 +160,28 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
 
   default List<List<U>> getParentPaths(List<FeatureSchema> parents) {
     List<List<U>> current = List.of();
+    List<FeatureSchema> relevantParents = parents;
 
-    for (FeatureSchema parent : parents) {
+    boolean isInConcat =
+        parents.size() > 1
+            && parents.get(parents.size() - 2).isObject()
+            && !parents.get(parents.size() - 2).getConcat().isEmpty();
+
+    boolean isVirtualObject =
+        isInConcat
+            && parents.get(parents.size() - 1).isObject()
+            && parents.get(parents.size() - 2).getEffectiveSourcePaths().stream()
+                .anyMatch(
+                    sourcePath ->
+                        Objects.equals(
+                            sourcePath,
+                            parents.get(parents.size() - 1).getEffectiveSourcePaths().get(0)));
+
+    if (isVirtualObject) {
+      relevantParents = parents.subList(0, parents.size() - 1);
+    }
+
+    for (FeatureSchema parent : relevantParents) {
       current = getParentPaths(parent, current);
     }
 
