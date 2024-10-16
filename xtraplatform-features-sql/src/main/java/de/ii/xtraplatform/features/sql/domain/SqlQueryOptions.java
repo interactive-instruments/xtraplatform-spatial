@@ -11,6 +11,7 @@ import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SortKey;
 import de.ii.xtraplatform.features.domain.SortKey.Direction;
+import de.ii.xtraplatform.features.sql.app.OnlyReturnables;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -71,6 +72,11 @@ public interface SqlQueryOptions extends FeatureProviderConnector.QueryOptions {
   @Value.Default
   default int getChunkSize() {
     return 1000;
+  }
+
+  @Value.Derived
+  default Optional<SchemaSql> getTableSchemaReturnables() {
+    return getTableSchema().map(schema -> schema.accept(new OnlyReturnables()));
   }
 
   @Value.Derived
