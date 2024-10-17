@@ -10,7 +10,6 @@ package de.ii.xtraplatform.features.sql.infra.db;
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.features.domain.SortKey;
 import de.ii.xtraplatform.features.domain.SortKey.Direction;
-import de.ii.xtraplatform.features.sql.app.OnlyReturnables;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.SqlRow;
@@ -142,8 +141,8 @@ class SqlRowVals implements SqlRow {
     List<Class<?>> columnTypes;
     int cursor = 1;
 
-    if (queryOptions.getTableSchema().isPresent()) {
-      this.tableSchema = queryOptions.getTableSchema().get().accept(new OnlyReturnables());
+    if (queryOptions.getTableSchemaReturnables().isPresent()) {
+      this.tableSchema = queryOptions.getTableSchemaReturnables().get();
       this.type = queryOptions.getType();
       this.sortKeyNames = queryOptions.getSortKeys();
       this.sortKeyDirections = queryOptions.getSortDirections();
