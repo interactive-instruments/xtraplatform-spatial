@@ -103,6 +103,7 @@ public abstract class FeaturePropertyTransformerWrap
     List<Object> transformed = new ArrayList<>();
     boolean foundFirstObject = false;
     boolean objectIsOpen = false;
+    boolean arrayIsOpen = false;
     boolean lastWasObjectEnd = false;
 
     for (int i = 0; i < slice.size(); i++) {
@@ -111,22 +112,25 @@ public abstract class FeaturePropertyTransformerWrap
           transformed.add(FeatureTokenType.ARRAY);
           transformed.add(schema.getFullPath());
           foundFirstObject = true;
+          arrayIsOpen = true;
         }
         objectIsOpen = true;
+        lastWasObjectEnd = false;
       } else if (isObjectEndWithPath(slice, i, schema.getFullPath())) {
         objectIsOpen = false;
         if (!lastWasObjectEnd) {
           lastWasObjectEnd = true;
         }
-      } else if (slice.get(i) instanceof FeatureTokenType && !objectIsOpen) {
+      } else if (slice.get(i) instanceof FeatureTokenType && arrayIsOpen && !objectIsOpen) {
         transformed.add(FeatureTokenType.ARRAY_END);
         transformed.add(schema.getFullPath());
         lastWasObjectEnd = false;
+        arrayIsOpen = false;
       }
 
       transformed.add(slice.get(i));
 
-      if (i == slice.size() - 1 && lastWasObjectEnd) {
+      if (i == slice.size() - 1 && arrayIsOpen && lastWasObjectEnd) {
         transformed.add(FeatureTokenType.ARRAY_END);
         transformed.add(schema.getFullPath());
       }
