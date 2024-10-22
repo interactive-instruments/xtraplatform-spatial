@@ -86,9 +86,7 @@ public class SchemaToPathsVisitor<T extends SchemaBase<T>>
                                 + "{priority="
                                 + (counter)
                                 + "}");
-                        return p.stream()
-                            .flatMap(s -> SPLITTER.splitToList(s).stream())
-                            .collect(Collectors.toList());
+                        return p;
                       }
 
                       return SPLITTER.splitToList(sourcePath + "{priority=" + (counter) + "}");

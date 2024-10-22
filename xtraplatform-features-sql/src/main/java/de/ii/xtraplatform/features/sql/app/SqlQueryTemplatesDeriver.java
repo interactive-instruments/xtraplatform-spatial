@@ -212,6 +212,13 @@ public class SqlQueryTemplatesDeriver
                                       + " AS "
                                       + column.getName()
                                   : getQualifiedColumn(attributeContainerAlias, column.getName());
+                          if (column.isExpression()) {
+                            return sqlDialect.applyToExpression(
+                                attributeContainerAlias,
+                                column.getName(),
+                                column.getSubDecoderPaths(),
+                                column.isSpatial());
+                          }
                           if (column.isSpatial()) {
                             return sqlDialect.applyToWkt(
                                 name, column.isForcePolygonCCW(), column.shouldLinearizeCurves());
@@ -220,12 +227,6 @@ public class SqlQueryTemplatesDeriver
                             if (column.getType() == SchemaBase.Type.DATE)
                               return sqlDialect.applyToDate(name, column.getFormat());
                             return sqlDialect.applyToDatetime(name, column.getFormat());
-                          }
-                          if (column.isExpression()) {
-                            return sqlDialect.applyToExpression(
-                                attributeContainerAlias,
-                                column.getName(),
-                                column.getSubDecoderPaths());
                           }
 
                           return name;
