@@ -75,20 +75,17 @@ public abstract class FeaturePropertyTransformerCoalesce
 
     for (int i = 0; i < slice.size(); i++) {
       if (isValueWithPath(slice, i, schema.getFullPath())) {
-        if (found) {
-          break;
-        }
-        if (isNonNullValue(slice, i)) {
+        if (found || !isNonNullValue(slice, i)) {
+          skip = true;
+        } else {
           skip = false;
           found = true;
-        } else {
-          skip = true;
         }
-      } else if (slice.get(i) instanceof FeatureTokenType) {
-        if (found) {
-          break;
-        }
+      } else if (isArrayWithPath(slice, i, schema.getFullPath())
+          || isArrayEndWithPath(slice, i, schema.getFullPath())) {
         skip = true;
+      } else if (skip && slice.get(i) instanceof FeatureTokenType) {
+        skip = false;
       }
       if (!skip) {
         transformed.add(slice.get(i));

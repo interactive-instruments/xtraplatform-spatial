@@ -497,6 +497,20 @@ public interface FeaturePropertyTokenSliceTransformer
         && Objects.equals(slice.get(index + 1), path);
   }
 
+  default boolean isArrayWithPath(List<Object> slice, int index, List<String> path) {
+    return slice.get(index) == FeatureTokenType.ARRAY
+        && index + 1 < slice.size()
+        && slice.get(index + 1) instanceof List
+        && Objects.equals(slice.get(index + 1), path);
+  }
+
+  default boolean isArrayEndWithPath(List<Object> slice, int index, List<String> path) {
+    return slice.get(index) == FeatureTokenType.ARRAY_END
+        && index + 1 < slice.size()
+        && slice.get(index + 1) instanceof List
+        && Objects.equals(slice.get(index + 1), path);
+  }
+
   default boolean isChildOfPath(List<Object> slice, int index, List<String> path) {
     return slice.get(index) instanceof FeatureTokenType
         && index + 1 < slice.size()
