@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -31,6 +32,19 @@ public class SchemaReferenceResolver implements TypesResolver {
     this.data = data;
     this.schemaResolvers = schemaResolvers;
     this.localFragmentResolver = new LocalSchemaFragmentResolver();
+  }
+
+  @Override
+  public int maxRounds() {
+    return 16;
+  }
+
+  @Override
+  public Optional<String> maxRoundsWarning() {
+    return Optional.of(
+        String.format(
+            "Exceeded the maximum length of %d for provider schema reference chains.",
+            maxRounds()));
   }
 
   private static boolean hasSchema(FeatureSchema type) {
@@ -75,11 +89,11 @@ public class SchemaReferenceResolver implements TypesResolver {
   }
 
   @Override
-  public boolean needsResolving(FeatureSchema type) {
-    return hasSchema(type)
-        || hasMergeWithSchema(type)
-        || hasConcatWithSchema(type)
-        || hasCoalesceWithSchema(type);
+  public boolean needsResolving(FeatureSchema property, boolean isFeature) {
+    return hasSchema(property)
+        || hasMergeWithSchema(property)
+        || hasConcatWithSchema(property)
+        || hasCoalesceWithSchema(property);
   }
 
   @Override
@@ -88,15 +102,15 @@ public class SchemaReferenceResolver implements TypesResolver {
   }
 
   @Override
-  public FeatureSchema resolve(FeatureSchema type) {
-    if (hasSchema(type)) {
-      return resolve(type.getSchema().get(), type);
+  public FeatureSchema resolve(FeatureSchema property, List<FeatureSchema> parents) {
+    if (hasSchema(property)) {
+      return resolve(property.getSchema().get(), property);
     }
 
-    if (hasMergeWithSchema(type)) {
+    if (hasMergeWithSchema(property)) {
       List<PartialObjectSchema> partials = new ArrayList<>();
 
-      for (PartialObjectSchema partial : type.getMerge()) {
+      for (PartialObjectSchema partial : property.getMerge()) {
         if (hasSchema(partial)) {
           PartialObjectSchema resolvedPartial = resolve(partial.getSchema().get(), partial);
 
@@ -108,30 +122,30 @@ public class SchemaReferenceResolver implements TypesResolver {
         }
       }
 
-      return new ImmutableFeatureSchema.Builder().from(type).merge(partials).build();
+      return new ImmutableFeatureSchema.Builder().from(property).merge(partials).build();
     }
 
-    if (hasConcatWithSchema(type)) {
-      List<FeatureSchema> partials = resolvePartials(type.getConcat());
+    if (hasConcatWithSchema(property)) {
+      List<FeatureSchema> partials = resolvePartials(property.getConcat());
 
       return new ImmutableFeatureSchema.Builder()
-          .from(type)
+          .from(property)
           .concat(partials)
           .propertyMap(Map.of())
           .build();
     }
 
-    if (hasCoalesceWithSchema(type)) {
-      List<FeatureSchema> partials = resolvePartials(type.getCoalesce());
+    if (hasCoalesceWithSchema(property)) {
+      List<FeatureSchema> partials = resolvePartials(property.getCoalesce());
 
       return new ImmutableFeatureSchema.Builder()
-          .from(type)
+          .from(property)
           .coalesce(partials)
           .propertyMap(Map.of())
           .build();
     }
 
-    return type;
+    return property;
   }
 
   private List<FeatureSchema> resolvePartials(List<FeatureSchema> partials) {

@@ -12,25 +12,40 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Stream;
+import java.util.Optional;
 
 public interface TypesResolver extends FeatureSchemaTransformer {
 
-  boolean needsResolving(FeatureSchema type);
+  default int maxRounds() {
+    return 1;
+  }
+
+  default Optional<String> maxRoundsWarning() {
+    return Optional.empty();
+  }
+
+  boolean needsResolving(FeatureSchema property, boolean isFeature);
 
   default boolean needsResolving(PartialObjectSchema partial) {
     return false;
   }
 
-  FeatureSchema resolve(FeatureSchema type);
+  FeatureSchema resolve(FeatureSchema property, List<FeatureSchema> parents);
 
   default boolean needsResolving(Map<String, FeatureSchema> types) {
-    return types.values().stream()
-            .flatMap(type -> Stream.concat(Stream.of(type), type.getAllNestedProperties().stream()))
-            .anyMatch(this::needsResolving)
+    return types.values().stream().anyMatch(type -> needsResolving(type, true))
+        || types.values().stream()
+            .flatMap(type -> type.getAllNestedProperties().stream())
+            .anyMatch(property -> needsResolving(property, false))
         || types.values().stream()
             .flatMap(type -> type.getAllNestedPartials().stream())
-            .anyMatch(this::needsResolving);
+            .anyMatch(property -> needsResolving(property))
+        || types.values().stream()
+            .flatMap(type -> type.getAllNestedConcatProperties().stream())
+            .anyMatch(property -> needsResolving(property, false))
+        || types.values().stream()
+            .flatMap(type -> type.getAllNestedCoalesceProperties().stream())
+            .anyMatch(property -> needsResolving(property, false));
   }
 
   default Map<String, FeatureSchema> resolve(Map<String, FeatureSchema> types) {
@@ -53,16 +68,20 @@ public interface TypesResolver extends FeatureSchemaTransformer {
       FeatureSchema schema,
       List<FeatureSchema> parents,
       List<FeatureSchema> visitedProperties,
-      List<PartialObjectSchema> visitedPartials) {
+      List<PartialObjectSchema> visitedMergeProperties,
+      List<FeatureSchema> visitedConcatProperties,
+      List<FeatureSchema> visitedCoalesceProperties) {
     ImmutableFeatureSchema visited =
         new Builder()
             .from(schema)
             .propertyMap(asMap(visitedProperties.stream()))
-            .merge(visitedPartials)
+            .merge(visitedMergeProperties)
+            .concat(visitedConcatProperties)
+            .coalesce(visitedCoalesceProperties)
             .build();
 
-    if (needsResolving(visited)) {
-      return resolve(visited);
+    if (needsResolving(visited, parents.isEmpty())) {
+      return resolve(visited, parents);
     }
 
     return visited;

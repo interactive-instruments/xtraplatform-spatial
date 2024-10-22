@@ -8,7 +8,6 @@
 package de.ii.xtraplatform.features.oracle.app;
 
 import com.github.azahnen.dagger.annotations.AutoBind;
-import com.google.common.collect.ImmutableMap;
 import dagger.Lazy;
 import dagger.assisted.AssistedFactory;
 import de.ii.xtraplatform.base.domain.LogContext;
@@ -32,12 +31,13 @@ import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
 import de.ii.xtraplatform.features.domain.MappingOperationResolver;
 import de.ii.xtraplatform.features.domain.ProviderData;
 import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
-import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaFragmentResolver;
 import de.ii.xtraplatform.features.domain.SchemaReferenceResolver;
-import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
+import de.ii.xtraplatform.features.domain.TypesResolver;
+import de.ii.xtraplatform.features.domain.transform.FeatureRefEmbedder;
 import de.ii.xtraplatform.features.domain.transform.FeatureRefResolver;
 import de.ii.xtraplatform.features.domain.transform.ImplicitMappingResolver;
+import de.ii.xtraplatform.features.domain.transform.LabelTemplateResolver;
 import de.ii.xtraplatform.features.sql.domain.ConstantsResolver;
 import de.ii.xtraplatform.features.sql.domain.FeatureProviderSqlData;
 import de.ii.xtraplatform.features.sql.domain.ImmutableConnectionInfoSql;
@@ -50,11 +50,10 @@ import de.ii.xtraplatform.features.sql.domain.SqlClientBasicFactory;
 import de.ii.xtraplatform.features.sql.domain.SqlDbmsAdapters;
 import de.ii.xtraplatform.streams.domain.Reactive;
 import de.ii.xtraplatform.values.domain.ValueStore;
+import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Predicate;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -171,10 +170,23 @@ public class FeatureProviderOracleFactory
     }
 
     try {
-      return normalizeConstants(
-          normalizeImplicitMappings(
-              normalizeFeatureRefs(
-                  resolveMappingOperationsIfNecessary(resolveSchemasIfNecessary(data)))));
+      List<TypesResolver> resolvers =
+          List.of(
+              new SchemaReferenceResolver(data, schemaResolvers),
+              new MappingOperationResolver(true),
+              new FeatureRefEmbedder(data.getTypes(), data.getId()),
+              new FeatureRefResolver(connectors),
+              new ImplicitMappingResolver(),
+              new ConstantsResolver(),
+              new LabelTemplateResolver(data.getLabelTemplate()),
+              new MappingOperationResolver());
+
+      for (TypesResolver resolver : resolvers) {
+        data = applyTypesResolver(data, resolver);
+      }
+
+      return data;
+
     } catch (Throwable e) {
       LogContext.error(
           LOGGER, e, "Feature provider with id '{}' could not be started", data.getId());
@@ -188,72 +200,21 @@ public class FeatureProviderOracleFactory
     return Map.of("extensions", "type");
   }
 
-  private FeatureProviderSqlData resolveSchemasIfNecessary(FeatureProviderSqlData data) {
-    SchemaReferenceResolver resolver = new SchemaReferenceResolver(data, schemaResolvers);
+  private FeatureProviderSqlData applyTypesResolver(
+      FeatureProviderSqlData data, TypesResolver resolver) {
     Map<String, FeatureSchema> types = data.getTypes();
-
     int rounds = 0;
+
     while (resolver.needsResolving(types)) {
       types = resolver.resolve(types);
-      if (++rounds > 16) {
-        LOGGER.warn("Exceeded the maximum length of 16 for provider schema reference chains.");
+      if (++rounds >= resolver.maxRounds()) {
+        resolver.maxRoundsWarning().ifPresent(LOGGER::warn);
         break;
       }
     }
 
     if (rounds > 0) {
-      return new Builder().from(data).types(types).build();
-    }
-
-    return data;
-  }
-
-  private FeatureProviderSqlData resolveMappingOperationsIfNecessary(FeatureProviderSqlData data) {
-    MappingOperationResolver resolver = new MappingOperationResolver();
-
-    if (resolver.needsResolving(data.getTypes())) {
-      Map<String, FeatureSchema> types = resolver.resolve(data.getTypes());
-
-      ImmutableFeatureProviderSqlData build = new Builder().from(data).types(types).build();
-      return build;
-    }
-    return data;
-  }
-
-  private FeatureProviderSqlData normalizeConstants(FeatureProviderSqlData data) {
-    return applySchemaTransformation(
-        data, p -> p.isConstant() && p.getSourcePaths().isEmpty(), new ConstantsResolver());
-  }
-
-  private FeatureProviderSqlData normalizeImplicitMappings(FeatureProviderSqlData data) {
-    ImplicitMappingResolver implicitMappingResolver = new ImplicitMappingResolver();
-    return applySchemaTransformation(
-        data, implicitMappingResolver::needsResolving, implicitMappingResolver);
-  }
-
-  private FeatureProviderSqlData normalizeFeatureRefs(FeatureProviderSqlData data) {
-    return applySchemaTransformation(
-        data,
-        p -> p.getType() == Type.FEATURE_REF || p.getType() == Type.FEATURE_REF_ARRAY,
-        new FeatureRefResolver(connectors));
-  }
-
-  private FeatureProviderSqlData applySchemaTransformation(
-      FeatureProviderSqlData data,
-      Predicate<FeatureSchema> propertyMatcher,
-      SchemaVisitorTopDown<FeatureSchema, FeatureSchema> transformer) {
-    boolean anyPropertyMatches =
-        data.getTypes().values().stream()
-            .flatMap(t -> t.getAllNestedProperties().stream())
-            .anyMatch(propertyMatcher);
-
-    if (anyPropertyMatches) {
-      Map<String, FeatureSchema> types =
-          data.getTypes().entrySet().stream()
-              .map(entry -> Map.entry(entry.getKey(), entry.getValue().accept(transformer)))
-              .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
-
-      return new Builder().from(data).types(types).build();
+      return new Builder().from(data).types(types).fragments(Map.of()).build();
     }
 
     return data;
