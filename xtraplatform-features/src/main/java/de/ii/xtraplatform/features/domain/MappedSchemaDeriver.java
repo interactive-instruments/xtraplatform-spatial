@@ -139,11 +139,9 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
                         .flatMap(p -> p.getFullPath().stream())
                         .collect(Collectors.toList());
                 List<T> matchingProperties =
-                    isVirtualObject
-                        ? properties.stream()
-                            .filter(prop -> Objects.equals(prop.getParentPath(), fullParentPath))
-                            .collect(Collectors.toList())
-                        : properties;
+                    properties.stream()
+                        .filter(prop -> Objects.equals(prop.getParentPath(), fullParentPath))
+                        .collect(Collectors.toList());
                 return merge(
                     schema,
                     parentPath.isEmpty()

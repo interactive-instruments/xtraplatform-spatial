@@ -103,7 +103,7 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
       return new Builder()
           .from(adjustType(parents, schema))
           .propertyMap(visitedPropertiesMap)
-          .concat(visitedConcat)
+          .concat(List.of())
           .build();
     }
 
