@@ -481,7 +481,7 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
                     && Objects.equals(
                         connector.get(), DecoderFactorySqlExpression.CONNECTOR_STRING))
             .properties(connector.isPresent() ? List.of() : newVisitedProperties2)
-            .constantValue(targetSchema.getConstantValue())
+            .constantValue(path.getConstantValue())
             .forcePolygonCCW(
                 targetSchema.isForcePolygonCCW() ? Optional.empty() : Optional.of(false))
             .linearizeCurves(

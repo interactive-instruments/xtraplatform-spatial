@@ -56,6 +56,8 @@ public interface SqlPath extends SourcePath {
 
   Optional<String> getFilterString();
 
+  Optional<String> getConstantValue();
+
   // TODO: not needed any more? should be based on primary key detection
   boolean getJunction();
 
