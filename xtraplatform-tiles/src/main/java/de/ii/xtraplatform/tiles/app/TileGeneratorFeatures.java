@@ -66,6 +66,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.measure.Unit;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -462,11 +464,19 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
 
     if ((userParameters.isEmpty() || userParameters.get().getFields().isEmpty())
         && tileset.getTransformations().containsKey(tile.getTileMatrixSet().getId())) {
-      tileset.getTransformations().get(tile.getTileMatrixSet().getId()).stream()
-          .filter(rule -> rule.matches(tile.getLevel()))
-          .map(LevelTransformation::getProperties)
-          .flatMap(Collection::stream)
-          .forEach(queryBuilder::addFields);
+      List<String> fields =
+          tileset.getTransformations().get(tile.getTileMatrixSet().getId()).stream()
+              .filter(rule -> rule.matches(tile.getLevel()))
+              .map(LevelTransformation::getProperties)
+              .flatMap(Collection::stream)
+              .collect(Collectors.toList());
+      if (!fields.isEmpty()) {
+        Stream.concat(
+                fields.stream(),
+                queryablesSchema.getPrimaryGeometry().map(SchemaBase::getFullPathAsString).stream())
+            .distinct()
+            .forEach(queryBuilder::addFields);
+      }
     }
 
     return queryBuilder.build();
