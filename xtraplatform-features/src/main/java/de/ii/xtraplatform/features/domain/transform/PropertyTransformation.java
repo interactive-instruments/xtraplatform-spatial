@@ -259,6 +259,16 @@ public interface PropertyTransformation
   Optional<String> getCodelist();
 
   /**
+   * @langEn Maps the value according to the given map. If the value does not have a matching entry
+   *     , the original value is passed through. A fallback mapping can be provided with the key
+   *     `*`.
+   * @langDe Bildet den Wert anhand der gegebenen Map ab. Falls der Wert keinen passenden Eintrag
+   *     hat, bleibt der Wert unverändert. Ein Fallback-Mapping kann mit dem Schlüssel `*` angegeben
+   *     werden.
+   */
+  Optional<Map<String, String>> getMap();
+
+  /**
    * @langEn Maps all values matching the list of regular expressions to `null`. Not applicable for
    *     properties containing objects.
    * @langDe Bildet alle Werte, die einem der regulären Ausdrücke in der Liste entsprechen, auf
