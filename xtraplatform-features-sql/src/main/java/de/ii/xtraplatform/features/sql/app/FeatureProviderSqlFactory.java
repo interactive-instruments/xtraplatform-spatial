@@ -211,7 +211,7 @@ public class FeatureProviderSqlFactory
           List.of(
               new SchemaReferenceResolver(data, schemaResolvers),
               new MappingOperationResolver(true),
-              new FeatureRefEmbedder(data.getTypes(), data.getId()),
+              new FeatureRefEmbedder(data.getId()),
               new FeatureRefResolver(connectors),
               new ImplicitMappingResolver(),
               new ConstantsResolver(),

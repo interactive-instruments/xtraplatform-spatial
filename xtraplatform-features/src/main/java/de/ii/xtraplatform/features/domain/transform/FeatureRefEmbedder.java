@@ -82,16 +82,16 @@ public class FeatureRefEmbedder implements TypesResolver {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureRefEmbedder.class);
 
-  private final Map<String, FeatureSchema> types;
   private final String providerId;
   private final WithoutRoles withoutRoles;
+  private Map<String, FeatureSchema> allTypes;
   private List<List<String>> typesByRound;
   private int currentRound;
 
-  public FeatureRefEmbedder(Map<String, FeatureSchema> types, String providerId) {
-    this.types = types;
+  public FeatureRefEmbedder(String providerId) {
     this.providerId = providerId;
     this.withoutRoles = new WithoutRoles();
+    this.allTypes = null;
     this.typesByRound = null;
     this.currentRound = -1;
   }
@@ -103,7 +103,8 @@ public class FeatureRefEmbedder implements TypesResolver {
 
   @Override
   public boolean needsResolving(Map<String, FeatureSchema> types) {
-    if (Objects.isNull(typesByRound)) {
+    if (Objects.isNull(allTypes)) {
+      this.allTypes = new LinkedHashMap<>(types);
       this.typesByRound = getTypesByRound(types, providerId);
     }
 
@@ -128,6 +129,7 @@ public class FeatureRefEmbedder implements TypesResolver {
         TypesResolver.super.resolve(getTypesForCurrentRound());
 
     newTypes.putAll(resolvedTypes);
+    this.allTypes.putAll(resolvedTypes);
 
     return newTypes;
   }
@@ -135,23 +137,22 @@ public class FeatureRefEmbedder implements TypesResolver {
   private Map<String, FeatureSchema> getTypesForCurrentRound() {
     if (currentRound < typesByRound.size()) {
       return typesByRound.get(currentRound).stream()
-          .collect(ImmutableMap.toImmutableMap(t -> t, types::get));
+          .collect(ImmutableMap.toImmutableMap(t -> t, allTypes::get));
     }
     return Map.of();
   }
 
   @Override
   public FeatureSchema resolve(FeatureSchema property, List<FeatureSchema> parents) {
-    // TODO: no longer needed, test with embed
-    /*if (!property.getConcat().isEmpty()) {
-      return getBuilder(property, types)
+    if (!property.getConcat().isEmpty()) {
+      return getBuilder(property, allTypes)
           .map(
               b -> {
                 property
                     .getConcat()
                     .forEach(
                         concat -> {
-                          getBuilder(concat, types)
+                          getBuilder(concat, allTypes)
                               .ifPresent(b2 -> b.addConcat(b2.build().accept(withoutRoles)));
                         });
                 return b.build();
@@ -160,22 +161,22 @@ public class FeatureRefEmbedder implements TypesResolver {
     }
 
     if (!property.getCoalesce().isEmpty()) {
-      return getBuilder(property, types)
+      return getBuilder(property, allTypes)
           .map(
               b -> {
                 property
                     .getCoalesce()
                     .forEach(
                         coalesce -> {
-                          getBuilder(coalesce, types)
+                          getBuilder(coalesce, allTypes)
                               .ifPresent(b2 -> b.addCoalesce(b2.build().accept(withoutRoles)));
                         });
                 return b.build();
               })
           .orElse(null);
-    }*/
+    }
 
-    return getBuilder(property, types).map(b -> b.build().accept(withoutRoles)).orElse(null);
+    return getBuilder(property, allTypes).map(b -> b.build().accept(withoutRoles)).orElse(null);
   }
 
   private static Optional<Builder> getBuilder(

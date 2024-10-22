@@ -38,7 +38,10 @@ public class WithScope implements SchemaVisitorTopDown<FeatureSchema, FeatureSch
       FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
 
     // always include ID property
-    if (!schema.hasOneOf(scopes) && !schema.isId() && !schema.isEmbeddedId()) {
+    if (!schema.hasOneOf(scopes)
+        && !schema.isId()
+        && !schema.isEmbeddedId()
+        && !parents.isEmpty()) {
       return null;
     }
 
