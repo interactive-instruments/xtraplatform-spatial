@@ -28,6 +28,15 @@ import org.slf4j.LoggerFactory;
 
 public interface FeatureStream {
 
+  enum PipelineSteps {
+    MAPPING,
+    COORDINATES,
+    CLEAN,
+    ETAG,
+    METADATA,
+    ALL
+  }
+
   Logger LOGGER = LoggerFactory.getLogger(FeatureStream.class);
 
   /**

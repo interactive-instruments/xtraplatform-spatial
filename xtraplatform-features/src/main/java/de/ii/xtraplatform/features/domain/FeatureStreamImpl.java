@@ -43,6 +43,11 @@ public class FeatureStreamImpl implements FeatureStream {
   private final Map<String, Codelist> codelists;
   private final QueryRunner runner;
   private final boolean doTransform;
+  private final boolean stepMapping;
+  private final boolean stepCoordinates;
+  private final boolean stepClean;
+  private final boolean stepEtag;
+  private final boolean stepMetadata;
 
   public FeatureStreamImpl(
       Query query,
@@ -57,6 +62,21 @@ public class FeatureStreamImpl implements FeatureStream {
     this.codelists = codelists;
     this.runner = runner;
     this.doTransform = doTransform;
+    this.stepMapping =
+        !query.debugSkipPipelineSteps().contains(PipelineSteps.MAPPING)
+            && !query.debugSkipPipelineSteps().contains(PipelineSteps.ALL);
+    this.stepCoordinates =
+        !query.debugSkipPipelineSteps().contains(PipelineSteps.COORDINATES)
+            && !query.debugSkipPipelineSteps().contains(PipelineSteps.ALL);
+    this.stepClean =
+        !query.debugSkipPipelineSteps().contains(PipelineSteps.CLEAN)
+            && !query.debugSkipPipelineSteps().contains(PipelineSteps.ALL);
+    this.stepEtag =
+        !query.debugSkipPipelineSteps().contains(PipelineSteps.ETAG)
+            && !query.debugSkipPipelineSteps().contains(PipelineSteps.ALL);
+    this.stepMetadata =
+        !query.debugSkipPipelineSteps().contains(PipelineSteps.METADATA)
+            && !query.debugSkipPipelineSteps().contains(PipelineSteps.ALL);
   }
 
   @Override
@@ -81,7 +101,8 @@ public class FeatureStreamImpl implements FeatureStream {
                       .filter(type -> type == ETag.Type.STRONG)
                       .isPresent();
 
-          if (query instanceof FeatureQuery
+          if (stepEtag
+              && query instanceof FeatureQuery
               && ((FeatureQuery) query)
                   .getETag()
                   .filter(type -> type == ETag.Type.WEAK)
@@ -89,7 +110,9 @@ public class FeatureStreamImpl implements FeatureStream {
             source = source.via(new FeatureTokenTransformerWeakETag(resultBuilder));
           }
 
-          source = source.via(new FeatureTokenTransformerMetadata(resultBuilder));
+          if (stepMetadata) {
+            source = source.via(new FeatureTokenTransformerMetadata(resultBuilder));
+          }
 
           source = source.via(new FeatureTokenTransformerHasFeatures(resultBuilder));
 
@@ -142,16 +165,17 @@ public class FeatureStreamImpl implements FeatureStream {
                       .filter(type -> type == ETag.Type.STRONG)
                       .isPresent();
 
-          if (query instanceof FeatureQuery
+          if (stepEtag
+              && query instanceof FeatureQuery
               && ((FeatureQuery) query)
                   .getETag()
                   .filter(type -> type == ETag.Type.WEAK)
                   .isPresent()) {
             source = source.via(new FeatureTokenTransformerWeakETag(resultBuilder));
           }
-
-          source = source.via(new FeatureTokenTransformerMetadata(resultBuilder));
-
+          if (stepMetadata) {
+            source = source.via(new FeatureTokenTransformerMetadata(resultBuilder));
+          }
           source = source.via(new FeatureTokenTransformerHasFeatures(resultBuilder));
 
           Reactive.BasicStream<?, X> basicStream =
@@ -203,9 +227,17 @@ public class FeatureStreamImpl implements FeatureStream {
     FeatureTokenTransformerRemoveEmptyOptionals cleaner =
         new FeatureTokenTransformerRemoveEmptyOptionals(propertyTransformations);
 
-    FeatureTokenSource tokenSourceTransformed =
-        featureTokenSource.via(schemaMapper).via(valueMapper).via(cleaner);
+    FeatureTokenSource tokenSourceTransformed = featureTokenSource;
 
+    if (stepMapping) {
+      tokenSourceTransformed = tokenSourceTransformed.via(schemaMapper);
+    }
+    if (stepCoordinates) {
+      tokenSourceTransformed = tokenSourceTransformed.via(valueMapper);
+    }
+    if (stepClean) {
+      tokenSourceTransformed = tokenSourceTransformed.via(cleaner);
+    }
     if (FeatureTokenValidator.LOGGER.isTraceEnabled()) {
       tokenSourceTransformed = tokenSourceTransformed.via(new FeatureTokenValidator());
     }

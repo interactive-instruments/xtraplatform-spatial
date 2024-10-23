@@ -9,6 +9,7 @@ package de.ii.xtraplatform.features.domain;
 
 import com.google.common.collect.ImmutableList;
 import de.ii.xtraplatform.crs.domain.EpsgCrs;
+import de.ii.xtraplatform.features.domain.FeatureStream.PipelineSteps;
 import java.util.List;
 import java.util.Optional;
 import org.immutables.value.Value;
@@ -40,5 +41,10 @@ public interface Query {
   @Value.Default
   default boolean hitsOnly() {
     return false;
+  }
+
+  @Value.Default
+  default List<PipelineSteps> debugSkipPipelineSteps() {
+    return List.of();
   }
 }
