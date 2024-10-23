@@ -109,7 +109,8 @@ public interface SqlDialect {
     return ImmutableSet.of();
   }
 
-  default String applyToExpression(String table, String name, Map<String, String> subDecoderPaths) {
+  default String applyToExpression(
+      String table, String name, Map<String, String> subDecoderPaths, boolean spatial) {
     return name;
   }
 

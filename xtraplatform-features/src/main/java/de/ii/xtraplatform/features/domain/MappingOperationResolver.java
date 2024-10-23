@@ -332,49 +332,50 @@ public class MappingOperationResolver implements TypesResolver {
   }
 
   @Override
-  public boolean needsResolving(FeatureSchema type) {
+  public boolean needsResolving(FeatureSchema property, boolean isFeature) {
     if (mergeOnly) {
-      return hasMerge(type);
+      return hasMerge(property);
     }
-    return hasMerge(type) || hasConcat(type) || hasCoalesce(type);
+    return hasMerge(property) || hasConcat(property) || hasCoalesce(property);
   }
 
   @Override
-  public FeatureSchema resolve(FeatureSchema type) {
-    FeatureSchema resolved = type;
+  public FeatureSchema resolve(FeatureSchema property, List<FeatureSchema> parents) {
+    FeatureSchema resolved = property;
 
-    if (hasMerge(type)) {
-      resolved = resolveMerge(type);
+    if (hasMerge(property)) {
+      resolved = resolveMerge(property);
     }
 
-    if (!mergeOnly && hasConcat(type)) {
-      resolved = resolveConcat(type);
+    if (!mergeOnly && hasConcat(property)) {
+      resolved = resolveConcat(property);
     }
 
-    if (!mergeOnly && hasCoalesce(type)) {
-      resolved = resolveCoalesce(type);
+    if (!mergeOnly && hasCoalesce(property)) {
+      resolved = resolveCoalesce(property);
     }
 
     return resolved;
   }
 
-  private FeatureSchema resolveMerge(FeatureSchema type) {
+  private FeatureSchema resolveMerge(FeatureSchema schema) {
     Map<String, FeatureSchema> props = new LinkedHashMap<>();
 
-    type.getMerge()
+    schema
+        .getMerge()
         .forEach(
             partial -> {
               if (partial.getSourcePath().isPresent()) {
                 partial
                     .getPropertyMap()
                     .forEach(
-                        (key, schema) -> {
+                        (key, property) -> {
                           props.put(
                               key,
                               new ImmutableFeatureSchema.Builder()
-                                  .from(schema)
+                                  .from(property)
                                   .sourcePath(
-                                      schema
+                                      property
                                           .getSourcePath()
                                           .map(
                                               sourcePath ->
@@ -382,7 +383,7 @@ public class MappingOperationResolver implements TypesResolver {
                                                       "%s/%s",
                                                       partial.getSourcePath().get(), sourcePath)))
                                   .sourcePaths(
-                                      schema.getSourcePaths().stream()
+                                      property.getSourcePaths().stream()
                                           .map(
                                               sourcePath ->
                                                   String.format(
@@ -397,37 +398,37 @@ public class MappingOperationResolver implements TypesResolver {
             });
 
     return new ImmutableFeatureSchema.Builder()
-        .from(type)
+        .from(schema)
         .merge(List.of())
         .propertyMap(props)
         .build();
   }
 
-  public static FeatureSchema resolveConcat(FeatureSchema type) {
-    if (type.getType() == Type.VALUE_ARRAY) {
-      String basePath = type.getSourcePath().map(p -> p + "/").orElse("");
+  public static FeatureSchema resolveConcat(FeatureSchema schema) {
+    if (schema.getType() == Type.VALUE_ARRAY) {
+      String basePath = schema.getSourcePath().map(p -> p + "/").orElse("");
 
       ImmutableFeatureSchema.Builder builder =
           new ImmutableFeatureSchema.Builder()
-              .from(type)
+              .from(schema)
               .sourcePath(Optional.empty())
               .addTransformations(
                   new ImmutablePropertyTransformation.Builder().concat(false).build());
 
-      for (FeatureSchema concat : type.getConcat()) {
+      for (FeatureSchema concat : schema.getConcat()) {
         builder.addSourcePaths(basePath + concat.getSourcePath().orElse(""));
       }
 
       builder.concat(
-          type.getConcat().stream()
+          schema.getConcat().stream()
               .map(
                   s -> {
                     if (Objects.isNull(s.getDesiredType()) || s.getValueType().isEmpty()) {
                       return new ImmutableFeatureSchema.Builder()
                           .from(s)
-                          .type(Objects.isNull(s.getDesiredType()) ? type.getType() : s.getType())
+                          .type(Objects.isNull(s.getDesiredType()) ? schema.getType() : s.getType())
                           .valueType(
-                              s.getValueType().orElse(type.getValueType().orElse(Type.STRING)))
+                              s.getValueType().orElse(schema.getValueType().orElse(Type.STRING)))
                           .build();
                     }
                     return s;
@@ -437,26 +438,26 @@ public class MappingOperationResolver implements TypesResolver {
       return builder.build();
     }
 
-    if (type.getType() == Type.OBJECT_ARRAY
-        || (type.getType() == Type.OBJECT && type.getFullPath().isEmpty())) {
-      String basePath = type.getSourcePath().map(p -> p + "/").orElse("");
+    if (schema.getType() == Type.OBJECT_ARRAY
+        || (schema.getType() == Type.OBJECT && schema.getFullPath().isEmpty())) {
+      String basePath = schema.getSourcePath().map(p -> p + "/").orElse("");
 
       ImmutableFeatureSchema.Builder builder =
           new ImmutableFeatureSchema.Builder()
-              .from(type)
+              .from(schema)
               .sourcePath(Optional.empty())
               .addTransformations(
                   new ImmutablePropertyTransformation.Builder().concat(true).build());
 
-      for (int i = 0; i < type.getConcat().size(); i++) {
+      for (int i = 0; i < schema.getConcat().size(); i++) {
         String basePath2 =
-            basePath + type.getConcat().get(i).getSourcePath().map(p -> p + "/").orElse("");
+            basePath + schema.getConcat().get(i).getSourcePath().map(p -> p + "/").orElse("");
         String basePath2NoSlash =
             basePath2.endsWith("/") ? basePath2.substring(0, basePath2.length() - 1) : basePath2;
 
         builder.addSourcePaths(basePath2NoSlash);
 
-        for (FeatureSchema prop : type.getConcat().get(i).getProperties()) {
+        for (FeatureSchema prop : schema.getConcat().get(i).getProperties()) {
           builder.putPropertyMap(
               i + "_" + prop.getName(),
               new ImmutableFeatureSchema.Builder()
@@ -470,15 +471,15 @@ public class MappingOperationResolver implements TypesResolver {
         }
       }
 
-      if (type.getConcat().stream().anyMatch(s -> Objects.isNull(s.getDesiredType()))) {
+      if (schema.getConcat().stream().anyMatch(s -> Objects.isNull(s.getDesiredType()))) {
         builder.concat(
-            type.getConcat().stream()
+            schema.getConcat().stream()
                 .map(
                     s -> {
                       if (Objects.isNull(s.getDesiredType())) {
                         return new ImmutableFeatureSchema.Builder()
                             .from(s)
-                            .type(type.getType())
+                            .type(schema.getType())
                             .build();
                       }
                       return s;
@@ -489,35 +490,35 @@ public class MappingOperationResolver implements TypesResolver {
       return builder.build();
     }
 
-    return type;
+    return schema;
   }
 
-  public static FeatureSchema resolveCoalesce(FeatureSchema type) {
-    if (type.isValue() && !type.isFeatureRef() && !type.isArray()) {
-      String basePath = type.getSourcePath().map(p -> p + "/").orElse("");
+  public static FeatureSchema resolveCoalesce(FeatureSchema schema) {
+    if (schema.isValue() && !schema.isFeatureRef() && !schema.isArray()) {
+      String basePath = schema.getSourcePath().map(p -> p + "/").orElse("");
 
       ImmutableFeatureSchema.Builder builder =
           new ImmutableFeatureSchema.Builder()
-              .from(type)
+              .from(schema)
               .type(Type.VALUE_ARRAY)
-              .valueType(type.getValueType().orElse(type.getType()))
+              .valueType(schema.getValueType().orElse(schema.getType()))
               .sourcePath(Optional.empty())
               .addTransformations(
                   new ImmutablePropertyTransformation.Builder().coalesce(false).build());
 
-      for (FeatureSchema coalesce : type.getCoalesce()) {
+      for (FeatureSchema coalesce : schema.getCoalesce()) {
         builder.addSourcePaths(basePath + coalesce.getSourcePath().orElse(""));
       }
 
       builder.coalesce(
-          type.getCoalesce().stream()
+          schema.getCoalesce().stream()
               .map(
                   s -> {
                     if (Objects.isNull(s.getDesiredType()) || s.getValueType().isEmpty()) {
                       return new ImmutableFeatureSchema.Builder()
                           .from(s)
-                          .type(Objects.isNull(s.getDesiredType()) ? type.getType() : s.getType())
-                          .valueType(s.getValueType().or(type::getValueType))
+                          .type(Objects.isNull(s.getDesiredType()) ? schema.getType() : s.getType())
+                          .valueType(s.getValueType().or(schema::getValueType))
                           .build();
                     }
                     return s;
@@ -527,22 +528,22 @@ public class MappingOperationResolver implements TypesResolver {
       return builder.build();
     }
 
-    if (type.isObject() && !type.isArray()) {
-      String basePath = type.getSourcePath().map(p -> p + "/").orElse("");
+    if (schema.isObject() && !schema.isArray()) {
+      String basePath = schema.getSourcePath().map(p -> p + "/").orElse("");
 
       ImmutableFeatureSchema.Builder builder =
           new ImmutableFeatureSchema.Builder()
-              .from(type)
+              .from(schema)
               .type(Type.OBJECT_ARRAY)
               .sourcePath(Optional.empty())
               .addTransformations(
                   new ImmutablePropertyTransformation.Builder().coalesce(true).build());
 
-      for (int i = 0; i < type.getCoalesce().size(); i++) {
+      for (int i = 0; i < schema.getCoalesce().size(); i++) {
         String basePath2 =
-            basePath + type.getCoalesce().get(i).getSourcePath().map(p -> p + "/").orElse("");
+            basePath + schema.getCoalesce().get(i).getSourcePath().map(p -> p + "/").orElse("");
 
-        for (FeatureSchema prop : type.getCoalesce().get(i).getProperties()) {
+        for (FeatureSchema prop : schema.getCoalesce().get(i).getProperties()) {
           builder.putPropertyMap(
               i + "_" + prop.getName(),
               new ImmutableFeatureSchema.Builder()
@@ -552,15 +553,15 @@ public class MappingOperationResolver implements TypesResolver {
         }
       }
 
-      if (type.getCoalesce().stream().anyMatch(s -> Objects.isNull(s.getDesiredType()))) {
+      if (schema.getCoalesce().stream().anyMatch(s -> Objects.isNull(s.getDesiredType()))) {
         builder.coalesce(
-            type.getCoalesce().stream()
+            schema.getCoalesce().stream()
                 .map(
                     s -> {
                       if (Objects.isNull(s.getDesiredType())) {
                         return new ImmutableFeatureSchema.Builder()
                             .from(s)
-                            .type(type.getType())
+                            .type(schema.getType())
                             .build();
                       }
                       return s;
@@ -571,18 +572,18 @@ public class MappingOperationResolver implements TypesResolver {
       return builder.build();
     }
 
-    return type;
+    return schema;
   }
 
-  private static boolean hasMerge(FeatureSchema type) {
-    return !type.getMerge().isEmpty();
+  private static boolean hasMerge(FeatureSchema schema) {
+    return !schema.getMerge().isEmpty();
   }
 
-  private static boolean hasConcat(FeatureSchema type) {
-    return !type.getConcat().isEmpty();
+  private static boolean hasConcat(FeatureSchema schema) {
+    return !schema.getConcat().isEmpty();
   }
 
-  private static boolean hasCoalesce(FeatureSchema type) {
-    return !type.getCoalesce().isEmpty();
+  private static boolean hasCoalesce(FeatureSchema schema) {
+    return !schema.getCoalesce().isEmpty();
   }
 }

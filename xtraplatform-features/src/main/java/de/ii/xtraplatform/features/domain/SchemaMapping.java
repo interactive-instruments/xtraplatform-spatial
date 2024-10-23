@@ -77,9 +77,11 @@ public interface SchemaMapping extends SchemaMappingBase<FeatureSchema> {
                   for (FeatureSchema coalesce : schema.getCoalesce()) {
                     if (coalesce.getSourcePath().isPresent()) {
                       List<String> sourcePath =
-                          Splitter.on('/')
-                              .omitEmptyStrings()
-                              .splitToList(coalesce.getSourcePath().get());
+                          coalesce.getConstantValue().isPresent()
+                              ? List.of(coalesce.getSourcePath().get())
+                              : Splitter.on('/')
+                                  .omitEmptyStrings()
+                                  .splitToList(coalesce.getSourcePath().get());
                       if (Objects.equals(
                           sourcePath, path.subList(path.size() - sourcePath.size(), path.size()))) {
                         ImmutableFeatureSchema build =

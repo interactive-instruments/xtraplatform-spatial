@@ -31,6 +31,8 @@ public abstract class FeaturePropertyTransformerCoalesce
 
   public abstract boolean isObject();
 
+  public abstract List<List<FeaturePropertyValueTransformer>> valueTransformers();
+
   @Override
   public FeatureSchema transformSchema(FeatureSchema schema) {
     // checkArray(schema);
@@ -72,23 +74,35 @@ public abstract class FeaturePropertyTransformerCoalesce
     List<Object> transformed = new ArrayList<>();
     boolean skip = false;
     boolean found = false;
+    int valueIndex = -1;
+    String value = null;
 
     for (int i = 0; i < slice.size(); i++) {
       if (isValueWithPath(slice, i, schema.getFullPath())) {
         if (found) {
-          break;
-        }
-        if (isNonNullValue(slice, i)) {
-          skip = false;
-          found = true;
+          skip = true;
         } else {
           skip = true;
+          valueIndex++;
+
+          value = (String) slice.get(i + 2);
+          for (FeaturePropertyValueTransformer transformer : valueTransformers().get(valueIndex)) {
+            value = transformer.transform(getPropertyPath(), value);
+          }
+          if (Objects.nonNull(value)) {
+            transformed.add(slice.get(i));
+            transformed.add(slice.get(i + 1));
+            transformed.add(value);
+            transformed.add(slice.get(i + 3));
+
+            found = true;
+          }
         }
-      } else if (slice.get(i) instanceof FeatureTokenType) {
-        if (found) {
-          break;
-        }
+      } else if (isArrayWithPath(slice, i, schema.getFullPath())
+          || isArrayEndWithPath(slice, i, schema.getFullPath())) {
         skip = true;
+      } else if (skip && slice.get(i) instanceof FeatureTokenType) {
+        skip = false;
       }
       if (!skip) {
         transformed.add(slice.get(i));

@@ -189,12 +189,16 @@ public class SqlDialectGpkg implements SqlDialect {
   }
 
   @Override
-  public String applyToExpression(String table, String name, Map<String, String> subDecoderPaths) {
+  public String applyToExpression(
+      String table, String name, Map<String, String> subDecoderPaths, boolean spatial) {
     if (!subDecoderPaths.isEmpty()) {
       String expression =
           subDecoderPaths.values().iterator().next().replaceAll("\\$(?:t|T|table)\\$", table);
+      if (spatial) {
+        expression = applyToWkt(expression, false, false);
+      }
       return String.format("(%s) AS %s", expression, name);
     }
-    return SqlDialect.super.applyToExpression(table, name, subDecoderPaths);
+    return SqlDialect.super.applyToExpression(table, name, subDecoderPaths, spatial);
   }
 }

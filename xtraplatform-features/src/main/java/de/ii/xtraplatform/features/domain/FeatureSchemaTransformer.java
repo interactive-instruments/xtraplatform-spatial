@@ -21,7 +21,9 @@ public interface FeatureSchemaTransformer {
       FeatureSchema schema,
       List<FeatureSchema> parents,
       List<FeatureSchema> visitedProperties,
-      List<PartialObjectSchema> visitedPartials);
+      List<PartialObjectSchema> visitedMergeProperties,
+      List<FeatureSchema> visitedConcatProperties,
+      List<FeatureSchema> visitedCoalesceProperties);
 
   default Map<String, FeatureSchema> asMap(Stream<FeatureSchema> visitedProperties) {
     return visitedProperties

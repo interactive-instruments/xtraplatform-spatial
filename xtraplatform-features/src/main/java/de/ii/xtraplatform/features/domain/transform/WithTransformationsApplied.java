@@ -73,7 +73,7 @@ public class WithTransformationsApplied
         propertyTransformations.getSchemaTransformations(null, true);
 
     TokenSliceTransformerChain sliceTransformations =
-        propertyTransformations.getTokenSliceTransformations(null);
+        propertyTransformations.getTokenSliceTransformations(null, Map.of(), Optional.empty());
 
     return schema.accept(schemaTransformations).accept(sliceTransformations);
   }

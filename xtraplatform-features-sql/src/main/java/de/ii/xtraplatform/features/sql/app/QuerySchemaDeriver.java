@@ -424,7 +424,11 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
             ? Optional.empty()
             : Optional.of(parentSortKeys.get(parentSortKeys.size() - 1));
 
-    Type type = connector.isPresent() ? Type.STRING : targetSchema.getType();
+    boolean isConnected = connector.isPresent();
+    boolean isExpression =
+        isConnected
+            && Objects.equals(connector.get(), DecoderFactorySqlExpression.CONNECTOR_STRING);
+    Type type = isConnected && !isExpression ? Type.STRING : targetSchema.getType();
     Optional<Type> valueType = targetSchema.getValueType();
 
     if (!targetSchema.getConcat().isEmpty()) {
@@ -441,7 +445,7 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
     Map<String, String> subConnectorPaths1 =
         Objects.requireNonNullElse(subConnectorPaths.get(path.getName()), Map.of());
     Map<String, String> subDecoderPaths =
-        connector.isPresent()
+        isConnected
             ? (subConnectorPaths1.isEmpty()
                 ? (path.getPathInConnector().isPresent()
                     ? ImmutableMap.of(fullSchemaPath, path.getPathInConnector().get())
@@ -451,7 +455,7 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
     Map<String, PropertyTypeInfo> subConnectorTypes1 =
         Objects.requireNonNullElse(subConnectorTypes.get(path.getName()), Map.of());
     Map<String, PropertyTypeInfo> subDecoderTypes =
-        connector.isPresent()
+        isConnected
             ? (subConnectorTypes1.isEmpty()
                 ? ImmutableMap.of(
                     fullSchemaPath,
@@ -476,12 +480,9 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
             .subDecoder(connector)
             .subDecoderPaths(subDecoderPaths)
             .subDecoderTypes(subDecoderTypes)
-            .isExpression(
-                connector.isPresent()
-                    && Objects.equals(
-                        connector.get(), DecoderFactorySqlExpression.CONNECTOR_STRING))
-            .properties(connector.isPresent() ? List.of() : newVisitedProperties2)
-            .constantValue(targetSchema.getConstantValue())
+            .isExpression(isExpression)
+            .properties(isConnected ? List.of() : newVisitedProperties2)
+            .constantValue(path.getConstantValue())
             .forcePolygonCCW(
                 targetSchema.isForcePolygonCCW() ? Optional.empty() : Optional.of(false))
             .linearizeCurves(

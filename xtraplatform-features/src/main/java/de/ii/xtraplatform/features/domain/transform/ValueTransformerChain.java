@@ -166,6 +166,15 @@ public class ValueTransformerChain
                               .parameter(codelist)
                               .codelists(codelists)
                               .build()));
+
+          if (propertyTransformation.getMap().isPresent()) {
+            transformers.add(
+                ImmutableFeaturePropertyTransformerMap.builder()
+                    .propertyPath(path)
+                    .parameter("")
+                    .mapping(propertyTransformation.getMap().get())
+                    .build());
+          }
         });
 
     return transformers;

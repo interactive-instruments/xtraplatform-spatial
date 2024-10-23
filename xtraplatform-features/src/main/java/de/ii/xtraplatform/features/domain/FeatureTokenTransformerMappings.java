@@ -85,7 +85,8 @@ public class FeatureTokenTransformerMappings extends FeatureTokenTransformer {
                         entry.getKey(),
                         propertyTransformations
                             .get(entry.getKey())
-                            .getTokenSliceTransformations(entry.getValue())))
+                            .getTokenSliceTransformations(
+                                entry.getValue(), codelists, nativeTimeZone)))
             .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
     this.valueTransformerChains =

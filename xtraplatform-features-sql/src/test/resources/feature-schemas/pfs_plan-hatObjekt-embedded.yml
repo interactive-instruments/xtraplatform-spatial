@@ -7,6 +7,9 @@ properties:
     sourcePath: id
     type: STRING
     role: ID
+  const:
+    type: STRING
+    constantValue: FOO
   hatObjekt:
     type: OBJECT_ARRAY
     role: EMBEDDED_FEATURE

@@ -72,7 +72,15 @@ public class PropertyTransformationsCollector
                             : String.join(".", schema.getFullPath()),
                         schema.getTransformations())),
             visitedProperties.stream().flatMap(m -> m.entrySet().stream()))
-        .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+        .collect(
+            ImmutableMap.toImmutableMap(
+                Map.Entry::getKey,
+                Map.Entry::getValue,
+                (first, second) ->
+                    ImmutableList.<PropertyTransformation>builder()
+                        .addAll(first)
+                        .addAll(second)
+                        .build()));
   }
 
   @Override

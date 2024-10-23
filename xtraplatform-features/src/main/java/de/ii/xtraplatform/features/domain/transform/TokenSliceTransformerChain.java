@@ -10,16 +10,19 @@ package de.ii.xtraplatform.features.domain.transform;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import de.ii.xtraplatform.codelists.domain.Codelist;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.SchemaMapping;
 import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
+import java.time.ZoneId;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -32,6 +35,7 @@ public class TokenSliceTransformerChain
         SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TokenSliceTransformerChain.class);
+  private static final Splitter PATH_SPLITTER = Splitter.on('.');
 
   private final SchemaMapping schemaMapping;
   private final Map<String, List<FeaturePropertyTokenSliceTransformer>> transformers;
@@ -39,7 +43,9 @@ public class TokenSliceTransformerChain
   public TokenSliceTransformerChain(
       Map<String, List<PropertyTransformation>> allTransformations,
       SchemaMapping schemaMapping,
-      Function<String, String> substitutionLookup) {
+      Function<String, String> substitutionLookup,
+      Map<String, Codelist> codelists,
+      Optional<ZoneId> defaultTimeZone) {
     this.schemaMapping = schemaMapping;
     this.transformers =
         allTransformations.entrySet().stream()
@@ -52,7 +58,11 @@ public class TokenSliceTransformerChain
                     List<String> propertyPaths = explodeWildcard(propertyPath, schemaMapping);
 
                     return createSliceTransformersForPaths(
-                        propertyPaths, transformation, substitutionLookup)
+                        propertyPaths,
+                        transformation,
+                        substitutionLookup,
+                        codelists,
+                        defaultTimeZone)
                         .entrySet()
                         .stream();
                   }
@@ -69,7 +79,11 @@ public class TokenSliceTransformerChain
                       new SimpleEntry<>(
                           propertyPath,
                           createSliceTransformers(
-                              propertyPath, transformation, substitutionLookup)));
+                              propertyPath,
+                              transformation,
+                              substitutionLookup,
+                              codelists,
+                              defaultTimeZone)));
                 })
             .collect(
                 ImmutableMap.toImmutableMap(
@@ -214,7 +228,9 @@ public class TokenSliceTransformerChain
   private List<FeaturePropertyTokenSliceTransformer> createSliceTransformers(
       String path,
       List<PropertyTransformation> propertyTransformations,
-      Function<String, String> substitutionLookup) {
+      Function<String, String> substitutionLookup,
+      Map<String, Codelist> codelists,
+      Optional<ZoneId> defaultTimeZone) {
     List<FeaturePropertyTokenSliceTransformer> transformers = new ArrayList<>();
 
     propertyTransformations.forEach(
@@ -292,24 +308,36 @@ public class TokenSliceTransformerChain
           propertyTransformation
               .getCoalesce()
               .ifPresent(
-                  isObject ->
-                      transformers.add(
-                          ImmutableFeaturePropertyTransformerCoalesce.builder()
-                              .propertyPath(path)
-                              .parameter("")
-                              .isObject(isObject)
-                              .build()));
+                  isObject -> {
+                    List<List<FeaturePropertyValueTransformer>> valueTransformers =
+                        getValueTransformers(
+                            path, false, isObject, substitutionLookup, codelists, defaultTimeZone);
+
+                    transformers.add(
+                        ImmutableFeaturePropertyTransformerCoalesce.builder()
+                            .propertyPath(path)
+                            .parameter("")
+                            .isObject(isObject)
+                            .valueTransformers(valueTransformers)
+                            .build());
+                  });
 
           propertyTransformation
               .getConcat()
               .ifPresent(
-                  isObject ->
-                      transformers.add(
-                          ImmutableFeaturePropertyTransformerConcat.builder()
-                              .propertyPath(path)
-                              .parameter("")
-                              .isObject(isObject)
-                              .build()));
+                  isObject -> {
+                    List<List<FeaturePropertyValueTransformer>> valueTransformers =
+                        getValueTransformers(
+                            path, true, isObject, substitutionLookup, codelists, defaultTimeZone);
+
+                    transformers.add(
+                        ImmutableFeaturePropertyTransformerConcat.builder()
+                            .propertyPath(path)
+                            .parameter("")
+                            .isObject(isObject)
+                            .valueTransformers(valueTransformers)
+                            .build());
+                  });
 
           propertyTransformation
               .getFlatten()
@@ -339,14 +367,43 @@ public class TokenSliceTransformerChain
   private Map<String, List<FeaturePropertyTokenSliceTransformer>> createSliceTransformersForPaths(
       List<String> propertyPaths,
       List<PropertyTransformation> propertyTransformation,
-      Function<String, String> substitutionLookup) {
+      Function<String, String> substitutionLookup,
+      Map<String, Codelist> codelists,
+      Optional<ZoneId> defaultTimeZone) {
     return propertyPaths.stream()
         .map(
             propertyPath ->
                 new SimpleEntry<>(
                     propertyPath,
                     createSliceTransformers(
-                        propertyPath, propertyTransformation, substitutionLookup)))
+                        propertyPath,
+                        propertyTransformation,
+                        substitutionLookup,
+                        codelists,
+                        defaultTimeZone)))
         .collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
+
+  private List<List<FeaturePropertyValueTransformer>> getValueTransformers(
+      String path,
+      boolean isConcat,
+      boolean isObject,
+      Function<String, String> substitutionLookup,
+      Map<String, Codelist> codelists,
+      Optional<ZoneId> defaultTimeZone) {
+    if (isObject || Objects.isNull(schemaMapping)) {
+      return List.of();
+    }
+
+    return schemaMapping.getSchemasForTargetPath(PATH_SPLITTER.splitToList(path)).stream()
+        .flatMap(schema -> isConcat ? schema.getConcat().stream() : schema.getCoalesce().stream())
+        .<PropertyTransformations>map(schema -> () -> Map.of(path, schema.getTransformations()))
+        .map(
+            transformations ->
+                transformations
+                    .getValueTransformations(
+                        schemaMapping, codelists, defaultTimeZone, substitutionLookup)
+                    .get(path))
+        .collect(Collectors.toList());
   }
 }

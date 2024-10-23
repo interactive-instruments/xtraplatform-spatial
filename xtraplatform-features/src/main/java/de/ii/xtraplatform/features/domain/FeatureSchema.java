@@ -876,13 +876,6 @@ public interface FeatureSchema
         getType(),
         getFullPathAsString());
 
-    // TODO
-    Preconditions.checkState(
-        getConcat().isEmpty()
-            || getConcat().stream().allMatch(s -> s.getTransformations().isEmpty()),
-        "Concat items may not contain transformations. Path: %s.",
-        getFullPathAsString());
-
     Preconditions.checkState(
         getConcat().isEmpty()
             || getType() != Type.OBJECT_ARRAY
@@ -947,12 +940,6 @@ public interface FeatureSchema
                         .contains(t))
             .findFirst()
             .orElse(getType()),
-        getFullPathAsString());
-
-    Preconditions.checkState(
-        getCoalesce().isEmpty()
-            || getCoalesce().stream().allMatch(s -> s.getTransformations().isEmpty()),
-        "Coalesce items may not contain transformations. Path: %s.",
         getFullPathAsString());
 
     Preconditions.checkState(
@@ -1070,6 +1057,28 @@ public interface FeatureSchema
         .collect(Collectors.toList());
   }
 
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default List<FeatureSchema> getAllNestedConcatProperties() {
+    return Stream.concat(
+            getProperties().stream().flatMap(t -> t.getAllNestedConcatProperties().stream()),
+            getConcat().stream()
+                .flatMap(t -> Stream.concat(Stream.of(t), t.getAllNestedProperties().stream())))
+        .collect(Collectors.toList());
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default List<FeatureSchema> getAllNestedCoalesceProperties() {
+    return Stream.concat(
+            getProperties().stream().flatMap(t -> t.getAllNestedCoalesceProperties().stream()),
+            getCoalesce().stream()
+                .flatMap(t -> Stream.concat(Stream.of(t), t.getAllNestedProperties().stream())))
+        .collect(Collectors.toList());
+  }
+
   default FeatureSchema accept(FeatureSchemaTransformer visitor, List<FeatureSchema> parents) {
     Function<FeatureSchema, FeatureSchema> visit =
         property ->
@@ -1101,7 +1110,9 @@ public interface FeatureSchema
                                       Map.Entry::getKey, Map.Entry::getValue)))
                       .build();
                 })
-            .collect(Collectors.toList()));
+            .collect(Collectors.toList()),
+        getConcat().stream().map(visit).collect(Collectors.toList()),
+        getCoalesce().stream().map(visit).collect(Collectors.toList()));
   }
 
   default FeatureSchema with(Consumer<ImmutableFeatureSchema.Builder> changes) {

@@ -1,0 +1,8 @@
+- >-
+  SELECT A.objid AS SKEY, A.objid, A.beb, 'https://registry.gdi-de.org/codelist/de.adv-online.inspire/LandCoverClassValue/1' AS constant_href_0
+  FROM o41001 A
+  ORDER BY 1
+- >-
+  SELECT A.objid AS SKEY, A.objid, A.beb, 'https://registry.gdi-de.org/codelist/de.adv-online.inspire/LandCoverClassValue/2' AS constant_href_1
+  FROM o41002 A
+  ORDER BY 1

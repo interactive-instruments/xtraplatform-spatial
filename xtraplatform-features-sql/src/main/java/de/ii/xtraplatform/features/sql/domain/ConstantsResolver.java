@@ -10,47 +10,36 @@ package de.ii.xtraplatform.features.sql.domain;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.SchemaBase;
-import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
+import de.ii.xtraplatform.features.domain.TypesResolver;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
-public class ConstantsResolver implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
-  final int[] constantCounter = {0};
+public class ConstantsResolver implements TypesResolver {
+  private final int[] constantCounter;
 
-  @Override
-  public FeatureSchema visit(
-      FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
-    List<FeatureSchema> visitedProperties2 =
-        visitedProperties.stream()
-            .filter(Objects::nonNull)
-            .map(featureSchema -> normalizeConstants(schema.getName(), featureSchema))
-            .collect(Collectors.toList());
-
-    return new ImmutableFeatureSchema.Builder()
-        .from(schema)
-        .propertyMap(asMap(visitedProperties2, FeatureSchema::getFullPathAsString))
-        .build();
+  public ConstantsResolver() {
+    this.constantCounter = new int[] {0};
   }
 
-  private FeatureSchema normalizeConstants(String parent, FeatureSchema schema) {
-    if (schema.getConstantValue().isPresent() && schema.getSourcePaths().isEmpty()) {
-      String constantValue =
-          schema.getType() == SchemaBase.Type.STRING
-              ? String.format("'%s'", schema.getConstantValue().get())
-              : schema.getConstantValue().get();
-      String constantSourcePath =
-          String.format(
-              "%sconstant_%s_%d{constant=%s}",
-              schema.getSourcePath().orElse(""), parent, constantCounter[0]++, constantValue);
+  @Override
+  public boolean needsResolving(FeatureSchema property, boolean isFeature) {
+    return property.getConstantValue().isPresent() && property.getSourcePaths().isEmpty();
+  }
 
-      return new ImmutableFeatureSchema.Builder()
-          .from(schema)
-          .sourcePath(Optional.empty())
-          .addSourcePaths(constantSourcePath)
-          .build();
-    }
-    return schema;
+  @Override
+  public FeatureSchema resolve(FeatureSchema schema, List<FeatureSchema> parents) {
+    String parentName =
+        parents.isEmpty()
+            ? "root"
+            : parents.get(parents.size() - 1).getName().replaceAll("[^a-zA-Z0-9]", "_");
+    String constantValue =
+        schema.getType() == SchemaBase.Type.STRING
+            ? String.format("'%s'", schema.getConstantValue().get())
+            : schema.getConstantValue().get();
+    String constantSourcePath =
+        String.format(
+            "%sconstant_%s_%d{constant=%s}",
+            schema.getSourcePath().orElse(""), parentName, constantCounter[0]++, constantValue);
+
+    return new ImmutableFeatureSchema.Builder().from(schema).sourcePath(constantSourcePath).build();
   }
 }

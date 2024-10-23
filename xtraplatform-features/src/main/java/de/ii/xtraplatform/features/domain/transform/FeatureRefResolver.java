@@ -10,11 +10,10 @@ package de.ii.xtraplatform.features.domain.transform;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema.Builder;
-import de.ii.xtraplatform.features.domain.MappingOperationResolver;
 import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaBase.Scope;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
-import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
+import de.ii.xtraplatform.features.domain.TypesResolver;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -253,7 +252,7 @@ import java.util.stream.Stream;
  * ```
  * </code>
  */
-public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
+public class FeatureRefResolver implements TypesResolver {
 
   public static final String ID = "id";
   public static final String TYPE = "type";
@@ -274,19 +273,15 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
     this.connectors = connectors.stream().map(c -> "[" + c + "]").collect(Collectors.toSet());
   }
 
-  private boolean isConnected(String sourcePath) {
-    return connectors.stream().anyMatch(sourcePath::contains);
-  }
-
-  private boolean isConnected(Optional<String> sourcePath) {
-    return sourcePath.isPresent() && isConnected(sourcePath.get());
+  @Override
+  public boolean needsResolving(FeatureSchema property, boolean isFeature) {
+    return property.getType() == Type.FEATURE_REF || property.getType() == Type.FEATURE_REF_ARRAY;
   }
 
   @Override
-  public FeatureSchema visit(
-      FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
+  public FeatureSchema resolve(FeatureSchema schema, List<FeatureSchema> parents) {
     if (schema.isFeatureRef()) {
-      if (!schema.getConcat().isEmpty()) {
+      /*if (!schema.getConcat().isEmpty()) {
         ImmutableFeatureSchema visited =
             new Builder()
                 .from(schema)
@@ -311,40 +306,30 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
 
         FeatureSchema featureSchema = MappingOperationResolver.resolveCoalesce(visited);
         return featureSchema;
-      }
+      }*/
 
-      return resolve(schema, visitedProperties, Optional.empty(), Optional.empty());
+      return resolve(schema, schema.getProperties(), Optional.empty(), Optional.empty());
     }
 
-    Map<String, FeatureSchema> visitedPropertiesMap =
-        asMap(visitedProperties, FeatureSchema::getFullPathAsString);
-    List<FeatureSchema> visitedConcat = schema.getConcat();
-    List<FeatureSchema> visitedCoalesce = schema.getCoalesce();
+    if (schema.getProperties().stream().anyMatch(SchemaBase::isFeatureRef)) {
+      Map<String, FeatureSchema> visitedPropertiesMap =
+          asMap(schema.getProperties().stream().flatMap(addQueryableDuplicateIfNecessary()));
 
-    if (visitedProperties.stream().anyMatch(SchemaBase::isFeatureRef)) {
-      visitedPropertiesMap =
-          asMap(
-              visitedProperties.stream()
-                  .flatMap(addQueryableDuplicateIfNecessary())
-                  .collect(Collectors.toList()),
-              FeatureSchema::getFullPathAsString);
-
-      visitedConcat =
-          visitedConcat.stream()
-              .map(concatSchema -> concatSchema.accept(this, parents))
-              .collect(Collectors.toList());
-      visitedCoalesce =
-          visitedCoalesce.stream()
-              .map(coalesceSchema -> coalesceSchema.accept(this, parents))
-              .collect(Collectors.toList());
+      return new ImmutableFeatureSchema.Builder()
+          .from(schema)
+          .propertyMap(visitedPropertiesMap)
+          .build();
     }
 
-    return new ImmutableFeatureSchema.Builder()
-        .from(schema)
-        .propertyMap(visitedPropertiesMap)
-        .concat(visitedConcat)
-        .coalesce(visitedCoalesce)
-        .build();
+    return schema;
+  }
+
+  private boolean isConnected(String sourcePath) {
+    return connectors.stream().anyMatch(sourcePath::contains);
+  }
+
+  private boolean isConnected(Optional<String> sourcePath) {
+    return sourcePath.isPresent() && isConnected(sourcePath.get());
   }
 
   private static Function<FeatureSchema, Stream<? extends FeatureSchema>>
@@ -577,7 +562,7 @@ public class FeatureRefResolver implements SchemaVisitorTopDown<FeatureSchema, F
         .from(schema)
         .type(schema.isArray() ? Type.OBJECT_ARRAY : Type.OBJECT)
         .refType(refType.orElse(REF_TYPE_DYNAMIC))
-        .propertyMap(asMap(newVisitedProperties, FeatureSchema::getFullPathAsString))
+        .propertyMap(asMap(newVisitedProperties.stream()))
         .transformations(newTransformations)
         .build();
   }

@@ -49,6 +49,7 @@ public class SqlPathParser {
     SORTKEYUNIQUE,
     PRIMARYKEY,
     FILTER,
+    CONSTANT,
     CONNECTOR,
     JOINTYPE
   }
@@ -68,13 +69,14 @@ public class SqlPathParser {
         String.format(
             "(?:(?<%s>%s)%s)?%s",
             MatcherGroups.SCHEMA, IDENTIFIER, Pattern.quote(Tokens.SCHEMA_SEPARATOR), IDENTIFIER);
-    String FLAGS = "(?:\\{[a-z_]+.*?\\})*";
+    String FLAGS = "(?:\\{[a-z_]+.*?(?:=(?:'.*?'|[^}]*))?\\})*";
     String SORT_KEY_FLAG = String.format("\\{sortKey=(?<%s>.+?)\\}", MatcherGroups.SORTKEY);
     String SORT_KEY_FLAG_UNIQUE =
         String.format("\\{sortKeyUnique=(?<%s>true|false)\\}", MatcherGroups.SORTKEYUNIQUE);
     String PRIMARY_KEY_FLAG =
         String.format("\\{primaryKey=(?<%s>.+?)\\}", MatcherGroups.PRIMARYKEY);
     String FILTER_FLAG = String.format("\\{filter=(?<%s>.+?)\\}", MatcherGroups.FILTER);
+    String CONSTANT_FLAG = String.format("\\{constant='(?<%s>.+?)'\\}", MatcherGroups.CONSTANT);
     // TODO: remove
     String JUNCTION_FLAG = "\\{junction\\}";
     String JOIN_TYPE_FLAG =
@@ -149,6 +151,8 @@ public class SqlPathParser {
 
     Pattern FILTER_FLAG = Pattern.compile(PatternStrings.FILTER_FLAG);
 
+    Pattern CONSTANT_FLAG = Pattern.compile(PatternStrings.CONSTANT_FLAG);
+
     Pattern PRIMARY_KEY_FLAG = Pattern.compile(PatternStrings.PRIMARY_KEY_FLAG);
 
     Pattern JOIN_TYPE_FLAG = Pattern.compile(PatternStrings.JOIN_TYPE_FLAG);
@@ -203,8 +207,15 @@ public class SqlPathParser {
           builder.parentTables(parseTables(tablePath));
         }
 
+        String flags = Optional.ofNullable(matcher.group(MatcherGroups.FLAGS.name())).orElse("");
+
         // TODO
-        builder.sortKey("").sortKeyUnique(true).primaryKey("").junction(false);
+        builder
+            .sortKey("")
+            .sortKeyUnique(true)
+            .primaryKey("")
+            .junction(false)
+            .constantValue(getConstantFlag(flags));
 
         return builder.build();
       }
@@ -427,6 +438,16 @@ public class SqlPathParser {
 
     if (matcher.find()) {
       return Optional.of(matcher.group(MatcherGroups.FILTER.name()));
+    }
+
+    return Optional.empty();
+  }
+
+  public Optional<String> getConstantFlag(String flags) {
+    Matcher matcher = Patterns.CONSTANT_FLAG.matcher(flags);
+
+    if (matcher.find()) {
+      return Optional.of(matcher.group(MatcherGroups.CONSTANT.name()));
     }
 
     return Optional.empty();

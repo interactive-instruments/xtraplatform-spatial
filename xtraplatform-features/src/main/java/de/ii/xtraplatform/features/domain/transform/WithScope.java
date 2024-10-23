@@ -38,7 +38,10 @@ public class WithScope implements SchemaVisitorTopDown<FeatureSchema, FeatureSch
       FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
 
     // always include ID property
-    if (!schema.hasOneOf(scopes) && !schema.isId() && !schema.isEmbeddedId()) {
+    if (!schema.hasOneOf(scopes)
+        && !schema.isId()
+        && !schema.isEmbeddedId()
+        && !parents.isEmpty()) {
       return null;
     }
 
@@ -54,10 +57,12 @@ public class WithScope implements SchemaVisitorTopDown<FeatureSchema, FeatureSch
     List<FeatureSchema> visitedConcat =
         schema.getConcat().stream()
             .map(concatSchema -> concatSchema.accept(this, parents))
+            .filter(Objects::nonNull)
             .collect(Collectors.toList());
     List<FeatureSchema> visitedCoalesce =
         schema.getCoalesce().stream()
             .map(coalesceSchema -> coalesceSchema.accept(this, parents))
+            .filter(Objects::nonNull)
             .collect(Collectors.toList());
 
     return new ImmutableFeatureSchema.Builder()

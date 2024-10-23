@@ -16,6 +16,7 @@ import de.ii.xtraplatform.features.domain.MappingOperationResolver
 import de.ii.xtraplatform.features.domain.SortKey
 import de.ii.xtraplatform.features.domain.Tuple
 import de.ii.xtraplatform.features.json.app.DecoderFactoryJson
+import de.ii.xtraplatform.features.sql.domain.ConstantsResolver
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlPathDefaults
 import de.ii.xtraplatform.features.sql.domain.SchemaSql
 import de.ii.xtraplatform.features.sql.domain.SqlDialectPgis
@@ -105,9 +106,9 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
 
         when:
 
-        def source = sqlSchema(schema, schemaDeriver, mappingOperationResolver)
-        SqlQueryTemplates templates = source.accept(deriver)
-        List<String> actual = values(templates, limit, offset, sortBy, filter)
+        def sources = sqlSchemas(schema, schemaDeriver, mappingOperationResolver)
+        List<SqlQueryTemplates> templates = sources.collect {it.accept(deriver) }
+        List<String> actual = templates.collectMany { values(it, limit, offset, sortBy, filter) }
         List<String> expected = SqlQueryFixtures.fromYaml(queries)
 
         then:
@@ -118,7 +119,8 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
 
         casename                                      | deriver | limit | offset | sortBy | filter | schema                        || queries
         "self join with nested duplicate and filters" | td      | 0     | 0      | []     | null   | "okstra_abschnitt"            || "okstra_abschnitt"
-        "embedded object with concat and backlink"               | td      | 0     | 0      | []     | null   | "pfs_plan-hatObjekt-embedded" || "pfs_plan-hatObjekt-embedded"
+        "embedded object with concat and backlink"    | td      | 0     | 0      | []     | null   | "pfs_plan-hatObjekt-embedded" || "pfs_plan-hatObjekt-embedded"
+        "root concat with value concat with constant" | td      | 0     | 0      | []     | null   | "landcoverunit"               || "landcoverunit"
 
     }
 
@@ -131,11 +133,15 @@ class SqlQueryTemplatesDeriverSpec extends Specification {
         return templates.getValueQueryTemplates().collect { it.generateValueQuery(limit, offset, sortBy, Optional.ofNullable(filter), limit == 0 ? Optional.<Tuple<Object, Object>> empty() : Optional.of(Tuple.of(offset, offset + limit - 1)), ImmutableMap.of()) }
     }
 
-    static SchemaSql sqlSchema(String featureSchemaName, QuerySchemaDeriver schemaDeriver, MappingOperationResolver mappingOperationResolver) {
+    static List<SchemaSql> sqlSchemas(String featureSchemaName, QuerySchemaDeriver schemaDeriver, MappingOperationResolver mappingOperationResolver) {
         def schema = FeatureSchemaFixtures.fromYaml(featureSchemaName)
-        def schema2 = schema.accept(mappingOperationResolver, List.of())
-        List<SchemaSql> sqlSchema = schema2.accept(schemaDeriver)
-        return sqlSchema.get(0)
+        def schema2 = schema.accept(new ConstantsResolver(), List.of()).accept(mappingOperationResolver, List.of())
+        List<SchemaSql> sqlSchemas = schema2.accept(schemaDeriver)
+        return sqlSchemas
+    }
+
+    static SchemaSql sqlSchema(String featureSchemaName, QuerySchemaDeriver schemaDeriver, MappingOperationResolver mappingOperationResolver) {
+        return sqlSchemas(featureSchemaName, schemaDeriver, mappingOperationResolver).get(0)
     }
 
 }

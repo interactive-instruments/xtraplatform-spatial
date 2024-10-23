@@ -87,7 +87,13 @@ public class SchemaToPathsVisitor<T extends SchemaBase<T>>
                                 + (counter)
                                 + "}");
                         return p.stream()
-                            .flatMap(s -> SPLITTER.splitToList(s).stream())
+                            .flatMap(
+                                s -> {
+                                  if (s.replaceAll("\\{.+?=.*?\\}", "").contains("/")) {
+                                    return SPLITTER.splitToList(s).stream();
+                                  }
+                                  return Stream.of(s);
+                                })
                             .collect(Collectors.toList());
                       }
 

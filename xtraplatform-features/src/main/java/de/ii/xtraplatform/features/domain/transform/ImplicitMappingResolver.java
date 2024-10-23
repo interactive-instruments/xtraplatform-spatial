@@ -11,44 +11,41 @@ import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema.Builder;
 import de.ii.xtraplatform.features.domain.MappingOperationResolver;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
-import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
+import de.ii.xtraplatform.features.domain.TypesResolver;
 import java.util.List;
 
-public class ImplicitMappingResolver implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
+public class ImplicitMappingResolver implements TypesResolver {
 
-  public boolean needsResolving(FeatureSchema schema) {
-    if (schema.isFeature() && !schema.getConcat().isEmpty()) {
+  @Override
+  public boolean needsResolving(FeatureSchema property, boolean isFeature) {
+    if (isFeature) {
       return false;
     }
 
     boolean isFeatureRefInConcat =
-        (schema.isFeatureRef() && MappingOperationResolver.isConcatPath(schema.getPath()));
+        (property.isFeatureRef() && MappingOperationResolver.isConcatPath(property.getPath()));
+    boolean isEmptySourcePathInConcat =
+        (property.getSourcePath().isPresent()
+            && property.getSourcePath().get().indexOf("/", 1) == -1
+            && MappingOperationResolver.isConcatPath(property.getPath()));
 
-    return ((schema.isObject() || schema.isArray()) && schema.getSourcePath().isEmpty())
-        || (schema.isObject()
-            && schema.getSourcePath().isPresent()
-            && schema.getValueNames().isEmpty())
-        || schema.getType() == Type.VALUE_ARRAY
+    return ((property.isObject() || property.isArray())
+            && (property.getSourcePath().isEmpty() || isEmptySourcePathInConcat))
+        || (property.isObject()
+            && property.getSourcePath().isPresent()
+            && property.getValueNames().isEmpty())
+        || property.getType() == Type.VALUE_ARRAY
         || isFeatureRefInConcat;
   }
 
   @Override
-  public FeatureSchema visit(
-      FeatureSchema schema, List<FeatureSchema> parents, List<FeatureSchema> visitedProperties) {
-    if (needsResolving(schema)) {
-      return new Builder()
-          .from(schema)
-          .propertyMap(asMap(visitedProperties, FeatureSchema::getFullPathAsString))
-          .transformations(List.of())
-          .addTransformations(
-              new ImmutablePropertyTransformation.Builder().wrap(schema.getType()).build())
-          .addAllTransformations(schema.getTransformations())
-          .build();
-    }
-
+  public FeatureSchema resolve(FeatureSchema property, List<FeatureSchema> parents) {
     return new Builder()
-        .from(schema)
-        .propertyMap(asMap(visitedProperties, FeatureSchema::getFullPathAsString))
+        .from(property)
+        .transformations(List.of())
+        .addTransformations(
+            new ImmutablePropertyTransformation.Builder().wrap(property.getType()).build())
+        .addAllTransformations(property.getTransformations())
         .build();
   }
 }
