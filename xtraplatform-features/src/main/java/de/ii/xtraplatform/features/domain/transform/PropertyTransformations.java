@@ -107,20 +107,28 @@ public interface PropertyTransformations {
       }
 
       @Override
-      public TokenSliceTransformerChain getTokenSliceTransformations(SchemaMapping schemaMapping) {
+      public TokenSliceTransformerChain getTokenSliceTransformations(
+          SchemaMapping schemaMapping,
+          Map<String, Codelist> codelists,
+          Optional<ZoneId> defaultTimeZone) {
         return PropertyTransformations.super.getTokenSliceTransformations(
-            schemaMapping, substitutions::get);
+            schemaMapping, substitutions::get, codelists, defaultTimeZone);
       }
 
       @Override
       public TokenSliceTransformerChain getTokenSliceTransformations(
-          SchemaMapping schemaMapping, Function<String, String> substitutionLookup) {
+          SchemaMapping schemaMapping,
+          Function<String, String> substitutionLookup,
+          Map<String, Codelist> codelists,
+          Optional<ZoneId> defaultTimeZone) {
         return PropertyTransformations.super.getTokenSliceTransformations(
             schemaMapping,
             key ->
                 substitutions.containsKey(key)
                     ? substitutions.get(key)
-                    : substitutionLookup.apply(key));
+                    : substitutionLookup.apply(key),
+            codelists,
+            defaultTimeZone);
       }
 
       @Override
@@ -135,13 +143,21 @@ public interface PropertyTransformations {
     return new SchemaTransformerChain(getTransformations(), schemaMapping, inCollection);
   }
 
-  default TokenSliceTransformerChain getTokenSliceTransformations(SchemaMapping schemaMapping) {
-    return new TokenSliceTransformerChain(getTransformations(), schemaMapping, key -> null);
+  default TokenSliceTransformerChain getTokenSliceTransformations(
+      SchemaMapping schemaMapping,
+      Map<String, Codelist> codelists,
+      Optional<ZoneId> defaultTimeZone) {
+    return new TokenSliceTransformerChain(
+        getTransformations(), schemaMapping, key -> null, codelists, defaultTimeZone);
   }
 
   default TokenSliceTransformerChain getTokenSliceTransformations(
-      SchemaMapping schemaMapping, Function<String, String> substitutionLookup) {
-    return new TokenSliceTransformerChain(getTransformations(), schemaMapping, substitutionLookup);
+      SchemaMapping schemaMapping,
+      Function<String, String> substitutionLookup,
+      Map<String, Codelist> codelists,
+      Optional<ZoneId> defaultTimeZone) {
+    return new TokenSliceTransformerChain(
+        getTransformations(), schemaMapping, substitutionLookup, codelists, defaultTimeZone);
   }
 
   default TransformerChain<String, FeaturePropertyValueTransformer> getValueTransformations(

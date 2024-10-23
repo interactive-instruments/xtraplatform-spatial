@@ -46,7 +46,7 @@ class Util {
     }
 
     static TokenSliceTransformerChain createSliceTransformerChain(FeatureSchema schema, Map<String, List<PropertyTransformation>> transformations = Map.of()) {
-        return new TokenSliceTransformerChain(transformations, SchemaMapping.of(schema), Function.identity())
+        return new TokenSliceTransformerChain(transformations, SchemaMapping.of(schema), Function.identity(), Map.of(), Optional.empty())
     }
 
     static FeatureEventBuffer<

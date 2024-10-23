@@ -33,6 +33,8 @@ public abstract class FeaturePropertyTransformerConcat
 
   public abstract boolean isObject();
 
+  public abstract List<List<FeaturePropertyValueTransformer>> valueTransformers();
+
   @Override
   public FeatureSchema transformSchema(FeatureSchema schema) {
     // checkArray(schema);
@@ -113,10 +115,25 @@ public abstract class FeaturePropertyTransformerConcat
   @Override
   public void transformValue(List<Object> slice, int start, int end, List<Object> result) {
     boolean skip = false;
+    int valueStart = 0;
+    int valueIndex = -1;
 
     for (int i = start; i <= end; i++) {
       if (isValueWithPath(slice, i, schema.getFullPath())) {
+        valueStart = i;
+        valueIndex++;
         skip = false;
+      } else if (valueIndex >= 0
+          && i == valueStart + 2
+          && valueTransformers().size() > valueIndex) {
+        String value = (String) slice.get(i);
+        for (FeaturePropertyValueTransformer transformer : valueTransformers().get(valueIndex)) {
+          value = transformer.transform(getPropertyPath(), value);
+        }
+
+        result.add(value);
+        result.add(slice.get(i + 1));
+        skip = true;
       } else if (slice.get(i) instanceof FeatureTokenType) {
         skip = true;
       }
