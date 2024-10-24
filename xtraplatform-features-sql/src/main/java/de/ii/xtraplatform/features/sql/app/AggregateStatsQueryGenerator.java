@@ -53,7 +53,7 @@ public class AggregateStatsQueryGenerator {
             .map(
                 attribute ->
                     sqlDialect.applyToExtent(
-                        getQualifiedColumn(spatialAlias, attribute.getName()), is3d))
+                        getQualifiedColumn(spatialAlias, attribute.getPath().get(0)), is3d))
             .get();
 
     String join =
@@ -178,6 +178,9 @@ public class AggregateStatsQueryGenerator {
   }
 
   private String getQualifiedColumn(String table, String column) {
+    if (column.startsWith("[EXPRESSION]{sql=")) {
+      return column.substring(17, column.length() - 1).replaceAll("\\$T\\$", table);
+    }
     return column.contains("(")
         ? column.replaceAll("((?:\\w+\\()+)(\\w+)((?:\\))+)", "$1" + table + ".$2$3 AS $2")
         : String.format("%s.%s", table, column);

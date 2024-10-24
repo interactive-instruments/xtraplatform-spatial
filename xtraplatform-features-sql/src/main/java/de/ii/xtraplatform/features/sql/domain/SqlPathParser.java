@@ -112,7 +112,10 @@ public class SqlPathParser {
         String.format("(?:%s|%s)(?:%s)(?:%s)?", Tokens.PATH_SEPARATOR, JOIN_PLAIN, TABLE, FLAGS);
     String CONNECTED_COLUMN =
         String.format(
-            "%s(?<%s>%s)%s(?<%s>%s)?(?<%s>%s)?",
+            "(?<%s>(?:%s%s)*)%s(?<%s>%s)%s(?<%s>%s)?(?<%s>%s)?",
+            MatcherGroups.PATH,
+            ROOT_OR_JOINED_TABLE_PLAIN,
+            Tokens.PATH_SEPARATOR,
             Pattern.quote(Tokens.JOIN_START),
             MatcherGroups.CONNECTOR,
             IDENTIFIER,
@@ -362,6 +365,12 @@ public class SqlPathParser {
             .sortKeyUnique(getSortKeyUnique(flags))
             .primaryKey(getPrimaryKey(flags))
             .junction(false);
+
+    String tablePath = connectedMatcher.group(MatcherGroups.PATH.name());
+
+    if (Objects.nonNull(tablePath)) {
+      builder.parentTables(parseTables(tablePath));
+    }
 
     if (!pathInConnector.isEmpty()) {
       builder.pathInConnector(pathInConnector);

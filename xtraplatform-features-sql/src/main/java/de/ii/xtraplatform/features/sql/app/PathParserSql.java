@@ -95,7 +95,7 @@ public class PathParserSql {
       }
     }
 
-    LOGGER.warn("Invalid sourcePath in provider configuration: {}", path);
+    // LOGGER.warn("Invalid sourcePath in provider configuration: {}", path);
 
     return Optional.empty();
   }
