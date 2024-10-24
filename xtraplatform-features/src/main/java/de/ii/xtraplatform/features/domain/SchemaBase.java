@@ -309,21 +309,6 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default List<T> getIdProperties() {
-    if (!getSourcePaths().isEmpty()) {
-      return getSourcePaths().stream()
-          .map(
-              path ->
-                  getAllNestedProperties().stream()
-                      .filter(
-                          property ->
-                              property.getSourcePath().filter(p -> p.startsWith(path)).isPresent())
-                      .filter(SchemaBase::isId)
-                      .findFirst())
-          .filter(Optional::isPresent)
-          .map(Optional::get)
-          .collect(Collectors.toList());
-    }
-
     return getIdProperty().stream().collect(Collectors.toList());
   }
 
@@ -360,32 +345,6 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default List<T> getPrimaryGeometries() {
-    if (!getSourcePaths().isEmpty()) {
-      return getSourcePaths().stream()
-          .map(
-              path ->
-                  getAllNestedProperties().stream()
-                      .filter(
-                          property ->
-                              property.getSourcePath().filter(p -> p.startsWith(path)).isPresent())
-                      .filter(SchemaBase::isPrimaryGeometry)
-                      .findFirst()
-                      .or(
-                          () ->
-                              getAllNestedProperties().stream()
-                                  .filter(
-                                      property ->
-                                          property
-                                              .getSourcePath()
-                                              .filter(p -> p.startsWith(path))
-                                              .isPresent())
-                                  .filter(SchemaBase::isSpatial)
-                                  .findFirst()))
-          .filter(Optional::isPresent)
-          .map(Optional::get)
-          .collect(Collectors.toList());
-    }
-
     return getPrimaryGeometry().stream().collect(Collectors.toList());
   }
 
@@ -465,32 +424,6 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default List<T> getPrimaryInstants() {
-    if (!getSourcePaths().isEmpty()) {
-      return getSourcePaths().stream()
-          .map(
-              path ->
-                  getAllNestedProperties().stream()
-                      .filter(
-                          property ->
-                              property.getSourcePath().filter(p -> p.startsWith(path)).isPresent())
-                      .filter(SchemaBase::isPrimaryInstant)
-                      .findFirst()
-                      .or(
-                          () ->
-                              getAllNestedProperties().stream()
-                                  .filter(
-                                      property ->
-                                          property
-                                              .getSourcePath()
-                                              .filter(p -> p.startsWith(path))
-                                              .isPresent())
-                                  .filter(SchemaBase::isTemporal)
-                                  .findFirst()))
-          .filter(Optional::isPresent)
-          .map(Optional::get)
-          .collect(Collectors.toList());
-    }
-
     return getPrimaryInstant().stream().collect(Collectors.toList());
   }
 
@@ -532,39 +465,6 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default List<Tuple<T, T>> getPrimaryIntervals() {
-    if (!getSourcePaths().isEmpty()) {
-      return getSourcePaths().stream()
-          .map(
-              path -> {
-                Optional<T> start =
-                    getAllNestedProperties().stream()
-                        .filter(
-                            property ->
-                                property
-                                    .getSourcePath()
-                                    .filter(p -> p.startsWith(path))
-                                    .isPresent())
-                        .filter(SchemaBase::isPrimaryIntervalStart)
-                        .findFirst();
-                Optional<T> end =
-                    getAllNestedProperties().stream()
-                        .filter(
-                            property ->
-                                property
-                                    .getSourcePath()
-                                    .filter(p -> p.startsWith(path))
-                                    .isPresent())
-                        .filter(SchemaBase::isPrimaryIntervalEnd)
-                        .findFirst();
-                return start.isPresent() && end.isPresent()
-                    ? Optional.of(Tuple.of(start.get(), end.get()))
-                    : Optional.<Tuple<T, T>>empty();
-              })
-          .filter(Optional::isPresent)
-          .map(Optional::get)
-          .collect(Collectors.toList());
-    }
-
     return getPrimaryInterval().stream().collect(Collectors.toList());
   }
 
@@ -605,21 +505,6 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @Value.Derived
   @Value.Auxiliary
   default List<T> getSecondaryGeometries() {
-    if (!getSourcePaths().isEmpty()) {
-      return getSourcePaths().stream()
-          .map(
-              path ->
-                  getAllNestedProperties().stream()
-                      .filter(
-                          property ->
-                              property.getSourcePath().filter(p -> p.startsWith(path)).isPresent())
-                      .filter(SchemaBase::isSecondaryGeometry)
-                      .findFirst())
-          .filter(Optional::isPresent)
-          .map(Optional::get)
-          .collect(Collectors.toList());
-    }
-
     return getPrimaryGeometry().stream().collect(Collectors.toList());
   }
 

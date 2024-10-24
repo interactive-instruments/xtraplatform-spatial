@@ -571,31 +571,31 @@ public interface FeatureSchema
               first -> {
                 Preconditions.checkState(
                     getIdProperties().size() == getConcat().size(),
-                    "The number of ID properties must match the number of concatenated objects, but found only %s properties for %s concatenated objects.",
+                    "The number of ID properties must match the number of concatenated objects, but found only %s properties for %s concatenated objects in type '%s'.",
                     getIdProperties().size(),
-                    getConcat().size());
+                    getConcat().size(),
+                    getName());
                 Preconditions.checkState(
                     getIdProperties().stream()
-                        .allMatch(
-                            p ->
-                                p.getFullPathAsString()
-                                    .replaceFirst("^\\d+_", "")
-                                    .equals(
-                                        first.getFullPathAsString().replaceFirst("^\\d+_", ""))),
-                    "All ID properties of concatenated objects must have the same name, but found: '%s'.",
+                            .map(FeatureSchema::getFullPathAsString)
+                            .distinct()
+                            .count()
+                        == 1,
+                    "All ID properties of concatenated objects must have the same name, but found '%s' in type '%s'.",
                     getIdProperties().stream()
                         .map(FeatureSchema::getFullPathAsString)
-                        .map(s -> s.replaceFirst("^\\d+_", ""))
                         .distinct()
-                        .collect(Collectors.joining("', '")));
+                        .collect(Collectors.joining("', '")),
+                    getName());
                 Preconditions.checkState(
                     getIdProperties().stream().allMatch(p -> p.getType().equals(first.getType())),
-                    "All ID properties of concatenated objects must have the same type, but found: '%s'.",
+                    "All ID properties of concatenated objects must have the same type, but found '%s' in type '%s'.",
                     getIdProperties().stream()
                         .map(FeatureSchema::getType)
                         .map(Enum::name)
                         .distinct()
-                        .collect(Collectors.joining("', '")));
+                        .collect(Collectors.joining("', '")),
+                    getName());
               });
 
       getPrimaryGeometry()
@@ -603,26 +603,26 @@ public interface FeatureSchema
               first -> {
                 Preconditions.checkState(
                     getPrimaryGeometries().size() == getConcat().size(),
-                    "The number of primary geometries must match the number of concatenated objects, but found only %s properties for %s concatenated objects.",
+                    "The number of primary geometries must match the number of concatenated objects, but found only %s properties for %s concatenated objects in type '%s'.",
                     getPrimaryGeometries().size(),
-                    getConcat().size());
+                    getConcat().size(),
+                    getName());
                 Preconditions.checkState(
                     getPrimaryGeometries().stream()
-                        .allMatch(
-                            p ->
-                                p.getFullPathAsString()
-                                    .replaceFirst("^\\d+_", "")
-                                    .equals(
-                                        first.getFullPathAsString().replaceFirst("^\\d+_", ""))),
-                    "All primary geometries of concatenated objects must have the same name, but found: '%s'.",
+                            .map(FeatureSchema::getFullPathAsString)
+                            .distinct()
+                            .count()
+                        == 1,
+                    "All primary geometries of concatenated objects must have the same name, but found '%s' in type '%s'.",
                     getPrimaryGeometries().stream()
                         .map(FeatureSchema::getFullPathAsString)
-                        .map(s -> s.replaceFirst("^\\d+_", ""))
                         .distinct()
-                        .collect(Collectors.joining("', '")));
+                        .collect(Collectors.joining("', '")),
+                    getName());
                 Preconditions.checkState(
                     getPrimaryGeometries().stream().allMatch(SchemaBase::isSimpleFeatureGeometry),
-                    "All primary geometries of concatenated objects must be simple feature geometries.");
+                    "All primary geometries of concatenated objects must be simple feature geometries in type '%s'.",
+                    getName());
               });
 
       getPrimaryInstant()
@@ -630,32 +630,32 @@ public interface FeatureSchema
               first -> {
                 Preconditions.checkState(
                     getPrimaryInstants().size() == getConcat().size(),
-                    "The number of primary instants must match the number of concatenated objects, but found only %s properties for %s concatenated objects.",
+                    "The number of primary instants must match the number of concatenated objects, but found only %s properties for %s concatenated objects in type '%s'.",
                     getPrimaryInstants().size(),
-                    getConcat().size());
+                    getConcat().size(),
+                    getName());
                 Preconditions.checkState(
                     getPrimaryInstants().stream()
-                        .allMatch(
-                            p ->
-                                p.getFullPathAsString()
-                                    .replaceFirst("^\\d+_", "")
-                                    .equals(
-                                        first.getFullPathAsString().replaceFirst("^\\d+_", ""))),
-                    "All primary instants of concatenated objects must have the same name, but found: '%s'.",
+                            .map(FeatureSchema::getFullPathAsString)
+                            .distinct()
+                            .count()
+                        == 1,
+                    "All primary instants of concatenated objects must have the same name, but found '%s' in type '%s'.",
                     getPrimaryInstants().stream()
                         .map(FeatureSchema::getFullPathAsString)
-                        .map(s -> s.replaceFirst("^\\d+_", ""))
                         .distinct()
-                        .collect(Collectors.joining("', '")));
+                        .collect(Collectors.joining("', '")),
+                    getName());
                 Preconditions.checkState(
                     getPrimaryInstants().stream()
                         .allMatch(p -> p.getType().equals(first.getType())),
-                    "All primary instants of concatenated objects must have the same type, but found: '%s'.",
+                    "All primary instants of concatenated objects must have the same type, but found '%s' in type '%s'.",
                     getPrimaryInstants().stream()
                         .map(FeatureSchema::getType)
                         .map(Enum::name)
                         .distinct()
-                        .collect(Collectors.joining("', '")));
+                        .collect(Collectors.joining("', '")),
+                    getName());
               });
 
       getPrimaryInterval()
@@ -663,67 +663,60 @@ public interface FeatureSchema
               first -> {
                 Preconditions.checkState(
                     getPrimaryIntervals().size() == getConcat().size(),
-                    "The number of primary intervals must match the number of concatenated objects, but found only %s properties for %s concatenated objects.",
+                    "The number of primary intervals must match the number of concatenated objects, but found only %s properties for %s concatenated objects in type '%s'.",
                     getPrimaryIntervals().size(),
-                    getConcat().size());
+                    getConcat().size(),
+                    getName());
                 Preconditions.checkState(
                     getPrimaryIntervals().stream()
-                        .allMatch(
-                            p ->
-                                p.first()
-                                    .getFullPathAsString()
-                                    .replaceFirst("^\\d+_", "")
-                                    .equals(
-                                        first
-                                            .first()
-                                            .getFullPathAsString()
-                                            .replaceFirst("^\\d+_", ""))),
-                    "All primary interval starts of concatenated objects must have the same name, but found: '%s'.",
+                            .map(Tuple::first)
+                            .map(FeatureSchema::getFullPathAsString)
+                            .distinct()
+                            .count()
+                        == 1,
+                    "All primary interval starts of concatenated objects must have the same name, but found '%s' in type '%s'.",
                     getPrimaryIntervals().stream()
                         .map(Tuple::first)
                         .map(FeatureSchema::getFullPathAsString)
-                        .map(s -> s.replaceFirst("^\\d+_", ""))
                         .distinct()
-                        .collect(Collectors.joining("', '")));
+                        .collect(Collectors.joining("', '")),
+                    getName());
                 Preconditions.checkState(
                     getPrimaryIntervals().stream()
-                        .allMatch(
-                            p ->
-                                p.second()
-                                    .getFullPathAsString()
-                                    .replaceFirst("^\\d+_", "")
-                                    .equals(
-                                        first
-                                            .second()
-                                            .getFullPathAsString()
-                                            .replaceFirst("^\\d+_", ""))),
-                    "All primary interval ends of concatenated objects must have the same name, but found: '%s'.",
+                            .map(Tuple::second)
+                            .map(FeatureSchema::getFullPathAsString)
+                            .distinct()
+                            .count()
+                        == 1,
+                    "All primary interval ends of concatenated objects must have the same name, but found '%s' in type '%s'.",
                     getPrimaryIntervals().stream()
                         .map(Tuple::second)
                         .map(FeatureSchema::getFullPathAsString)
-                        .map(s -> s.replaceFirst("^\\d+_", ""))
                         .distinct()
-                        .collect(Collectors.joining("', '")));
+                        .collect(Collectors.joining("', '")),
+                    getName());
                 Preconditions.checkState(
                     getPrimaryIntervals().stream()
                         .allMatch(p -> p.first().getType().equals(first.first().getType())),
-                    "All primary interval starts of concatenated objects must have the same type, but found: '%s'.",
+                    "All primary interval starts of concatenated objects must have the same type, but found '%s' in type '%s'.",
                     getPrimaryIntervals().stream()
                         .map(Tuple::first)
                         .map(FeatureSchema::getType)
                         .map(Enum::name)
                         .distinct()
-                        .collect(Collectors.joining("', '")));
+                        .collect(Collectors.joining("', '")),
+                    getName());
                 Preconditions.checkState(
                     getPrimaryIntervals().stream()
                         .allMatch(p -> p.second().getType().equals(first.second().getType())),
-                    "All primary interval ends of concatenated objects must have the same type, but found: '%s'.",
+                    "All primary interval ends of concatenated objects must have the same type, but found '%s' in type '%s'.",
                     getPrimaryIntervals().stream()
                         .map(Tuple::second)
                         .map(FeatureSchema::getType)
                         .map(Enum::name)
                         .distinct()
-                        .collect(Collectors.joining("', '")));
+                        .collect(Collectors.joining("', '")),
+                    getName());
               });
 
       getSecondaryGeometry()
@@ -731,23 +724,22 @@ public interface FeatureSchema
               first -> {
                 Preconditions.checkState(
                     getSecondaryGeometries().size() == getConcat().size(),
-                    "The number of secondary geometries must match the number of concatenated objects, but found only %s properties for %s concatenated objects.",
+                    "The number of secondary geometries must match the number of concatenated objects, but found only %s properties for %s concatenated objects in type '%s'.",
                     getSecondaryGeometries().size(),
-                    getConcat().size());
+                    getConcat().size(),
+                    getName());
                 Preconditions.checkState(
                     getSecondaryGeometries().stream()
-                        .allMatch(
-                            p ->
-                                p.getFullPathAsString()
-                                    .replaceFirst("^\\d+_", "")
-                                    .equals(
-                                        first.getFullPathAsString().replaceFirst("^\\d+_", ""))),
-                    "All secondary geometries of concatenated objects must have the same name, but found: '%s'.",
+                            .map(FeatureSchema::getFullPathAsString)
+                            .distinct()
+                            .count()
+                        == 1,
+                    "All secondary geometries of concatenated objects must have the same name, but found '%s' in type '%s'.",
                     getSecondaryGeometries().stream()
                         .map(FeatureSchema::getFullPathAsString)
-                        .map(s -> s.replaceFirst("^\\d+_", ""))
                         .distinct()
-                        .collect(Collectors.joining("', '")));
+                        .collect(Collectors.joining("', '")),
+                    getName());
               });
     }
   }
@@ -1077,6 +1069,86 @@ public interface FeatureSchema
             getCoalesce().stream()
                 .flatMap(t -> Stream.concat(Stream.of(t), t.getAllNestedProperties().stream())))
         .collect(Collectors.toList());
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  @Override
+  default List<FeatureSchema> getIdProperties() {
+    if (!getConcat().isEmpty()) {
+      return getConcat().stream()
+          .map(SchemaBase::getIdProperty)
+          .filter(Optional::isPresent)
+          .map(Optional::get)
+          .collect(Collectors.toList());
+    }
+
+    return getIdProperty().stream().collect(Collectors.toList());
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  @Override
+  default List<FeatureSchema> getPrimaryGeometries() {
+    if (!getConcat().isEmpty()) {
+      return getConcat().stream()
+          .map(SchemaBase::getPrimaryGeometry)
+          .filter(Optional::isPresent)
+          .map(Optional::get)
+          .collect(Collectors.toList());
+    }
+
+    return getPrimaryGeometry().stream().collect(Collectors.toList());
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  @Override
+  default List<FeatureSchema> getPrimaryInstants() {
+    if (!getConcat().isEmpty()) {
+      return getConcat().stream()
+          .map(SchemaBase::getPrimaryInstant)
+          .filter(Optional::isPresent)
+          .map(Optional::get)
+          .collect(Collectors.toList());
+    }
+
+    return getPrimaryInstant().stream().collect(Collectors.toList());
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  @Override
+  default List<Tuple<FeatureSchema, FeatureSchema>> getPrimaryIntervals() {
+    if (!getConcat().isEmpty()) {
+      return getConcat().stream()
+          .map(SchemaBase::getPrimaryInterval)
+          .filter(Optional::isPresent)
+          .map(Optional::get)
+          .collect(Collectors.toList());
+    }
+
+    return getPrimaryInterval().stream().collect(Collectors.toList());
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  @Override
+  default List<FeatureSchema> getSecondaryGeometries() {
+    if (!getConcat().isEmpty()) {
+      return getConcat().stream()
+          .map(SchemaBase::getSecondaryGeometry)
+          .filter(Optional::isPresent)
+          .map(Optional::get)
+          .collect(Collectors.toList());
+    }
+
+    return getPrimaryGeometry().stream().collect(Collectors.toList());
   }
 
   default FeatureSchema accept(FeatureSchemaTransformer visitor, List<FeatureSchema> parents) {
