@@ -274,7 +274,8 @@ public class FeatureRefResolver implements TypesResolver {
   }
 
   @Override
-  public boolean needsResolving(FeatureSchema property, boolean isFeature) {
+  public boolean needsResolving(
+      FeatureSchema property, boolean isFeature, boolean isInConcat, boolean isInCoalesce) {
     return property.getType() == Type.FEATURE_REF
         || property.getType() == Type.FEATURE_REF_ARRAY
         || property.getProperties().stream().anyMatch(SchemaBase::isFeatureRef);

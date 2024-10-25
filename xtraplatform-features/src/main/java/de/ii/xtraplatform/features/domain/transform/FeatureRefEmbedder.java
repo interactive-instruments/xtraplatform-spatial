@@ -116,7 +116,8 @@ public class FeatureRefEmbedder implements TypesResolver {
   }
 
   @Override
-  public boolean needsResolving(FeatureSchema property, boolean isFeature) {
+  public boolean needsResolving(
+      FeatureSchema property, boolean isFeature, boolean isInConcat, boolean isInCoalesce) {
     return property.isEmbed() && property.getRole().orElse(null) != Role.EMBEDDED_FEATURE;
   }
 

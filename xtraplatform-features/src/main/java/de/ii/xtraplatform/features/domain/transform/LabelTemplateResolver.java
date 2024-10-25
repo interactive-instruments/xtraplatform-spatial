@@ -30,7 +30,8 @@ public class LabelTemplateResolver implements TypesResolver {
   }
 
   @Override
-  public boolean needsResolving(FeatureSchema property, boolean isFeature) {
+  public boolean needsResolving(
+      FeatureSchema property, boolean isFeature, boolean isInConcat, boolean isInCoalesce) {
     return needsResolving(Map.of());
   }
 

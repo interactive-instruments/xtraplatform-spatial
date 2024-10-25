@@ -40,7 +40,14 @@ public class FeatureTokenEncoderDebug
   @Override
   public final void onPush(Object token) {
     String prefix = token instanceof FeatureTokenType ? "\n" : " ";
-    String asString = Objects.nonNull(token) ? Strings.padEnd(token.toString(), 11, ' ') : "null";
+    String asString =
+        Objects.isNull(token)
+            ? "NULL"
+            : token instanceof FeatureTokenType
+                ? Strings.padEnd(token.toString(), 11, ' ')
+                : token instanceof String && ((String) token).isEmpty()
+                    ? "EMPTY"
+                    : token.toString();
 
     push((prefix + asString).getBytes(StandardCharsets.UTF_8));
   }

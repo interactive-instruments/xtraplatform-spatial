@@ -71,6 +71,8 @@ public interface FeatureSchema
   Logger LOGGER = LoggerFactory.getLogger(FeatureSchema.class);
 
   String IS_PROPERTY = "IS_PROPERTY";
+  String CONCAT_ELEMENT = "_CONCAT_ELEMENT_";
+  String COALESCE_ELEMENT = "_COALESCE_ELEMENT_";
 
   @JsonIgnore
   @Override
@@ -490,7 +492,7 @@ public interface FeatureSchema
     public ImmutableFeatureSchema.Builder concatBuilders(
         Iterable<ImmutableFeatureSchema.Builder> elements) {
       for (ImmutableFeatureSchema.Builder element : elements) {
-        element.name("concat");
+        element.name(CONCAT_ELEMENT);
       }
       return addAllConcatBuilders(elements);
     }
@@ -506,7 +508,7 @@ public interface FeatureSchema
     public ImmutableFeatureSchema.Builder coalesceBuilders(
         Iterable<ImmutableFeatureSchema.Builder> elements) {
       for (ImmutableFeatureSchema.Builder element : elements) {
-        element.name("coalesce");
+        element.name(COALESCE_ELEMENT);
       }
       return addAllCoalesceBuilders(elements);
     }
@@ -561,6 +563,20 @@ public interface FeatureSchema
   default boolean isConstant() {
     return (isValue() && getConstantValue().isPresent())
         || (isObject() && getProperties().stream().allMatch(FeatureSchema::isConstant));
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean isConcatElement() {
+    return Objects.equals(getName(), CONCAT_ELEMENT);
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  default boolean isCoalesceElement() {
+    return Objects.equals(getName(), COALESCE_ELEMENT);
   }
 
   @Value.Check

@@ -89,7 +89,8 @@ public class SchemaReferenceResolver implements TypesResolver {
   }
 
   @Override
-  public boolean needsResolving(FeatureSchema property, boolean isFeature) {
+  public boolean needsResolving(
+      FeatureSchema property, boolean isFeature, boolean isInConcat, boolean isInCoalesce) {
     return hasSchema(property)
         || hasMergeWithSchema(property)
         || hasConcatWithSchema(property)

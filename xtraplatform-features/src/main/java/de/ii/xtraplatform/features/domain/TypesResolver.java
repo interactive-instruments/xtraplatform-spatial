@@ -24,7 +24,8 @@ public interface TypesResolver extends FeatureSchemaTransformer {
     return Optional.empty();
   }
 
-  boolean needsResolving(FeatureSchema property, boolean isFeature);
+  boolean needsResolving(
+      FeatureSchema property, boolean isFeature, boolean isInConcat, boolean isInCoalesce);
 
   default boolean needsResolving(PartialObjectSchema partial) {
     return false;
@@ -33,19 +34,19 @@ public interface TypesResolver extends FeatureSchemaTransformer {
   FeatureSchema resolve(FeatureSchema property, List<FeatureSchema> parents);
 
   default boolean needsResolving(Map<String, FeatureSchema> types) {
-    return types.values().stream().anyMatch(type -> needsResolving(type, true))
+    return types.values().stream().anyMatch(type -> needsResolving(type, true, false, false))
         || types.values().stream()
             .flatMap(type -> type.getAllNestedProperties().stream())
-            .anyMatch(property -> needsResolving(property, false))
+            .anyMatch(property -> needsResolving(property, false, false, false))
         || types.values().stream()
             .flatMap(type -> type.getAllNestedPartials().stream())
             .anyMatch(property -> needsResolving(property))
         || types.values().stream()
             .flatMap(type -> type.getAllNestedConcatProperties().stream())
-            .anyMatch(property -> needsResolving(property, false))
+            .anyMatch(property -> needsResolving(property, false, true, false))
         || types.values().stream()
             .flatMap(type -> type.getAllNestedCoalesceProperties().stream())
-            .anyMatch(property -> needsResolving(property, false));
+            .anyMatch(property -> needsResolving(property, false, false, true));
   }
 
   default Map<String, FeatureSchema> resolve(Map<String, FeatureSchema> types) {
@@ -80,7 +81,11 @@ public interface TypesResolver extends FeatureSchemaTransformer {
             .coalesce(visitedCoalesceProperties)
             .build();
 
-    if (needsResolving(visited, parents.isEmpty())) {
+    if (needsResolving(
+        visited,
+        parents.isEmpty(),
+        !parents.isEmpty() && parents.get(parents.size() - 1).isConcatElement(),
+        !parents.isEmpty() && parents.get(parents.size() - 1).isCoalesceElement())) {
       return resolve(visited, parents);
     }
 

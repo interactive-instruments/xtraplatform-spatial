@@ -332,7 +332,8 @@ public class MappingOperationResolver implements TypesResolver {
   }
 
   @Override
-  public boolean needsResolving(FeatureSchema property, boolean isFeature) {
+  public boolean needsResolving(
+      FeatureSchema property, boolean isFeature, boolean isInConcat, boolean isInCoalesce) {
     if (mergeOnly) {
       return hasMerge(property);
     }

@@ -21,7 +21,8 @@ public class ConstantsResolver implements TypesResolver {
   }
 
   @Override
-  public boolean needsResolving(FeatureSchema property, boolean isFeature) {
+  public boolean needsResolving(
+      FeatureSchema property, boolean isFeature, boolean isInConcat, boolean isInCoalesce) {
     return property.getConstantValue().isPresent() && property.getSourcePaths().isEmpty();
   }
 

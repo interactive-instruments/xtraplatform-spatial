@@ -9,7 +9,6 @@ package de.ii.xtraplatform.features.domain.transform;
 
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema.Builder;
-import de.ii.xtraplatform.features.domain.MappingOperationResolver;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.TypesResolver;
 import java.util.List;
@@ -17,20 +16,15 @@ import java.util.List;
 public class ImplicitMappingResolver implements TypesResolver {
 
   @Override
-  public boolean needsResolving(FeatureSchema property, boolean isFeature) {
+  public boolean needsResolving(
+      FeatureSchema property, boolean isFeature, boolean isInConcat, boolean isInCoalesce) {
     if (isFeature) {
       return false;
     }
 
-    boolean isFeatureRefInConcat =
-        (property.isFeatureRef() && MappingOperationResolver.isConcatPath(property.getPath()));
-    boolean isEmptySourcePathInConcat =
-        (property.getSourcePath().isPresent()
-            && property.getSourcePath().get().indexOf("/", 1) == -1
-            && MappingOperationResolver.isConcatPath(property.getPath()));
+    boolean isFeatureRefInConcat = property.isFeatureRef() && isInConcat;
 
-    return ((property.isObject() || property.isArray())
-            && (property.getSourcePath().isEmpty() || isEmptySourcePathInConcat))
+    return ((property.isObject() || property.isArray()) && (property.getSourcePath().isEmpty()))
         || (property.isObject()
             && property.getSourcePath().isPresent()
             && property.getValueNames().isEmpty())
