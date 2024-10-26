@@ -26,7 +26,7 @@ import de.ii.xtraplatform.features.domain.TypeQuery;
 import de.ii.xtraplatform.features.sql.domain.FeatureProviderSqlData.QueryGeneratorSettings;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlQueryBatch;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlQueryOptions;
-import de.ii.xtraplatform.features.sql.domain.ImmutableSqlQuerySet.Builder;
+import de.ii.xtraplatform.features.sql.domain.ImmutableSqlQuerySet;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql;
 import de.ii.xtraplatform.features.sql.domain.SchemaSql.PropertyTypeInfo;
 import de.ii.xtraplatform.features.sql.domain.SqlDialect;
@@ -118,14 +118,16 @@ public class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch
             .flatMap(s -> s)
             .collect(Collectors.toList());
 
+    // reuse SqlQuerySet instances instead of copying them; this is expensive and unnecessary, since
+    // they are immutable
     return new ImmutableSqlQueryBatch.Builder()
         .limit(query.getLimit())
         .offset(query.getOffset())
         .chunkSize(chunkSize)
         .isSingleFeature(query.returnsSingleFeature())
         .isAllowSkipMetaQueries(skipRedundantMetaQueries)
-        .querySets(querySets)
-        .build();
+        .build()
+        .withQuerySets(querySets);
   }
 
   private SqlQueryBatch encode(
@@ -158,12 +160,14 @@ public class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch
                 })
             .collect(Collectors.toList());
 
+    // reuse SqlQuerySet instances instead of copying them; this is expensive and unnecessary, since
+    // they are immutable
     return new ImmutableSqlQueryBatch.Builder()
         .limit(query.getLimit())
         .offset(query.getOffset())
         .chunkSize(chunkSize)
-        .querySets(querySets)
-        .build();
+        .build()
+        .withQuerySets(querySets);
   }
 
   private SqlQuerySet createQuerySet(
@@ -214,12 +218,14 @@ public class FeatureQueryEncoderSql implements FeatureQueryEncoder<SqlQueryBatch
                                 : Optional.empty(),
                             additionalQueryParameters));
 
-    return new Builder()
+    // reuse SchemaSql instances instead of copying them; this is expensive and unnecessary, since
+    // they are immutable
+    return new ImmutableSqlQuerySet.Builder()
         .metaQuery(metaQuery)
         .valueQueries(valueQueries)
-        .tableSchemas(queryTemplates.getQuerySchemas())
         .options(getOptions(typeQuery, query))
-        .build();
+        .build()
+        .withTableSchemas(queryTemplates.getQuerySchemas());
   }
 
   @Override
