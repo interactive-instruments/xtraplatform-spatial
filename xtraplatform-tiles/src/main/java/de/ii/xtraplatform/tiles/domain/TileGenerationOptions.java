@@ -56,6 +56,17 @@ public interface TileGenerationOptions {
   Boolean getIgnoreInvalidGeometries();
 
   /**
+   * @langEn The feature type of the tileset is likely sparsely populated and may have a significant
+   *     number of tiles without features.
+   * @langDe Die dem Tileset zugrundeliegende Objektart ist wahrscheinlich spärlich belegt. Eine
+   *     beträchtliche Anzahl von Kacheln könnte keine Features beinhalten.
+   * @default false
+   * @since v4.2
+   */
+  @Nullable
+  Boolean getSparse();
+
+  /**
    * @langEn Transform the selected features for a certain zoom level. Supported transformations
    *     are: selecting a subset of feature properties (`properties`), spatial merging of features
    *     that intersect (`merge`), with the option to restrict the operations to features with

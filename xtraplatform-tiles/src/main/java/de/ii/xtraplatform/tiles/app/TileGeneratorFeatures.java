@@ -258,8 +258,9 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
       throw new IllegalStateException("Feature provider has no CRS support.");
     }
 
-    // if the tile is outside the extent of the feature data, return null
-    if (featureProvider.extents().isAvailable()) {
+    // if the tileset is sparse, check, if the tile is outside the extent of the feature data;
+    // if yes, return null
+    if (Boolean.TRUE.equals(tileset.getSparse()) && featureProvider.extents().isAvailable()) {
       String featureType = tileset.getFeatureType().orElse(tileQuery.getTileset());
       if (featureProvider
           .extents()
