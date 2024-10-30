@@ -65,6 +65,11 @@ public interface TilesetFeatures
   Boolean getIgnoreInvalidGeometries();
 
   @DocIgnore
+  @Nullable
+  @Override
+  Boolean getSparse();
+
+  @DocIgnore
   @Override
   Map<String, List<LevelTransformation>> getTransformations();
 
@@ -141,6 +146,9 @@ public interface TilesetFeatures
     if (Objects.isNull(this.getIgnoreInvalidGeometries())
         && Objects.nonNull(defaults.getIgnoreInvalidGeometries())) {
       withDefaults.ignoreInvalidGeometries(defaults.getIgnoreInvalidGeometries());
+    }
+    if (Objects.isNull(this.getSparse()) && Objects.nonNull(defaults.getSparse())) {
+      withDefaults.sparse(defaults.getSparse());
     }
 
     return withDefaults.build();

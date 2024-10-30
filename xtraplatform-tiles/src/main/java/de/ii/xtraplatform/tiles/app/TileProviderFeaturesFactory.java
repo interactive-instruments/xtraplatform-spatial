@@ -100,7 +100,8 @@ public class TileProviderFeaturesFactory
                 .putLevels("WebMercatorQuad", new ImmutableMinMax.Builder().min(0).max(23).build())
                 .featureLimit(100000)
                 .minimumSizeInPixel(0.5)
-                .ignoreInvalidGeometries(false));
+                .ignoreInvalidGeometries(false)
+                .sparse(false));
   }
 
   @Override

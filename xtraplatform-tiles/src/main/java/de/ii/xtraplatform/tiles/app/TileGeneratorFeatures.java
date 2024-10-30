@@ -82,6 +82,8 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
   private static final Map<
           MediaType, Function<TileGenerationContext, ? extends FeatureTokenEncoder<?>>>
       ENCODERS = ImmutableMap.of(FeatureEncoderMVT.FORMAT, FeatureEncoderMVT::new);
+  private static final Map<MediaType, byte[]> EMPTY_TILES =
+      ImmutableMap.of(FeatureEncoderMVT.FORMAT, FeatureEncoderMVT.EMPTY_TILE);
   private static final Map<MediaType, PropertyTransformations> TRANSFORMATIONS =
       ImmutableMap.of(
           FeatureEncoderMVT.FORMAT,
@@ -211,6 +213,10 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
     }
 
     FeatureStream tileSource = getTileSource(tileQuery);
+    if (tileSource == null) {
+      // no features in this tile
+      return EMPTY_TILES.get(tileQuery.getMediaType());
+    }
 
     TilesetFeatures tileset =
         data.getTilesets().get(tileQuery.getTileset()).mergeDefaults(data.getTilesetDefaults());
@@ -250,6 +256,31 @@ public class TileGeneratorFeatures extends AbstractVolatileComposed
     }
     if (!featureProvider.crs().isSupported()) {
       throw new IllegalStateException("Feature provider has no CRS support.");
+    }
+
+    // if the tileset is sparse, check, if the tile is outside the extent of the feature data;
+    // if yes, return null
+    if (Boolean.TRUE.equals(tileset.getSparse()) && featureProvider.extents().isAvailable()) {
+      String featureType = tileset.getFeatureType().orElse(tileQuery.getTileset());
+      if (featureProvider
+          .extents()
+          .get()
+          .getSpatialExtent(featureType)
+          .filter(
+              bboxFeatures -> {
+                try {
+                  return BoundingBox.intersects(
+                      bboxFeatures,
+                      tileQuery.getBoundingBox(bboxFeatures.getEpsgCrs(), crsTransformerFactory));
+                } catch (CrsTransformationException e) {
+                  // ignore, assume there are features
+                  return true;
+                }
+              })
+          // if the extent is empty, there are no features, so we can return null, too
+          .isEmpty()) {
+        return null;
+      }
     }
 
     EpsgCrs nativeCrs = featureProvider.crs().get().getNativeCrs();

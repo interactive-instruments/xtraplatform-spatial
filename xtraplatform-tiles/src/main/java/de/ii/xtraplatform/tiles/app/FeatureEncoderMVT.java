@@ -37,6 +37,7 @@ public class FeatureEncoderMVT extends FeatureEncoderSfFlat {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FeatureEncoderMVT.class);
   public static final MediaType FORMAT = new MediaType("application", "vnd.mapbox-vector-tile");
+  public static final byte[] EMPTY_TILE = new VectorTileEncoder().encode();
 
   private final TileGenerationOptions parameters;
   private final TileCoordinates tile;
