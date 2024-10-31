@@ -899,21 +899,21 @@ public interface FeatureSchema
             .orElse(getType()),
         getFullPathAsString());
 
-    Preconditions.checkState(
-        getConcat().isEmpty()
-            || getType() != Type.FEATURE_REF_ARRAY
-            || getConcat().stream()
-                .map(FeatureSchema::getDesiredType)
-                .filter(Objects::nonNull)
-                .allMatch(type -> List.of(Type.FEATURE_REF, Type.FEATURE_REF_ARRAY).contains(type)),
-        "Concat of type FEATURE_REF_ARRAY may only contain items of type FEATURE_REF_ARRAY or FEATURE_REF. Found: %s. Path: %s.",
-        getConcat().stream()
+    /*Preconditions.checkState(
+    getConcat().isEmpty()
+        || getType() != Type.FEATURE_REF_ARRAY
+        || getConcat().stream()
             .map(FeatureSchema::getDesiredType)
             .filter(Objects::nonNull)
-            .filter(type -> !List.of(Type.FEATURE_REF, Type.FEATURE_REF_ARRAY).contains(type))
-            .findFirst()
-            .orElse(getType()),
-        getFullPathAsString());
+            .allMatch(type -> List.of(Type.FEATURE_REF, Type.FEATURE_REF_ARRAY).contains(type)),
+    "Concat of type FEATURE_REF_ARRAY may only contain items of type FEATURE_REF_ARRAY or FEATURE_REF. Found: %s. Path: %s.",
+    getConcat().stream()
+        .map(FeatureSchema::getDesiredType)
+        .filter(Objects::nonNull)
+        .filter(type -> !List.of(Type.FEATURE_REF, Type.FEATURE_REF_ARRAY).contains(type))
+        .findFirst()
+        .orElse(getType()),
+    getFullPathAsString());*/
 
     Preconditions.checkState(
         getConcat().isEmpty()
