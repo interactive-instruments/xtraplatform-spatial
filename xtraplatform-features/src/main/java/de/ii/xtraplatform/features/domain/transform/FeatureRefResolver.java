@@ -284,32 +284,13 @@ public class FeatureRefResolver implements TypesResolver {
   @Override
   public FeatureSchema resolve(FeatureSchema schema, List<FeatureSchema> parents) {
     if (schema.isFeatureRef()) {
-      /*if (!schema.getConcat().isEmpty()) {
-        ImmutableFeatureSchema visited =
-            new Builder()
-                .from(schema)
-                .type(schema.isArray() ? Type.OBJECT_ARRAY : Type.OBJECT)
-                .refType(schema.getRefType().orElse(REF_TYPE_DYNAMIC))
-                .propertyMap(Map.of())
-                .concat(resolveAll(schema.getConcat(), schema.getValueType(), schema.getRefType()))
-                .build();
-
-        return MappingOperationResolver.resolveConcat(visited);
+      if (!schema.getConcat().isEmpty() || !schema.getCoalesce().isEmpty()) {
+        return new Builder()
+            .from(schema)
+            .type(schema.isArray() ? Type.OBJECT_ARRAY : Type.OBJECT)
+            .refType(schema.getRefType().orElse(REF_TYPE_DYNAMIC))
+            .build();
       }
-      if (!schema.getCoalesce().isEmpty()) {
-        ImmutableFeatureSchema visited =
-            new Builder()
-                .from(schema)
-                .type(schema.isArray() ? Type.OBJECT_ARRAY : Type.OBJECT)
-                .refType(schema.getRefType().orElse(REF_TYPE_DYNAMIC))
-                .propertyMap(Map.of())
-                .coalesce(
-                    resolveAll(schema.getCoalesce(), schema.getValueType(), schema.getRefType()))
-                .build();
-
-        FeatureSchema featureSchema = MappingOperationResolver.resolveCoalesce(visited);
-        return featureSchema;
-      }*/
 
       return resolve(schema, schema.getProperties(), Optional.empty(), Optional.empty());
     }
