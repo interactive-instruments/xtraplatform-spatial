@@ -48,44 +48,39 @@ public interface FeaturePropertyTokenSliceTransformer
       return slice;
     }
 
-    int min = findFirst(slice, pathAsList(currentPropertyPath), 0);
-    int max = findLast(slice, pathAsList(currentPropertyPath), min + 1);
+    List<String> path = pathAsList(currentPropertyPath);
+    int min = findFirst(slice, path, 0);
+    int max = findLast(slice, path, min + 1);
 
     if (min == -1 || max == -1) {
       return slice;
     }
 
-    List<String> rootPath = getRootPath(slice, min);
-    boolean isArray = slice.get(min) == FeatureTokenType.ARRAY;
     List<Object> transformed = new ArrayList<>();
 
     transformed.addAll(slice.subList(0, min));
 
-    if (!isArray) {
-      transformObject(currentPropertyPath, slice, rootPath, min, max + 1, transformed);
+    int lastEnd = min - 1;
+    int start = findPos(slice, FeatureTokenType.OBJECT, path, min);
+    int end = findPos(slice, FeatureTokenType.OBJECT_END, path, start);
 
-      transformed.addAll(slice.subList(max + 1, slice.size()));
+    while (start > -1 && end > -1 && end <= max) {
+      if (start > lastEnd) {
+        transformed.addAll(slice.subList(lastEnd + 1, start));
+      }
 
-      return transformed;
+      // TODO: +2 is needed for .sublist usage in implementations, should be +1 here and +1 in
+      // implementations
+      transformObject(currentPropertyPath, slice, path, start, end + 2, transformed);
+
+      lastEnd = end + 1;
+      start = findPos(slice, FeatureTokenType.OBJECT, path, lastEnd);
+      end = findPos(slice, FeatureTokenType.OBJECT_END, path, start);
     }
 
-    transformed.add(FeatureTokenType.ARRAY);
-    transformed.add(rootPath);
-
-    int start = findPos(slice, FeatureTokenType.OBJECT, rootPath, min);
-    int end = findPos(slice, FeatureTokenType.OBJECT_END, rootPath, start);
-
-    while (start > -1 && end > -1 && end + 1 <= max) {
-      transformObject(currentPropertyPath, slice, rootPath, start, end + 2, transformed);
-
-      start = findPos(slice, FeatureTokenType.OBJECT, rootPath, end);
-      end = findPos(slice, FeatureTokenType.OBJECT_END, rootPath, start);
+    if (slice.size() > lastEnd) {
+      transformed.addAll(slice.subList(lastEnd + 1, slice.size()));
     }
-
-    transformed.add(FeatureTokenType.ARRAY_END);
-    transformed.add(rootPath);
-
-    transformed.addAll(slice.subList(max + 1, slice.size()));
 
     return transformed;
   }
