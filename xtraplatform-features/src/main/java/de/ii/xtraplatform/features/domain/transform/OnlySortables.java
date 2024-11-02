@@ -18,8 +18,12 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class OnlySortables implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(OnlySortables.class);
 
   private final boolean wildcard;
   private final List<String> included;
@@ -78,6 +82,19 @@ public class OnlySortables implements SchemaVisitorTopDown<FeatureSchema, Featur
         if (excludePathMatcher.test(schema.getSourcePath().orElse(""))) {
           return null;
         }
+
+        // TODO: In the next major release move to FeatureSchema.sortable() and exclude
+        //       incompatible properties.
+        if (!isCompatible(schema)) {
+          if (wildcard) {
+            return null;
+          }
+          if (LOGGER.isWarnEnabled()) {
+            LOGGER.warn(
+                "Property '{}' has a value transformation or is a constant value. The property should not be used as a sortable as sorting by the values may not work as expected.",
+                schema.getFullPathAsString(pathSeparator));
+          }
+        }
       } else if (!schema.isFeature()) {
         return null;
       }
@@ -104,5 +121,17 @@ public class OnlySortables implements SchemaVisitorTopDown<FeatureSchema, Featur
           .concat(visitedConcat)
           .build();
     }
+  }
+
+  private boolean isCompatible(FeatureSchema schema) {
+    return schema.getConstantValue().isEmpty()
+        && schema.getTransformations().stream()
+            .allMatch(
+                t ->
+                    t.getNullify().isEmpty()
+                        && t.getStringFormat().isEmpty()
+                        && t.getDateFormat().isEmpty()
+                        && t.getMap().isEmpty()
+                        && t.getCodelist().isEmpty());
   }
 }
