@@ -7,6 +7,7 @@
  */
 package de.ii.xtraplatform.features.domain;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -82,6 +83,11 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
             && parents.get(parents.size() - 1).isObject()
             && !parents.get(parents.size() - 1).getConcat().isEmpty();
 
+    boolean isInConcatNested =
+        parents.size() > 1
+            && parents.subList(0, parents.size() - 1).stream()
+                .anyMatch(parent -> parent.isObject() && !parent.getConcat().isEmpty());
+
     boolean isVirtualObject =
         isInConcat
             && schema.isObject()
@@ -105,11 +111,21 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
                                 isInConcat
                                     ? currentPath.withoutParentIntersection(parentPath)
                                     : currentPath;
-                            List<String> fullPath =
-                                Stream.concat(
-                                        parentPath.stream().flatMap(p -> p.getFullPath().stream()),
-                                        finalCurrentPath.getFullPath().stream())
-                                    .collect(Collectors.toList());
+
+                            List<String> fullParentPath = new ArrayList<>();
+                            List<U> last = new ArrayList<>();
+                            for (U path : parentPath) {
+                              U finalPath =
+                                  isInConcatNested && !last.isEmpty()
+                                      ? path.withoutParentIntersection(last)
+                                      : path;
+
+                              fullParentPath.addAll(finalPath.getFullPath());
+                              last.add(finalPath);
+                            }
+                            List<String> fullPath = new ArrayList<>(fullParentPath);
+                            fullPath.addAll(finalCurrentPath.getFullPath());
+
                             List<T> matchingProperties =
                                 properties.stream()
                                     .filter(
@@ -124,6 +140,7 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
                                 finalCurrentPath,
                                 matchingProperties,
                                 parentPath,
+                                fullParentPath,
                                 nestedArray);
                           }))
           .collect(Collectors.toList());
@@ -217,6 +234,7 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
       U path,
       List<T> visitedProperties,
       List<U> parentPaths,
+      List<String> fullParentPath,
       boolean nestedArray);
 
   List<T> merge(FeatureSchema targetSchema, List<String> parentPath, List<T> visitedProperties);

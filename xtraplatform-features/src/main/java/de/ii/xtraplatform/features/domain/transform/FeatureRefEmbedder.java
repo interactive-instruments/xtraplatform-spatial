@@ -229,6 +229,8 @@ public class FeatureRefEmbedder implements TypesResolver {
 
     if (Objects.nonNull(refSchema)) {
       builder.propertyMap(refSchema.getPropertyMap());
+      builder.label(refSchema.getLabel().orElse(refSchema.getName()));
+      builder.description(refSchema.getDescription());
     } else {
       builder.propertyMap(Map.of());
     }

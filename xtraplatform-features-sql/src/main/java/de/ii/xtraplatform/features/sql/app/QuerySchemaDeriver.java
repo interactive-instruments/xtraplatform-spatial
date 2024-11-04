@@ -75,14 +75,10 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
       SqlPath path,
       List<SchemaSql> visitedProperties,
       List<SqlPath> parentPaths,
+      List<String> fullParentPath,
       boolean nestedArray) {
 
     String fullSchemaPath = targetSchema.getFullPathAsString();
-
-    List<String> fullParentPath =
-        parentPaths.stream()
-            .flatMap(sqlPath -> sqlPath.getFullPath().stream())
-            .collect(Collectors.toList());
 
     List<SqlRelation> relations =
         parentPaths.isEmpty()

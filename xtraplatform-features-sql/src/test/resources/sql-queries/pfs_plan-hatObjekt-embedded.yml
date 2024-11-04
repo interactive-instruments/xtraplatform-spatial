@@ -12,3 +12,9 @@
   FROM pfs_plan A
   JOIN bst_speicher B ON (A._id=B.gehoertzuplan_pfs_plan_fk)
   ORDER BY 1,2
+- >-
+  SELECT A.id AS SKEY, B.id AS SKEY_1, C.id AS SKEY_2, C._id
+  FROM pfs_plan A
+  JOIN bst_speicher B ON (A._id=B.gehoertzuplan_pfs_plan_fk)
+  JOIN bra_mikrorohr C ON (B.mikrorohr_fk=C._id)
+  ORDER BY 1,2,3
