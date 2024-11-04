@@ -163,6 +163,17 @@ public class SchemaTransformerChain
                               .build()));
 
           propertyTransformation
+              .getRenamePathOnly()
+              .ifPresent(
+                  rename ->
+                      transformers.add(
+                          ImmutableFeaturePropertyTransformerRename.builder()
+                              .propertyPath(path)
+                              .parameter(rename)
+                              .pathOnly(true)
+                              .build()));
+
+          propertyTransformation
               .getRemove()
               .ifPresent(
                   remove ->

@@ -62,9 +62,7 @@ public abstract class AbstractFeatureProvider<
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractFeatureProvider.class);
   protected static final WithScope WITH_SCOPE_RETURNABLE = new WithScope(Scope.RETURNABLE);
   protected static final WithScope WITH_SCOPE_QUERIES =
-      new WithScope(
-          EnumSet.of(
-              SchemaBase.Scope.RETURNABLE, SchemaBase.Scope.QUERYABLE, SchemaBase.Scope.SORTABLE));
+      new WithScope(EnumSet.of(SchemaBase.Scope.QUERYABLE, SchemaBase.Scope.SORTABLE));
   protected static final WithScope WITH_SCOPE_RECEIVABLE =
       new WithScope(SchemaBase.Scope.RECEIVABLE);
 

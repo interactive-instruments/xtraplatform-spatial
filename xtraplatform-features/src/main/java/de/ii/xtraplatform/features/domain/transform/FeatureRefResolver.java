@@ -459,7 +459,12 @@ public class FeatureRefResolver implements TypesResolver {
       return builder.build();
     }
 
-    List<FeatureSchema> newVisitedProperties = new ArrayList<>(properties);
+    List<FeatureSchema> newVisitedProperties =
+        new ArrayList<>(
+            properties.stream()
+                .map(
+                    property -> new Builder().from(property).excludedScopes(excludedScopes).build())
+                .collect(Collectors.toList()));
     List<PropertyTransformation> newTransformations = new ArrayList<>(schema.getTransformations());
 
     if (properties.stream().noneMatch(schema1 -> Objects.equals(schema1.getName(), TITLE))) {

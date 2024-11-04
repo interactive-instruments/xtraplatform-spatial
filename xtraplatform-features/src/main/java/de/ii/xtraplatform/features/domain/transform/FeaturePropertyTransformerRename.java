@@ -26,20 +26,25 @@ public interface FeaturePropertyTransformerRename extends FeaturePropertySchemaT
     return TYPE;
   }
 
+  @Value.Default
+  default boolean pathOnly() {
+    return false;
+  }
+
   @Override
   default FeatureSchema transform(String currentPropertyPath, FeatureSchema schema) {
     if (Objects.equals(currentPropertyPath, getPropertyPath())
         && !Objects.equals(schema.getName(), getParameter())) {
       return new ImmutableFeatureSchema.Builder()
           .from(schema)
-          .name(getParameter())
+          .name(pathOnly() ? schema.getName() : getParameter())
           .path(List.of(getParameter()))
           .propertyMap(
               adjustProperties(
                   schema.getPropertyMap(),
                   merge(schema.getParentPath(), getParameter()),
                   schema.getName(),
-                  getParameter()))
+                  pathOnly() ? schema.getName() : getParameter()))
           .build();
     }
 

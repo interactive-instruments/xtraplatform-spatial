@@ -459,8 +459,9 @@ public class MappingOperationResolver implements TypesResolver {
         builder.addSourcePaths(basePath2NoSlash);
 
         for (FeatureSchema prop : schema.getConcat().get(i).getProperties()) {
+          String prefix = i + "_";
           builder.putPropertyMap(
-              i + "_" + prop.getName(),
+              prefix + prop.getName(),
               new ImmutableFeatureSchema.Builder()
                   .from(prop)
                   .sourcePath(
@@ -468,6 +469,19 @@ public class MappingOperationResolver implements TypesResolver {
                           ? basePath2 + prop.getSourcePath().get()
                           : basePath2NoSlash)
                   .path(List.of(i + "_" + prop.getName()))
+                  .transformations(
+                      prop.getTransformations().stream()
+                          .map(
+                              transformation -> {
+                                if (transformation.getRename().isPresent()) {
+                                  return new ImmutablePropertyTransformation.Builder()
+                                      .rename(transformation.getRename().get())
+                                      .renamePathOnly(prefix + transformation.getRename().get())
+                                      .build();
+                                }
+                                return transformation;
+                              })
+                          .collect(Collectors.toList()))
                   .putAdditionalInfo(IS_PROPERTY, "true"));
         }
       }
