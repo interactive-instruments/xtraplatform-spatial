@@ -214,7 +214,8 @@ public class NestingTracker {
   }
 
   public boolean hasIndexChanged(List<Integer> nextIndexes) {
-    return !startsWith(nextIndexes, context.indexes());
+    return nextIndexes.size() >= context.indexes().size()
+        && !startsWith(nextIndexes, context.indexes());
   }
 
   public boolean hasParentIndexChanged(List<Integer> nextIndexes) {
