@@ -331,6 +331,12 @@ public class MappingOperationResolver implements TypesResolver {
     return propertyPath;
   }
 
+  public static List<String> cleanConcatPath(List<String> propertyPath) {
+    return propertyPath.stream()
+        .map(MappingOperationResolver::cleanConcatPath)
+        .collect(Collectors.toList());
+  }
+
   @Override
   public boolean needsResolving(
       FeatureSchema property, boolean isFeature, boolean isInConcat, boolean isInCoalesce) {

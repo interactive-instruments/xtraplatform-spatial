@@ -11,6 +11,7 @@ import com.google.common.base.Joiner;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.FeatureTokenType;
 import de.ii.xtraplatform.features.domain.ImmutableFeatureSchema;
+import de.ii.xtraplatform.features.domain.MappingOperationResolver;
 import de.ii.xtraplatform.geometries.domain.SimpleFeatureGeometry;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -154,7 +155,7 @@ public abstract class FeaturePropertyTransformerFlatten
         .map(
             elem -> {
               if (elem.endsWith("]")) {
-                return elem.substring(0, elem.indexOf("[")) + "[]";
+                return elem.substring(0, elem.indexOf("["));
               }
               return elem;
             })
@@ -166,7 +167,7 @@ public abstract class FeaturePropertyTransformerFlatten
       List<FeatureSchema> schemas, List<String> path) {
     String name =
         Joiner.on(getParameter())
-            .join(path)
+            .join(MappingOperationResolver.cleanConcatPath(path))
             .replaceAll("\\[", getParameter())
             .replaceAll("\\]", "");
 

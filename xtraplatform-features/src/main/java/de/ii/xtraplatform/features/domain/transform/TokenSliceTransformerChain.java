@@ -19,6 +19,7 @@ import java.time.ZoneId;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -111,8 +112,30 @@ public class TokenSliceTransformerChain
   public Map<String, String> transform(FeatureEventBuffer buffer) {
     Map<String, String> applied = new HashMap<>();
 
-    transformers.keySet().stream()
-        .filter(path -> !transformers.get(path).isEmpty())
+    Map<String, List<FeaturePropertyTokenSliceTransformer>> filteredTransformers;
+    Optional<FeaturePropertyTokenSliceTransformer> flatten;
+
+    // flatten is a special case, as it needs to be applied after all other transformers
+    if (transformers.containsKey(PropertyTransformations.WILDCARD)
+        && transformers.get(PropertyTransformations.WILDCARD).stream()
+            .anyMatch(transformer -> transformer instanceof FeaturePropertyTransformerFlatten)) {
+      filteredTransformers = new LinkedHashMap<>(transformers);
+      filteredTransformers.put(
+          PropertyTransformations.WILDCARD,
+          transformers.get(PropertyTransformations.WILDCARD).stream()
+              .filter(transformer -> !(transformer instanceof FeaturePropertyTransformerFlatten))
+              .collect(Collectors.toList()));
+      flatten =
+          transformers.get(PropertyTransformations.WILDCARD).stream()
+              .filter(transformer -> transformer instanceof FeaturePropertyTransformerFlatten)
+              .findFirst();
+    } else {
+      filteredTransformers = transformers;
+      flatten = Optional.empty();
+    }
+
+    filteredTransformers.keySet().stream()
+        .filter(path -> !filteredTransformers.get(path).isEmpty())
         .forEach(
             path -> {
               schemaMapping
@@ -131,12 +154,12 @@ public class TokenSliceTransformerChain
                               FeatureEventBuffer.sliceToString(slice));
                         }
 
-                        List<Object> transformed = run(transformers, path, path, slice);
+                        List<Object> transformed = run(filteredTransformers, path, path, slice);
 
                         boolean replaced = buffer.replaceSlice(pos, transformed);
 
                         String transformerNames =
-                            transformers.get(path).stream()
+                            filteredTransformers.get(path).stream()
                                 .map(FeaturePropertyTransformer::getType)
                                 .collect(Collectors.joining(","));
 
@@ -158,6 +181,29 @@ public class TokenSliceTransformerChain
                         }
                       });
             });
+
+    // flatten is a special case, as it needs to be applied after all other transformers
+    if (flatten.isPresent()) {
+      String path = PropertyTransformations.WILDCARD;
+      schemaMapping
+          .getPositionsForTargetPath(List.of())
+          .forEach(
+              pos -> {
+                List<Object> slice = buffer.getSlice(pos);
+
+                List<Object> transformed =
+                    run(Map.of(path, List.of(flatten.get())), path, path, slice);
+
+                buffer.replaceSlice(pos, transformed);
+
+                String transformerNames =
+                    transformers.get(path).stream()
+                        .map(FeaturePropertyTransformer::getType)
+                        .collect(Collectors.joining(","));
+
+                applied.put(path, transformerNames);
+              });
+    }
 
     return applied;
   }
