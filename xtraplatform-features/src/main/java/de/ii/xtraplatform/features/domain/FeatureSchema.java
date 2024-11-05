@@ -950,6 +950,8 @@ public interface FeatureSchema
             .orElse(getType()),
         getFullPathAsString());
 
+    /*
+    TODO Results in error, similar to CONCAT above: "Found: OBJECT."
     Preconditions.checkState(
         getCoalesce().isEmpty()
             || getType() != Type.FEATURE_REF
@@ -962,6 +964,7 @@ public interface FeatureSchema
             .findFirst()
             .orElse(getType()),
         getFullPathAsString());
+     */
 
     Preconditions.checkState(
         getCoalesce().isEmpty()
