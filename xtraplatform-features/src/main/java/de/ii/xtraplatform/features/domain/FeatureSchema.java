@@ -899,21 +899,38 @@ public interface FeatureSchema
             .orElse(getType()),
         getFullPathAsString());
 
-    /*Preconditions.checkState(
-    getConcat().isEmpty()
-        || getType() != Type.FEATURE_REF_ARRAY
-        || getConcat().stream()
+    // TODO OBJECT and OBJECT_ARRAY is only added temporarily, because currently the schema is
+    //      transformed in the process to use these types instead of FEATURE_REF and
+    //      FEATURE_REF_ARRAY
+    Preconditions.checkState(
+        getConcat().isEmpty()
+            || getType() != Type.FEATURE_REF_ARRAY
+            || getConcat().stream()
+                .map(FeatureSchema::getDesiredType)
+                .filter(Objects::nonNull)
+                .allMatch(
+                    type ->
+                        List.of(
+                                Type.FEATURE_REF,
+                                Type.FEATURE_REF_ARRAY,
+                                Type.OBJECT,
+                                Type.OBJECT_ARRAY)
+                            .contains(type)),
+        "Concat of type FEATURE_REF_ARRAY may only contain items of type FEATURE_REF_ARRAY or FEATURE_REF. Found: %s. Path: %s.",
+        getConcat().stream()
             .map(FeatureSchema::getDesiredType)
             .filter(Objects::nonNull)
-            .allMatch(type -> List.of(Type.FEATURE_REF, Type.FEATURE_REF_ARRAY).contains(type)),
-    "Concat of type FEATURE_REF_ARRAY may only contain items of type FEATURE_REF_ARRAY or FEATURE_REF. Found: %s. Path: %s.",
-    getConcat().stream()
-        .map(FeatureSchema::getDesiredType)
-        .filter(Objects::nonNull)
-        .filter(type -> !List.of(Type.FEATURE_REF, Type.FEATURE_REF_ARRAY).contains(type))
-        .findFirst()
-        .orElse(getType()),
-    getFullPathAsString());*/
+            .filter(
+                type ->
+                    !List.of(
+                            Type.FEATURE_REF,
+                            Type.FEATURE_REF_ARRAY,
+                            Type.OBJECT,
+                            Type.OBJECT_ARRAY)
+                        .contains(type))
+            .findFirst()
+            .orElse(getType()),
+        getFullPathAsString());
 
     Preconditions.checkState(
         getConcat().isEmpty()
@@ -950,21 +967,21 @@ public interface FeatureSchema
             .orElse(getType()),
         getFullPathAsString());
 
-    /*
-    TODO Results in error, similar to CONCAT above: "Found: OBJECT."
+    // TODO OBJECT is only added temporarily, because currently the schema is transformed in the
+    //      process to use these types instead of FEATURE_REF
     Preconditions.checkState(
         getCoalesce().isEmpty()
             || getType() != Type.FEATURE_REF
             || getCoalesce().stream()
-                .allMatch(s -> List.of(Type.STRING, Type.FEATURE_REF).contains(s.getType())),
+                .allMatch(
+                    s -> List.of(Type.STRING, Type.FEATURE_REF, Type.OBJECT).contains(s.getType())),
         "Coalesce of type FEATURE_REF may only contain items of type FEATURE_REF. Found: %s. Path: %s.",
         getCoalesce().stream()
             .map(FeatureSchema::getType)
-            .filter(t -> !List.of(Type.STRING, Type.FEATURE_REF).contains(t))
+            .filter(t -> !List.of(Type.STRING, Type.FEATURE_REF, Type.OBJECT).contains(t))
             .findFirst()
             .orElse(getType()),
         getFullPathAsString());
-     */
 
     Preconditions.checkState(
         getCoalesce().isEmpty()

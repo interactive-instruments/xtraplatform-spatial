@@ -22,8 +22,12 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, FeatureSchema> {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(OnlyQueryables.class);
 
   private final boolean wildcard;
   private final List<String> included;
@@ -79,6 +83,19 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
         if (excludePathMatcher.test(schema.getSourcePath().orElse(""))) {
           return null;
         }
+
+        // TODO: In the next major release move to FeatureSchema.queryable() and exclude
+        //       incompatible properties.
+        if (!isCompatible(schema)) {
+          if (wildcard) {
+            return null;
+          }
+          if (LOGGER.isWarnEnabled()) {
+            LOGGER.warn(
+                "Property '{}' has a value transformation or is a constant value. The property should not be used as a queryable as filtering on the values may not work as expected.",
+                schema.getFullPathAsString(pathSeparator));
+          }
+        }
       } else if (!schema.isObject()
           || (!parents.isEmpty() && visitedProperties.stream().noneMatch(Objects::nonNull))) {
         return null;
@@ -120,6 +137,18 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
           .propertyMap(filteredPropertiesMap)
           .concat(List.of())
           .build();
+    }
+
+    private boolean isCompatible(FeatureSchema schema) {
+      return schema.getConstantValue().isEmpty()
+          && schema.getTransformations().stream()
+              .allMatch(
+                  t ->
+                      t.getNullify().isEmpty()
+                          && t.getStringFormat().isEmpty()
+                          && t.getDateFormat().isEmpty()
+                          && t.getMap().isEmpty()
+                          && t.getCodelist().isEmpty());
     }
 
     private FeatureSchema cleanupPathsIfDesired(FeatureSchema property) {

@@ -345,6 +345,8 @@ public class FeatureRefResolver implements TypesResolver {
                           + idProperty.get().getSourcePath().orElse(""))
                   .excludedScopes(property.getExcludedScopes())
                   .addAllExcludedScopes(Scope.allBut(Scope.QUERYABLE, Scope.SORTABLE))
+                  .addAllTransformations(
+                      idProperty.map(FeatureSchema::getTransformations).orElse(List.of()))
                   .addTransformations(
                       new ImmutablePropertyTransformation.Builder()
                           .rename(property.getName())
