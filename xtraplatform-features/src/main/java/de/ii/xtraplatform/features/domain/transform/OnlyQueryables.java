@@ -15,6 +15,7 @@ import de.ii.xtraplatform.features.domain.SchemaBase;
 import de.ii.xtraplatform.features.domain.SchemaBase.Type;
 import de.ii.xtraplatform.features.domain.SchemaVisitorTopDown;
 import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -83,6 +84,10 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
         return null;
       }
 
+      int requiredCount =
+          !cleanupKeys || schema.getConcat().isEmpty() ? 1 : schema.getConcat().size();
+      Map<String, Integer> counts = new HashMap<>();
+
       Map<String, FeatureSchema> visitedPropertiesMap =
           visitedProperties.stream()
               .filter(Objects::nonNull)
@@ -93,16 +98,26 @@ public class OnlyQueryables implements SchemaVisitorTopDown<FeatureSchema, Featu
                           property.getFullPathAsString(pathSeparator), property))
               .collect(
                   ImmutableMap.toImmutableMap(
-                      Entry::getKey, Entry::getValue, (first, second) -> second));
+                      Entry::getKey,
+                      Entry::getValue,
+                      (first, second) -> {
+                        counts.put(
+                            first.getFullPathAsString(pathSeparator),
+                            counts.getOrDefault(first.getFullPathAsString(pathSeparator), 1) + 1);
+                        return second;
+                      }));
 
-      List<FeatureSchema> visitedConcat =
-          schema.getConcat().stream()
-              .map(concatSchema -> concatSchema.accept(this, parents))
-              .collect(Collectors.toList());
+      // ignore properties that are not included in all concat variants
+      Map<String, FeatureSchema> filteredPropertiesMap =
+          requiredCount == 1
+              ? visitedPropertiesMap
+              : visitedPropertiesMap.entrySet().stream()
+                  .filter(entry -> counts.getOrDefault(entry.getKey(), 1) == requiredCount)
+                  .collect(ImmutableMap.toImmutableMap(Entry::getKey, Entry::getValue));
 
       return new Builder()
           .from(adjustType(parents, schema))
-          .propertyMap(visitedPropertiesMap)
+          .propertyMap(filteredPropertiesMap)
           .concat(List.of())
           .build();
     }
