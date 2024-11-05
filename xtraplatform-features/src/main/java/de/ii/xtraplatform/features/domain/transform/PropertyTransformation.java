@@ -112,6 +112,9 @@ public interface PropertyTransformation
    */
   Optional<String> getRename();
 
+  @JsonIgnore
+  Optional<String> getRenamePathOnly();
+
   /**
    * @langEn `IN_COLLECTION` (until version 3.0: `OVERVIEW`) skips the property only for the
    *     *Features* resource, `ALWAYS` always skips it, `NEVER` never skips it.

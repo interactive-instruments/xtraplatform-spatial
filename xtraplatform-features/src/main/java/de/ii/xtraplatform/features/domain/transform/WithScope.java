@@ -41,7 +41,7 @@ public class WithScope implements SchemaVisitorTopDown<FeatureSchema, FeatureSch
     if (!schema.hasOneOf(scopes)
         && !schema.isId()
         && !schema.isEmbeddedId()
-        && !parents.isEmpty()) {
+        && !schema.isObject()) {
       return null;
     }
 
@@ -64,6 +64,14 @@ public class WithScope implements SchemaVisitorTopDown<FeatureSchema, FeatureSch
             .map(coalesceSchema -> coalesceSchema.accept(this, parents))
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
+
+    if (schema.isObject()
+        && !parents.isEmpty()
+        && visitedProperties.isEmpty()
+        && visitedConcat.isEmpty()
+        && visitedCoalesce.isEmpty()) {
+      return null;
+    }
 
     return new ImmutableFeatureSchema.Builder()
         .from(schema)
