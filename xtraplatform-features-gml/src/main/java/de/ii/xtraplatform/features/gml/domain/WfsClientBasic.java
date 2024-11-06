@@ -16,4 +16,6 @@ public interface WfsClientBasic {
   InputStream runWfsOperation(final WfsOperation operation);
 
   Optional<Metadata> getMetadata();
+
+  Optional<Throwable> getConnectionError();
 }

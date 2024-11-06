@@ -56,6 +56,13 @@ public class FeatureProviderWfsAuto implements AutoEntityFactory {
     WfsClientBasic wfsClient =
         clientFactory.create(data.getProviderSubType(), data.getId(), data.getConnectionInfo());
 
+    if (wfsClient.getConnectionError().isPresent()) {
+      Throwable throwable = wfsClient.getConnectionError().get();
+      if (throwable instanceof RuntimeException) {
+        throw (RuntimeException) throwable;
+      }
+    }
+
     try {
       Optional<Metadata> metadata = wfsClient.getMetadata();
 
