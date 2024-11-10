@@ -94,6 +94,7 @@ public class SqlClientRx implements SqlClient {
     Flowable<SqlRow> flowable =
         session
             .select(query)
+            .transacted()
             .get(
                 resultSet -> {
                   SqlRow row = new SqlRowVals(collator).read(resultSet, options);
@@ -103,7 +104,9 @@ public class SqlClientRx implements SqlClient {
                   }
 
                   return row;
-                });
+                })
+            .filter(tx2 -> !tx2.isComplete())
+            .map(Tx::value);
 
     // TODO: prettify, see
     // https://github.com/slick/slick/blob/main/slick/src/main/scala/slick/jdbc/StatementInvoker.scala
