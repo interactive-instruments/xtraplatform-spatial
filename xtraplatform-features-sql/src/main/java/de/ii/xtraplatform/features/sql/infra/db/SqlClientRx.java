@@ -99,9 +99,12 @@ public class SqlClientRx implements SqlClient {
     }
     List<SqlRow> logBuffer = new ArrayList<>(5);
 
+    // TODO encapsulating the query in a transaction is a workaround for what appears to be a bug in
+    //      rxjava3-jdbc, see https://github.com/interactive-instruments/ldproxy/issues/1293
     Flowable<SqlRow> flowable =
         session
             .select(query)
+            .transacted()
             .get(
                 resultSet -> {
                   SqlRow row = new SqlRowVals(collator).read(resultSet, options);
@@ -111,7 +114,9 @@ public class SqlClientRx implements SqlClient {
                   }
 
                   return row;
-                });
+                })
+            .filter(tx2 -> !tx2.isComplete())
+            .map(Tx::value);
 
     // TODO: prettify, see
     // https://github.com/slick/slick/blob/main/slick/src/main/scala/slick/jdbc/StatementInvoker.scala
