@@ -18,11 +18,11 @@ import org.immutables.value.Value;
 
 /**
  * @langEn ### Raster Tileset
- *     <p>To generate raster tiles [xtratiler](https://github.com/ldproxy/xtratiler) is required.
- *     Raster tiles cannot be generated on-demand, so a seeded [cache](#cache) is required.
- *     Currently only `DYNAMIC` caches are supported.
+ *     <p>To generate raster tiles [xtratiler](../../tools/xtratiler/README.md) is required. Raster
+ *     tiles cannot be generated on-demand, so a seeded [cache](#cache) is required. Currently only
+ *     `DYNAMIC` caches are supported.
  * @langDe ### Raster-Tileset
- *     <p>Um Raster-Kacheln zu generieren, wird [xtratiler](https://github.com/ldproxy/xtratiler)
+ *     <p>Um Raster-Kacheln zu generieren, wird [xtratiler](../../tools/xtratiler/README.md)
  *     benötigt. Raster-Kacheln können nicht auf Anfrage generiert werden, daher ist ein `seeded`
  *     [Cache](#cache) erforderlich. Aktuell werden nur `DYNAMIC`-Caches unterstützt.
  */

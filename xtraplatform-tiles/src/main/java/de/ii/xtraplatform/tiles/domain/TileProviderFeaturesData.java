@@ -29,7 +29,7 @@ import org.immutables.value.Value;
  *
  * @langEn In this tile provider, the tiles in Mapbox Vector Tiles format are derived from a
  *     [Feature Provider](../feature/README.md). Additionally, raster tiles in PNG format can be
- *     derived from the vector tiles using [xtratiler](https://github.com/ldproxy/xtratiler).
+ *     derived from the vector tiles using [xtratiler](../../tools/xtratiler/README.md).
  *     <p>## Configuration
  *     <p>{@docTable:properties}
  *     <p>{@docVar:tilesetDefaults}
@@ -46,8 +46,8 @@ import org.immutables.value.Value;
  *     <p>{@docVar:examples}
  * @langDe Bei diesem Tile-Provider werden die Kacheln im Format Mapbox Vector Tiles aus einem
  *     [Feature Provider](../feature/README.md) abgeleitet. Zusätzlich können Raster-Kacheln im
- *     PNG-Format aus den Vektor-Kacheln mit [xtratiler](https://github.com/ldproxy/xtratiler)
- *     abgeleitet werden.
+ *     PNG-Format aus den Vektor-Kacheln mit [xtratiler](../../tools/xtratiler/README.md) abgeleitet
+ *     werden.
  *     <p>## Konfiguration
  *     <p>{@docTable:properties}
  *     <p>{@docVar:tilesetDefaults}
