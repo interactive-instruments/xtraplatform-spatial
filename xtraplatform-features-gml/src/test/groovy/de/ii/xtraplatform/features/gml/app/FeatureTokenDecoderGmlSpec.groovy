@@ -81,7 +81,7 @@ class FeatureTokenDecoderGmlSpec extends Specification {
     }
 
     static Reactive.SinkReduced<Object, List<Object>> ListSink() {
-        Reactive.SinkReduced.reduce([], (list2, element) -> {
+        Reactive.Sink.reduce([], (list2, element) -> {
             list2 << element
             return list2
         })

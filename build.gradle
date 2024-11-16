@@ -1,15 +1,5 @@
-buildscript {
-    configurations.all {
-        resolutionStrategy {
-            cacheChangingModulesFor 0, 'seconds'
-            cacheDynamicVersionsFor 0, 'seconds'
-        }
-    }
-}
-
 plugins {
-    alias catalog.plugins.xtraplatform.layer
-    alias catalog.plugins.spotless apply false
+    id "de.interactive_instruments.xtraplatform-layer"
 }
 
 allprojects {
@@ -50,8 +40,6 @@ subprojects {
         suppressedValidationErrors.add('enforced-platform')
     }
 }
-
-apply from: 'formatting.gradle'
 
 tasks.clean { dependsOn subprojects*.tasks*.findByPath('clean') }
 

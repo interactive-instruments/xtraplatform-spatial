@@ -64,11 +64,11 @@ class SchemaGeneratorSqlSpec extends Specification {
         featureTypeList.get(0).sourcePath.get() == "/table1"
         featureTypeList.get(0).propertyMap.size() == 2
         featureTypeList.get(0).propertyMap.containsKey("column1")
-        featureTypeList.get(0).propertyMap.get("column1").type == SchemaBase.Type.INTEGER
+        featureTypeList.get(0).propertyMap.get("column1").getType() == SchemaBase.Type.INTEGER
         featureTypeList.get(0).propertyMap.get("column1").role.isPresent()
         featureTypeList.get(0).propertyMap.get("column1").role.get() == SchemaBase.Role.ID
         featureTypeList.get(0).propertyMap.containsKey("column2")
-        featureTypeList.get(0).propertyMap.get("column2").type == SchemaBase.Type.STRING
+        featureTypeList.get(0).propertyMap.get("column2").getType() == SchemaBase.Type.STRING
 //        featureTypeList.get(0).propertyMap.containsKey("column3")
 //        featureTypeList.get(0).propertyMap.get("column3").type == SchemaBase.Type.GEOMETRY
 
@@ -76,15 +76,15 @@ class SchemaGeneratorSqlSpec extends Specification {
         featureTypeList.get(1).sourcePath.get() == "/table2"
         featureTypeList.get(1).propertyMap.size() == 4
         featureTypeList.get(1).propertyMap.containsKey("column5")
-        featureTypeList.get(1).propertyMap.get("column5").type == SchemaBase.Type.INTEGER
+        featureTypeList.get(1).propertyMap.get("column5").getType() == SchemaBase.Type.INTEGER
         featureTypeList.get(1).propertyMap.get("column5").role.isPresent()
         featureTypeList.get(1).propertyMap.get("column5").role.get() == SchemaBase.Role.ID
         featureTypeList.get(1).propertyMap.containsKey("column6")
-        featureTypeList.get(1).propertyMap.get("column6").type == SchemaBase.Type.FLOAT
+        featureTypeList.get(1).propertyMap.get("column6").getType() == SchemaBase.Type.FLOAT
         featureTypeList.get(1).propertyMap.containsKey("column7")
-        featureTypeList.get(1).propertyMap.get("column7").type == SchemaBase.Type.BOOLEAN
+        featureTypeList.get(1).propertyMap.get("column7").getType() == SchemaBase.Type.BOOLEAN
         featureTypeList.get(1).propertyMap.containsKey("column9")
-        featureTypeList.get(1).propertyMap.get("column9").type == SchemaBase.Type.DATETIME
+        featureTypeList.get(1).propertyMap.get("column9").getType() == SchemaBase.Type.DATETIME
     }
 
 

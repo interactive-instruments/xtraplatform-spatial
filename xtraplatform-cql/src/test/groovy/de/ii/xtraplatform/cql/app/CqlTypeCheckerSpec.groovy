@@ -210,7 +210,7 @@ class CqlTypeCheckerSpec extends Specification {
 
         when:
 
-            Interval.intervalOf(Property.of("begin"), Property.of("end") ).accept(vis1)
+            Temporal.intervalOf(Property.of("begin"), Property.of("end") ).accept(vis1)
 
         then:
 
@@ -220,7 +220,7 @@ class CqlTypeCheckerSpec extends Specification {
 
         when:
 
-            Interval.intervalOf(Property.of(property21), Property.of(property22) ).accept(vis2)
+            Temporal.intervalOf(Property.of(property21), Property.of(property22) ).accept(vis2)
 
         then:
 
@@ -506,9 +506,9 @@ class CqlTypeCheckerSpec extends Specification {
 
         where:
 
-        expression << [Interval.intervalOf(TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")), TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z"))),
-                       Interval.intervalOf(TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")), Property.of("event")),
-                       Interval.intervalOf(Property.of("event"), TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")))]
+        expression << [Temporal.intervalOf(TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")), TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z"))),
+                       Temporal.intervalOf(TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")), Property.of("event")),
+                       Temporal.intervalOf(Property.of("event"), TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")))]
 
 
     }
@@ -516,7 +516,7 @@ class CqlTypeCheckerSpec extends Specification {
     def 'Test Temporal throws IllegalStateException'(){
         when:
 
-        In.of(Interval.intervalOf(TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")), ScalarLiteral.of(true) as Temporal)).accept(visitor)
+        In.of(Temporal.intervalOf(TemporalLiteral.of(ImmutableList.of("2017-06-10T07:30:00Z", "2017-06-11T10:30:00Z")), ScalarLiteral.of(true) as Temporal)).accept(visitor)
 
         then:
 
