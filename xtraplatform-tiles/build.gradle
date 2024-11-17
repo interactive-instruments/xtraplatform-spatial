@@ -4,12 +4,6 @@ maintenance = 'FULL'
 description = 'Tile provider.'
 descriptionDe = 'Tile-Provider.'
 
-repositories {
-    maven {
-        url "https://ecc-mvn.ams3.digitaloceanspaces.com/releases"
-    }
-}
-
 dependencies {
     provided 'de.interactive_instruments:xtraplatform-entities'
     provided 'de.interactive_instruments:xtraplatform-blobs'
