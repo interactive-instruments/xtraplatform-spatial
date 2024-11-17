@@ -1,10 +1,5 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["ldproxy/renovate-config:xtraplatform"],
-  "packageRules": [
-    {
-      "matchDatasources": ["maven"],
-      "registryUrls": ["https://repo.maven.apache.org/maven2", "https://ecc-mvn.ams3.digitaloceanspaces.com/releases", "https://jitpack.io"]
-    }
-  ]
+  "packageRules": []
 }

@@ -7,7 +7,6 @@ pluginManagement {
             url "https://dl.interactive-instruments.de/repository/maven-snapshots/"
         }
         gradlePluginPortal()
-        mavenCentral()
     }
 }
 
@@ -27,7 +26,7 @@ plugins {
 dependencyResolutionManagement {
     repositories {
         maven {
-            url 'https://ecc-mvn.ams3.digitaloceanspaces.com/releases'
+            url 'https://maven.ecc.no/releases'
         }
         maven {
             url 'https://jitpack.io'
