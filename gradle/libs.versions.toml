@@ -2,7 +2,7 @@
 antlr = '4.7.2'
 xsom = '20140925'
 aalto = '1.3.3'
-staxmate = '2.4.0'
+staxmate = '2.4.1'
 rxjava-jdbc = '0.1.4'
 hikaricp = '5.1.0'
 postgresql = '42.7.4'
