@@ -44,7 +44,7 @@ commonmark = { module = "org.commonmark:commonmark", version.ref = "commonmark" 
 commonmark-tables = { module = "org.commonmark:commonmark-ext-gfm-tables", version.ref = "commonmark" }
 
 # tiles
-vectortile = { module = "no.ecc.vectortile:java-vector-tile", version.ref = "vectortile" }
+vectortile = { module = "com.github.ElectronicChartCentre:java-vector-tile", version.ref = "vectortile" }
 
 [bundles]
 sql = ["hikaricp", "postgresql", "schemacrawler-postgresql", "schemacrawler-sqlite", "jsqlparser", "schemacrawler-api", "schemacrawler-tools", "schemacrawler-utility"]
