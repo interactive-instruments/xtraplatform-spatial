@@ -6,7 +6,7 @@ descriptionDe = 'Tile-Provider.'
 
 repositories {
     maven {
-        url "https://ecc-mvn.ams3.digitaloceanspaces.com/releases"
+        url 'https://jitpack.io'
     }
 }
 
