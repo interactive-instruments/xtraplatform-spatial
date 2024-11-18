@@ -16,6 +16,12 @@ plugins {
 }
 
 dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+        maven {
+            url 'https://jitpack.io'
+        }
+    }
     versionCatalogs {
         catalog {
             from(files("gradle/plugins.versions.toml"))
