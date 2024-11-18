@@ -14,19 +14,21 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.parser.CCJSqlParser;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.parser.ParseException;
 import net.sf.jsqlparser.parser.StringProvider;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
+import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.statement.StatementVisitor;
 import net.sf.jsqlparser.statement.select.FromItemVisitorAdapter;
+import net.sf.jsqlparser.statement.select.ParenthesedFromItem;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
-import net.sf.jsqlparser.statement.select.SelectExpressionItem;
 import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.SelectItemVisitorAdapter;
-import net.sf.jsqlparser.statement.select.SubJoin;
 import net.sf.jsqlparser.util.TablesNamesFinder;
 
 public class ViewInfo {
@@ -35,15 +37,23 @@ public class ViewInfo {
     try {
       PlainSelect select = parse(viewDefinition);
 
-      TablesNamesFinder tablesNamesFinder =
-          new TablesNamesFinder() {
+      TablesNamesFinder<Void> tablesNamesFinder =
+          new TablesNamesFinder<Void>() {
             @Override
             protected String extractTableName(Table table) {
               return table.getName();
             }
           };
 
-      return tablesNamesFinder.getTableList(statementVisitor -> select.accept(tablesNamesFinder));
+      Statement statementVisitor =
+          new Statement() {
+            @Override
+            public <T, S> T accept(StatementVisitor<T> statementVisitor, S s) {
+              return select.accept(statementVisitor, null);
+            }
+          };
+
+      return tablesNamesFinder.getTableList(statementVisitor);
 
     } catch (JSQLParserException | ParseException e) {
       // ignore
@@ -74,11 +84,11 @@ public class ViewInfo {
     ImmutableTuple.Builder<String, String> builder =
         ImmutableTuple.<String, String>builder().second(columnName);
 
-    for (SelectItem selectItem : select.getSelectItems()) {
+    for (SelectItem<? extends Expression> selectItem : select.getSelectItems()) {
       selectItem.accept(
-          new SelectItemVisitorAdapter() {
+          new SelectItemVisitorAdapter<Void>() {
             @Override
-            public void visit(SelectExpressionItem item) {
+            public void visit(SelectItem<? extends Expression> item) {
               if (item.getExpression() instanceof Column) {
                 Column column = (Column) item.getExpression();
 
@@ -90,7 +100,8 @@ public class ViewInfo {
                 }
               }
             }
-          });
+          },
+          null);
     }
     try {
       return Optional.of(builder.build());
@@ -109,7 +120,7 @@ public class ViewInfo {
     select
         .getFromItem()
         .accept(
-            new FromItemVisitorAdapter() {
+            new FromItemVisitorAdapter<Void>() {
               @Override
               public void visit(Table tableName) {
                 if (Objects.nonNull(tableName.getAlias())
@@ -119,9 +130,9 @@ public class ViewInfo {
               }
 
               @Override
-              public void visit(SubJoin subjoin) {
-                subjoin.getLeft().accept(this);
-                subjoin.getJoinList().forEach(join -> join.getRightItem().accept(this));
+              public void visit(ParenthesedFromItem subjoin) {
+                subjoin.getFromItem().accept(this);
+                subjoin.getJoins().forEach(join -> join.getRightItem().accept(this));
               }
             });
 
