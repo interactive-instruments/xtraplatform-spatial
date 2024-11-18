@@ -12,7 +12,6 @@ import de.ii.xtraplatform.features.domain.Tuple;
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -26,18 +25,19 @@ import schemacrawler.schema.Table;
 import schemacrawler.schemacrawler.LimitOptionsBuilder;
 import schemacrawler.schemacrawler.LoadOptions;
 import schemacrawler.schemacrawler.LoadOptionsBuilder;
-import schemacrawler.schemacrawler.SchemaCrawlerException;
 import schemacrawler.schemacrawler.SchemaCrawlerOptions;
 import schemacrawler.schemacrawler.SchemaCrawlerOptionsBuilder;
 import schemacrawler.schemacrawler.SchemaInfoLevelBuilder;
-import schemacrawler.utility.SchemaCrawlerUtility;
+import schemacrawler.schemacrawler.exceptions.SchemaCrawlerException;
+import schemacrawler.tools.utility.SchemaCrawlerUtility;
+import us.fatehi.utility.datasource.DatabaseConnectionSource;
 
 public class SqlSchemaCrawler implements Closeable {
 
-  private final Connection connection;
+  private final DatabaseConnectionSource connection;
 
   public SqlSchemaCrawler(Connection connection) {
-    this.connection = connection;
+    this.connection = new SingleDatabaseConnectionSource(connection);
   }
 
   public Catalog getCatalog(List<String> excludeSchemas, List<String> excludeTables)
@@ -150,7 +150,7 @@ public class SqlSchemaCrawler implements Closeable {
   public void close() throws IOException {
     try {
       connection.close();
-    } catch (SQLException exception) {
+    } catch (Exception exception) {
       throw new IOException(exception);
     }
   }
@@ -187,7 +187,7 @@ public class SqlSchemaCrawler implements Closeable {
                 .setRetrieveTableColumnPrivileges(false)
                 .setRetrieveTablePrivileges(false)
                 .setRetrieveTriggerInformation(false)
-                .setRetrieveWeakAssociations(false)
+                // .setRetrieveWeakAssociations(false)
                 .toOptions())
         .toOptions();
   }
@@ -224,7 +224,7 @@ public class SqlSchemaCrawler implements Closeable {
                 .setRetrieveTableColumnPrivileges(false)
                 .setRetrieveTablePrivileges(false)
                 .setRetrieveTriggerInformation(false)
-                .setRetrieveWeakAssociations(false)
+                // .setRetrieveWeakAssociations(false)
                 .toOptions())
         .toOptions();
   }

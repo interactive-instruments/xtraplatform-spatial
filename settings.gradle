@@ -27,10 +27,9 @@ dependencyResolutionManagement {
     repositories {
         mavenCentral()
         maven {
-            url 'https://maven.ecc.no/releases'
-        }
-        maven {
             url 'https://jitpack.io'
+            //TODO: use version catalog for schemas-ext
+            //content { includeGroupAndSubgroups "com.github" }
         }
     }
 }

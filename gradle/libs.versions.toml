@@ -7,7 +7,7 @@ rxjava-jdbc = '0.1.4'
 hikaricp = '6.2.0'
 postgresql = '42.7.4'
 sqlite = '3.47.0.0'
-schemacrawler = '16.11.6'
+schemacrawler = '16.22.3'
 jsqlparser = '5.0'
 jts = '1.20.0'
 commonmark = '0.24.0'
@@ -44,7 +44,7 @@ commonmark = { module = "org.commonmark:commonmark", version.ref = "commonmark" 
 commonmark-tables = { module = "org.commonmark:commonmark-ext-gfm-tables", version.ref = "commonmark" }
 
 # tiles
-vectortile = { module = "no.ecc.vectortile:java-vector-tile", version.ref = "vectortile" }
+vectortile = { module = "com.github.ElectronicChartCentre:java-vector-tile", version.ref = "vectortile" }
 
 [bundles]
 sql = ["hikaricp", "postgresql", "schemacrawler-postgresql", "schemacrawler-sqlite", "jsqlparser", "schemacrawler-api", "schemacrawler-tools", "schemacrawler-utility"]

@@ -15,16 +15,20 @@ import de.ii.xtraplatform.features.sql.domain.SqlClient
 import schemacrawler.crawl.MutableCatalog
 import schemacrawler.crawl.MutableColumn
 import schemacrawler.crawl.MutableColumnDataType
+import schemacrawler.crawl.MutableDatabaseInfo
+import schemacrawler.crawl.MutableJdbcDriverInfo
 import schemacrawler.crawl.MutablePrimaryKey
 import schemacrawler.crawl.MutableTable
 import schemacrawler.crawl.MutableTableConstraintColumn
 import schemacrawler.schema.Catalog
 import schemacrawler.schema.Column
 import schemacrawler.schema.ColumnDataType
+import schemacrawler.schema.DataTypeType
 import schemacrawler.schema.JavaSqlType
 import schemacrawler.schema.JavaSqlTypeGroup
 import schemacrawler.schema.PrimaryKey
 import schemacrawler.schema.Table
+import schemacrawler.schema.TableConstraintType
 import schemacrawler.schemacrawler.SchemaReference
 import spock.lang.Shared
 import spock.lang.Specification
@@ -90,7 +94,7 @@ class SchemaGeneratorSqlSpec extends Specification {
 
     static def createCatalog() {
 
-        Catalog catalog = new MutableCatalog("mockCatalog")
+        Catalog catalog = new MutableCatalog("mockCatalog", new MutableDatabaseInfo("1","2","3"), new MutableJdbcDriverInfo("1","2","3",1,2,3,4,true,"foo"))
         SchemaReference schema = new SchemaReference("mockCatalog", "mockSchema")
         catalog.addSchema(schema)
 
@@ -100,29 +104,29 @@ class SchemaGeneratorSqlSpec extends Specification {
         catalog.addTable(table)
 
         Column column = new MutableColumn(table, "column1")
-        ColumnDataType columnDataType = new MutableColumnDataType(schema, "serial")
+        ColumnDataType columnDataType = new MutableColumnDataType(schema, "serial", DataTypeType.system)
         columnDataType.setJavaSqlType(new JavaSqlType(JDBCType.INTEGER, Integer.class, JavaSqlTypeGroup.integer))
         column.setColumnDataType(columnDataType)
         table.addColumn(column)
 
-        PrimaryKey primaryKey = new MutablePrimaryKey(table, "pkey1")
+        PrimaryKey primaryKey = new MutablePrimaryKey(table, "pkey1", TableConstraintType.primary_key)
         primaryKey.addColumn(new MutableTableConstraintColumn(null, column))
         table.setPrimaryKey(primaryKey)
 
         column = new MutableColumn(table, "column2")
-        columnDataType = new MutableColumnDataType(schema, "varchar")
+        columnDataType = new MutableColumnDataType(schema, "varchar", DataTypeType.system)
         columnDataType.setJavaSqlType(new JavaSqlType(JDBCType.VARCHAR, String.class, JavaSqlTypeGroup.character))
         column.setColumnDataType(columnDataType)
         table.addColumn(column)
 
         column = new MutableColumn(table, "column3")
-        columnDataType = new MutableColumnDataType(schema, "geometry")
+        columnDataType = new MutableColumnDataType(schema, "geometry", DataTypeType.system)
         columnDataType.setJavaSqlType(new JavaSqlType(JDBCType.OTHER, Object.class, JavaSqlTypeGroup.object))
         column.setColumnDataType(columnDataType)
         table.addColumn(column)
 
         column = new MutableColumn(table, "column4")
-        columnDataType = new MutableColumnDataType(schema, "_text")
+        columnDataType = new MutableColumnDataType(schema, "_text", DataTypeType.system)
         columnDataType.setJavaSqlType(new JavaSqlType(JDBCType.ARRAY, Array.class, JavaSqlTypeGroup.object))
         column.setColumnDataType(columnDataType)
         table.addColumn(column)
@@ -132,35 +136,35 @@ class SchemaGeneratorSqlSpec extends Specification {
         catalog.addTable(table)
 
         column = new MutableColumn(table, "column5")
-        columnDataType = new MutableColumnDataType(schema, "serial")
+        columnDataType = new MutableColumnDataType(schema, "serial", DataTypeType.system)
         columnDataType.setJavaSqlType(new JavaSqlType(JDBCType.INTEGER, Integer.class, JavaSqlTypeGroup.integer))
         column.setColumnDataType(columnDataType)
         table.addColumn(column)
 
-        primaryKey = new MutablePrimaryKey(table, "pkey2")
+        primaryKey = new MutablePrimaryKey(table, "pkey2", TableConstraintType.primary_key)
         primaryKey.addColumn(new MutableTableConstraintColumn(null, column))
         table.setPrimaryKey(primaryKey)
 
         column = new MutableColumn(table, "column6")
-        columnDataType = new MutableColumnDataType(schema, "numeric")
+        columnDataType = new MutableColumnDataType(schema, "numeric", DataTypeType.system)
         columnDataType.setJavaSqlType(new JavaSqlType(JDBCType.NUMERIC, BigDecimal.class, JavaSqlTypeGroup.real))
         column.setColumnDataType(columnDataType)
         table.addColumn(column)
 
         column = new MutableColumn(table, "column7")
-        columnDataType = new MutableColumnDataType(schema, "bool")
+        columnDataType = new MutableColumnDataType(schema, "bool", DataTypeType.system)
         columnDataType.setJavaSqlType(new JavaSqlType(JDBCType.BIT, Boolean.class, JavaSqlTypeGroup.bit))
         column.setColumnDataType(columnDataType)
         table.addColumn(column)
 
         column = new MutableColumn(table, "column8")
-        columnDataType = new MutableColumnDataType(schema, "_float8")
+        columnDataType = new MutableColumnDataType(schema, "_float8", DataTypeType.system)
         columnDataType.setJavaSqlType(new JavaSqlType(JDBCType.ARRAY, Array.class, JavaSqlTypeGroup.object))
         column.setColumnDataType(columnDataType)
         table.addColumn(column)
 
         column = new MutableColumn(table, "column9")
-        columnDataType = new MutableColumnDataType(schema, "datetime")
+        columnDataType = new MutableColumnDataType(schema, "datetime", DataTypeType.system)
         columnDataType.setJavaSqlType(new JavaSqlType(JDBCType.TIMESTAMP, Timestamp.class, JavaSqlTypeGroup.temporal))
         column.setColumnDataType(columnDataType)
         table.addColumn(column)

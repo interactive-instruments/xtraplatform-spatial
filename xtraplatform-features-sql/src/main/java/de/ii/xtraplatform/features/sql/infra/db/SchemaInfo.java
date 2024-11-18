@@ -59,8 +59,10 @@ class SchemaInfo {
 
       boolean isPrimaryKey =
           table.hasPrimaryKey()
-              && table.getPrimaryKey().getColumns().size() == 1
-              && Objects.equals(table.getPrimaryKey().getColumns().get(0), column);
+              && table.getPrimaryKey().getConstrainedColumns().size() == 1
+              && Objects.equals(
+                  table.getPrimaryKey().getConstrainedColumns().get(0).getFullName(),
+                  column.getFullName());
 
       boolean isUniqueIndex =
           table.getIndexes().stream()
