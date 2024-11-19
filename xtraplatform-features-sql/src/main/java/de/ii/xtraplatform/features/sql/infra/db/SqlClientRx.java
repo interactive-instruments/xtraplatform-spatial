@@ -15,6 +15,7 @@ import de.ii.xtraplatform.features.sql.app.FeatureSql;
 import de.ii.xtraplatform.features.sql.domain.SqlClient;
 import de.ii.xtraplatform.features.sql.domain.SqlDbmsAdapter;
 import de.ii.xtraplatform.features.sql.domain.SqlDialect;
+import de.ii.xtraplatform.features.sql.domain.SqlDialectPgis;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.SqlRow;
 import de.ii.xtraplatform.streams.domain.Reactive;
@@ -94,21 +95,34 @@ public class SqlClientRx implements SqlClient {
     // TODO encapsulating the query in a transaction is a workaround for what appears to be a bug in
     //      rxjava3-jdbc, see https://github.com/interactive-instruments/ldproxy/issues/1293
     Flowable<SqlRow> flowable =
-        session
-            .select(query)
-            .transacted()
-            .get(
-                resultSet -> {
-                  SqlRow row = new SqlRowVals(collator).read(resultSet, options);
+        dialect.getClass().equals(SqlDialectPgis.class)
+            ? session
+                .select(query)
+                .transacted()
+                .get(
+                    resultSet -> {
+                      SqlRow row = new SqlRowVals(collator).read(resultSet, options);
 
-                  if (LOGGER.isDebugEnabled(MARKER.SQL_RESULT) && logBuffer.size() < 5) {
-                    logBuffer.add(row);
-                  }
+                      if (LOGGER.isDebugEnabled(MARKER.SQL_RESULT) && logBuffer.size() < 5) {
+                        logBuffer.add(row);
+                      }
 
-                  return row;
-                })
-            .filter(tx2 -> !tx2.isComplete())
-            .map(Tx::value);
+                      return row;
+                    })
+                .filter(tx2 -> !tx2.isComplete())
+                .map(Tx::value)
+            : session
+                .select(query)
+                .get(
+                    resultSet -> {
+                      SqlRow row = new SqlRowVals(collator).read(resultSet, options);
+
+                      if (LOGGER.isDebugEnabled(MARKER.SQL_RESULT) && logBuffer.size() < 5) {
+                        logBuffer.add(row);
+                      }
+
+                      return row;
+                    });
 
     // TODO: prettify, see
     // https://github.com/slick/slick/blob/main/slick/src/main/scala/slick/jdbc/StatementInvoker.scala
