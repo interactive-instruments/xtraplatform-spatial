@@ -111,6 +111,25 @@ public interface TileSeedingJobSet extends JobSetDetails {
     }
   }
 
+  @Override
+  default void reset(Job job) {
+    if (job.getDetails() instanceof TileSeedingJob) {
+      TileSeedingJob details = (TileSeedingJob) job.getDetails();
+
+      TilesetProgress progress = getTileSets().get(details.getTileSet()).getProgress();
+
+      progress.getCurrent().addAndGet(-(job.getCurrent().get()));
+
+      if (progress.getLevels().containsKey(details.getTileMatrixSet())) {
+        int level = details.getSubMatrices().get(0).getLevel();
+        progress
+            .getLevels()
+            .get(details.getTileMatrixSet())
+            .addAndGet(level, job.getCurrent().get());
+      }
+    }
+  }
+
   @Value.Immutable
   interface TilesetDetails {
 
