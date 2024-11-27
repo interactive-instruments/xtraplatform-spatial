@@ -69,10 +69,22 @@ public interface MappedSchemaDeriver<T extends SchemaBase<T>, U extends SourcePa
   @Override
   default List<T> visit(
       FeatureSchema schema, List<FeatureSchema> parents, List<List<T>> visitedProperties) {
-    List<List<U>> parentPaths1 = getParentPaths(parents);
+    List<List<U>> parentPaths1;
+    List<U> currentPaths;
 
-    List<U> currentPaths = parseSourcePaths(schema, parentPaths1);
-
+    try {
+      parentPaths1 = getParentPaths(parents);
+      currentPaths = parseSourcePaths(schema, parentPaths1);
+    } catch (Throwable e) {
+      String propertyPath =
+          Stream.concat(parents.stream(), Stream.of(schema))
+              .map(SchemaBase::getName)
+              .collect(Collectors.joining("."));
+      throw new IllegalArgumentException(
+          String.format(
+              "error while parsing source paths for '%s': %s", propertyPath, e.getMessage()),
+          e);
+    }
     boolean nestedArray = parents.stream().anyMatch(SchemaBase::isArray);
 
     List<T> properties =

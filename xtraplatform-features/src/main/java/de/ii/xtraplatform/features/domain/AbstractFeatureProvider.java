@@ -170,12 +170,6 @@ public abstract class AbstractFeatureProvider<
     boolean isShared = getConnectionInfo().isShared();
     String connectorId = getConnectorId(previousAlive, isShared);
 
-    this.streamRunner =
-        reactive.runner(
-            getData().getId(),
-            getRunnerCapacity(getConnectionInfo()),
-            getRunnerQueueSize(getConnectionInfo()));
-
     FeatureProviderConnector<T, U, V> connector1 =
         createConnector(getData().getProviderSubType(), connectorId);
     this.connector.set(connector1);
@@ -206,6 +200,12 @@ public abstract class AbstractFeatureProvider<
       // TODO: volatile defective
       return false;
     }
+
+    this.streamRunner =
+        reactive.runner(
+            getData().getId(),
+            getRunnerCapacity(getConnectionInfo()),
+            getRunnerQueueSize(getConnectionInfo()));
 
     // TODO: validation does not make sense when startupMode=ASYNC, move to editor/CLI
     if (getTypeInfoValidator().isPresent() && getData().getTypeValidation() != MODE.NONE) {
