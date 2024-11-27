@@ -378,7 +378,11 @@ public class FeatureRefResolver implements TypesResolver {
     List<Scope> excludedScopes = isStatic ? List.of(Scope.QUERYABLE, Scope.SORTABLE) : List.of();
 
     if (properties.isEmpty() && schema.getSourcePath().isEmpty()) {
-      return schema;
+      return new Builder()
+          .from(schema)
+          .type(schema.isArray() ? Type.OBJECT_ARRAY : Type.OBJECT)
+          .valueType(Optional.empty())
+          .build();
     }
 
     if (properties.isEmpty()) {
