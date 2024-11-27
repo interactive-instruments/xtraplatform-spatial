@@ -116,10 +116,18 @@ public interface Codelist extends StoredValue {
 
   /**
    * @langEn Human readable label.
-   * @langDe Eine lesbare Bezeichnung der Codelist, die im Manager angezeigt wird.
+   * @langDe Eine lesbare Bezeichnung der Codelist.
    * @default id
    */
   Optional<String> getLabel();
+
+  /**
+   * @langEn A description of the codelist.
+   * @langDe Eine Beschreibung der Codelist.
+   * @default null
+   * @since v4.3
+   */
+  Optional<String> getDescription();
 
   /**
    * @langEn Map with the original value as key and the new value as value.
