@@ -224,7 +224,8 @@ public class SqlPathParser {
       }
     }
 
-    throw new IllegalArgumentException("Invalid sourcePath in provider configuration: " + path);
+    throw new IllegalArgumentException(
+        String.format("invalid sourcePath '%s', expected column", path));
   }
 
   public String tablePathWithDefaults(String path) {
@@ -277,7 +278,8 @@ public class SqlPathParser {
           .build();
     }
 
-    throw new IllegalArgumentException("Invalid sourcePath in provider configuration: " + path);
+    throw new IllegalArgumentException(
+        String.format("invalid sourcePath '%s', expected table", path));
   }
 
   private List<SqlPath> parseTables(String tablePath) {

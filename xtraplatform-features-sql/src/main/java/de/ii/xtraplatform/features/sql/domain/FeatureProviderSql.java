@@ -655,7 +655,7 @@ public class FeatureProviderSql
 
   @Override
   protected Optional<String> getRunnerError(ConnectionInfo connectionInfo) {
-    if (getStreamRunner().getCapacity() == 0) {
+    if (getRunnerCapacity(connectionInfo) == 0) {
       ConnectionInfoSql connectionInfoSql = (ConnectionInfoSql) connectionInfo;
 
       int maxConnections = connectionInfoSql.getPool().getMaxConnections();

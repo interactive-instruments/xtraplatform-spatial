@@ -377,6 +377,10 @@ public class FeatureRefResolver implements TypesResolver {
     boolean isStatic = isStatic(refType);
     List<Scope> excludedScopes = isStatic ? List.of(Scope.QUERYABLE, Scope.SORTABLE) : List.of();
 
+    if (properties.isEmpty() && schema.getSourcePath().isEmpty()) {
+      return schema;
+    }
+
     if (properties.isEmpty()) {
       String sourcePath = schema.getSourcePath().orElse("");
       Optional<String> objectSourcePath =
