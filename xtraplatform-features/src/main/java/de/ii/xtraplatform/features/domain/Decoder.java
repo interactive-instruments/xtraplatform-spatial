@@ -27,16 +27,15 @@ public interface Decoder extends AutoCloseable {
         downstream();
   }
 
-  static Decoder noop() {
+  static Decoder noop(String connector) {
     return new Decoder() {
       @Override
       public void decode(byte[] data, Pipeline pipeline) {
-        boolean isValues = pipeline.context().schema().filter(FeatureSchema::isValue).isPresent();
-        boolean isSingleValue =
-            isValues && pipeline.context().schema().filter(FeatureSchema::isArray).isEmpty();
+        boolean isValue = pipeline.context().schema().filter(FeatureSchema::isValue).isPresent();
 
-        if (!isSingleValue) {
-          throw new IllegalArgumentException("Only single values are allowed in this context");
+        if (!isValue) {
+          throw new IllegalArgumentException(
+              String.format("Only allowed in value mappings: [%s]", connector));
         }
 
         pipeline.downstream().onValue(pipeline.context());

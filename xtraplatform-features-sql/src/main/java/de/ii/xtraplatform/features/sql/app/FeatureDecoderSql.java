@@ -254,7 +254,7 @@ public class FeatureDecoderSql
         context.setValue((String) sqlRow.getValues().get(i));
         context.setSchemaIndex(schemaIndexes.get(sqlRow.getColumnPaths().get(i)));
 
-        if (sqlRow.isSubDecoderColumn(i)) {
+        if (sqlRow.isSubDecoderColumn(i) && Objects.nonNull(context.value())) {
           String subDecoder = sqlRow.getSubDecoder(i);
           if (subDecoders.containsKey(subDecoder)) {
             subDecoders
