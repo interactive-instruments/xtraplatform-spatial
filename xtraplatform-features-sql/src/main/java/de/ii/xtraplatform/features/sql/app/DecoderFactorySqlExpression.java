@@ -45,7 +45,7 @@ public class DecoderFactorySqlExpression implements DecoderFactory {
 
   @Override
   public Decoder createDecoder() {
-    return Decoder.noop();
+    return Decoder.noop(CONNECTOR_STRING);
   }
 
   @Override
