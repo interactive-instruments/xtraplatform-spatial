@@ -10,9 +10,6 @@ package de.ii.xtraplatform.features.gml.app;
 import com.github.azahnen.dagger.annotations.AutoBind;
 import dagger.assisted.AssistedFactory;
 import de.ii.xtraplatform.base.domain.LogContext;
-import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
-import de.ii.xtraplatform.cql.domain.Cql;
-import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.entities.domain.AbstractEntityFactory;
 import de.ii.xtraplatform.entities.domain.AutoEntityFactory;
 import de.ii.xtraplatform.entities.domain.EntityData;
@@ -23,13 +20,10 @@ import de.ii.xtraplatform.features.domain.ConnectorFactory;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
 import de.ii.xtraplatform.features.domain.ProviderData;
-import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.gml.domain.FeatureProviderWfsData;
 import de.ii.xtraplatform.features.gml.domain.ImmutableFeatureProviderWfsData;
 import de.ii.xtraplatform.features.gml.infra.WfsClientBasicFactoryDefault;
 import de.ii.xtraplatform.features.gml.infra.WfsClientBasicFactorySimple;
-import de.ii.xtraplatform.streams.domain.Reactive;
-import de.ii.xtraplatform.values.domain.ValueStore;
 import de.ii.xtraplatform.web.domain.Http;
 import java.util.List;
 import java.util.Map;
@@ -52,15 +46,7 @@ public class FeatureProviderWfsFactory
 
   @Inject
   public FeatureProviderWfsFactory(
-      // TODO: needed because dagger-auto does not parse FeatureProviderSql
-      CrsTransformerFactory crsTransformerFactory,
-      Cql cql,
-      ConnectorFactory connectorFactory,
-      Reactive reactive,
-      ValueStore valueStore,
-      ProviderExtensionRegistry extensionRegistry,
-      VolatileRegistry volatileRegistry,
-      ProviderWfsFactoryAssisted providerWfsFactoryAssisted) {
+      ConnectorFactory connectorFactory, ProviderWfsFactoryAssisted providerWfsFactoryAssisted) {
     super(providerWfsFactoryAssisted);
     this.featureProviderWfsAuto =
         new FeatureProviderWfsAuto(new WfsClientBasicFactoryDefault(connectorFactory));

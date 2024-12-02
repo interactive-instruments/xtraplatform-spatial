@@ -13,15 +13,12 @@ import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableSet;
 import dagger.assisted.AssistedFactory;
 import de.ii.xtraplatform.base.domain.AppConfiguration;
-import de.ii.xtraplatform.base.domain.AppContext;
-import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.features.domain.ConnectionInfo;
 import de.ii.xtraplatform.features.domain.ConnectorFactory2;
 import de.ii.xtraplatform.features.domain.FeatureProviderConnector;
 import de.ii.xtraplatform.features.sql.domain.ConnectionInfoSql;
 import de.ii.xtraplatform.features.sql.domain.FeatureProviderSql;
 import de.ii.xtraplatform.features.sql.domain.SqlConnector;
-import de.ii.xtraplatform.features.sql.domain.SqlDbmsAdapters;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryBatch;
 import de.ii.xtraplatform.features.sql.domain.SqlQueryOptions;
 import de.ii.xtraplatform.features.sql.domain.SqlRow;
@@ -45,13 +42,7 @@ public class SqlConnectorRxFactory
   private HealthCheckRegistry healthCheckRegistry;
 
   @Inject
-  public SqlConnectorRxFactory(
-      SqlDbmsAdapters
-          sqlDbmsAdapter, // TODO: needed because dagger-auto does not parse SqlConnectorRx
-      AppContext appContext, // TODO: needed because dagger-auto does not parse SqlConnectorRx
-      VolatileRegistry
-          volatileRegistry, // TODO: needed because dagger-auto does not parse SqlConnectorRx
-      FactoryAssisted factoryAssisted) {
+  public SqlConnectorRxFactory(FactoryAssisted factoryAssisted) {
     this.factoryAssisted = factoryAssisted;
     this.instances = new LinkedHashMap<>();
   }
