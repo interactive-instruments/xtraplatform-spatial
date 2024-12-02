@@ -11,6 +11,6 @@ dependencies {
     provided project(':xtraplatform-geometries')
     provided project(':xtraplatform-crs')
 
-    testImplementation(testFixtures(project(":xtraplatform-features")))
+    testProvided(testFixtures(project(":xtraplatform-features")))
 }
 

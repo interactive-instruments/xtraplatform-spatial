@@ -14,10 +14,10 @@ dependencies {
 
     embeddedFlat libs.antlr.runtime
 
-    testImplementation 'de.interactive_instruments:xtraplatform-blobs'
-    testImplementation 'de.interactive_instruments:xtraplatform-openapi'
-    testImplementation 'de.interactive_instruments:xtraplatform-nativ-loader'
-    testImplementation 'de.interactive_instruments:xtraplatform-proj'
+    testProvided 'de.interactive_instruments:xtraplatform-blobs'
+    testProvided 'de.interactive_instruments:xtraplatform-openapi'
+    testProvided 'de.interactive_instruments:xtraplatform-nativ-loader'
+    testProvided 'de.interactive_instruments:xtraplatform-proj'
 
     testImplementation 'org.skyscreamer:jsonassert:1.5.0'
 }

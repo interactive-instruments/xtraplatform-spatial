@@ -15,7 +15,7 @@ dependencies {
     provided project(':xtraplatform-features')
     provided project(':xtraplatform-geometries')
 
-    testImplementation(testFixtures(project(":xtraplatform-features")))
+    testProvided(testFixtures(project(":xtraplatform-features")))
 
     embedded libs.xsom
     embeddedFlat libs.aalto

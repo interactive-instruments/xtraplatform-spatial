@@ -34,10 +34,10 @@ dependencies {
     embeddedFlat libs.bundles.sql
     embeddedFlatExport libs.sqlite
 
-    testImplementation 'de.interactive_instruments:xtraplatform-proj'
-    testImplementation project(":xtraplatform-features-json")
-    testImplementation(testFixtures(project(":xtraplatform-cql")))
-    testImplementation(testFixtures(project(":xtraplatform-features")))
+    testProvided 'de.interactive_instruments:xtraplatform-proj'
+    testProvided project(":xtraplatform-features-json")
+    testProvided(testFixtures(project(":xtraplatform-cql")))
+    testProvided(testFixtures(project(":xtraplatform-features")))
 }
 
 moduleInfo {
