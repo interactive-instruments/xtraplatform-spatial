@@ -1,12 +1,12 @@
 pluginManagement {
     repositories {
+        gradlePluginPortal()
         maven {
             url "https://dl.interactive-instruments.de/repository/maven-releases/"
         }
         maven {
             url "https://dl.interactive-instruments.de/repository/maven-snapshots/"
         }
-        gradlePluginPortal()
     }
 }
 
@@ -20,7 +20,14 @@ buildscript {
 }
 
 plugins {
-    id "de.interactive_instruments.xtraplatform-settings" version "6.0.1"
+    id "de.interactive_instruments.xtraplatform-settings" version "6.1.0-SNAPSHOT"
+}
+
+xtraplatform {
+    //useMavenLocal()
+
+    layer group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '6.3.0-build-plugins-SNAPSHOT'
+    layerNative group: 'de.interactive_instruments', name: 'xtraplatform-native', version: "2.5.0-SNAPSHOT" 
 }
 
 dependencyResolutionManagement {
@@ -35,13 +42,6 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = 'xtraplatform-spatial'
-
-rootDir.listFiles().each { file ->
-    if (file.isDirectory() && file.name.startsWith('xtraplatform-')) {
-        include file.name
-    }  
-}
-
 
 //includeBuild '../xtraplatform-build'
 //includeBuild '../xtraplatform'

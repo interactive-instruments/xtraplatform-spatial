@@ -19,27 +19,3 @@ layer {
         minimumCoverage = 0.0
     }
 }
-
-dependencies {
-    layers group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '6.3.0-SNAPSHOT'
-    layers group: 'de.interactive_instruments', name: 'xtraplatform-native', version: "2.4.0-${platform}"
-
-    modules subprojects
-}
-
-configurations.all {
-    resolutionStrategy {
-        cacheChangingModulesFor 0, 'seconds'
-        cacheDynamicVersionsFor 0, 'seconds'
-    }
-}
-
-
-subprojects {
-    tasks.withType(GenerateModuleMetadata).configureEach {
-        suppressedValidationErrors.add('enforced-platform')
-    }
-}
-
-tasks.clean { dependsOn subprojects*.tasks*.findByPath('clean') }
-
