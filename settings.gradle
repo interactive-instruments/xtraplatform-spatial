@@ -23,11 +23,16 @@ plugins {
     id "de.interactive_instruments.xtraplatform-settings" version "6.1.0-SNAPSHOT"
 }
 
-xtraplatform {
-    //useMavenLocal()
+ext {
+    coreVersion    = '6.3.0-build-plugins-SNAPSHOT'
+    nativeVersion  = '2.5.0-SNAPSHOT'
+}
 
-    layer group: 'de.interactive_instruments', name: 'xtraplatform-core', version: '6.3.0-build-plugins-SNAPSHOT'
-    layerNative group: 'de.interactive_instruments', name: 'xtraplatform-native', version: "2.5.0-SNAPSHOT" 
+xtraplatform {
+    includeOnlyIf { layer -> gradle.parent != null || (settings.hasProperty('inc') && layer.name != 'xtraplatform-native') || (settings.hasProperty('inc') && settings.hasProperty('native'))  }
+
+    layerInclude       name: 'xtraplatform-core', group: 'de.interactive_instruments', version: coreVersion, path: '../', dir: 'xtraplatform'
+    layerIncludeNative name: 'xtraplatform-native', group: 'de.interactive_instruments', version: nativeVersion, path: '../'
 }
 
 dependencyResolutionManagement {
@@ -42,7 +47,3 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = 'xtraplatform-spatial'
-
-//includeBuild '../xtraplatform-build'
-//includeBuild '../xtraplatform'
-//includeBuild '../xtraplatform-native'
