@@ -29,7 +29,7 @@ ext {
 }
 
 xtraplatform {
-    includeOnlyIf { layer -> gradle.parent != null || (settings.hasProperty('inc') && layer.name != 'xtraplatform-native') || (settings.hasProperty('inc') && settings.hasProperty('native'))  }
+    includeOnlyIf { layer -> (gradle.parent != null || settings.hasProperty('inc')) && (layer.name != 'xtraplatform-native' || settings.hasProperty('native'))  }
 
     layerInclude       name: 'xtraplatform-core', group: 'de.interactive_instruments', version: coreVersion, path: '../', dir: 'xtraplatform'
     layerIncludeNative name: 'xtraplatform-native', group: 'de.interactive_instruments', version: nativeVersion, path: '../'
