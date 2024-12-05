@@ -23,9 +23,14 @@ plugins {
     id "de.interactive_instruments.xtraplatform-settings" version "6.1.0-SNAPSHOT"
 }
 
+def versions =  xtraplatform.getCatalogVersions(file("gradle/layers.versions.toml"))
+
 ext {
-    coreVersion    = '6.3.0-build-plugins-SNAPSHOT'
-    nativeVersion  = '2.5.0-SNAPSHOT'
+    coreVersionCatalog    = versions['xtraplatform-core']
+    nativeVersionCatalog  = versions['xtraplatform-native']
+
+    coreVersion    = settings.hasProperty('coreVersionExt') ? settings.getProperty('coreVersionExt') : coreVersionCatalog
+    nativeVersion  = settings.hasProperty('nativeVersionExt') ? settings.getProperty('nativeVersionExt') : nativeVersionCatalog
 }
 
 xtraplatform {
