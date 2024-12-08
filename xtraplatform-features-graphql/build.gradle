@@ -17,5 +17,5 @@ dependencies {
     provided project(':xtraplatform-strings')
     provided project(':xtraplatform-features-json')
 
-    testImplementation(testFixtures(project(":xtraplatform-features")))
+    testProvided(testFixtures(project(":xtraplatform-features")))
 }

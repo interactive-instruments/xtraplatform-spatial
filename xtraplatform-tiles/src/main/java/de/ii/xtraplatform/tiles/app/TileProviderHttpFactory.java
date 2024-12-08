@@ -9,7 +9,6 @@ package de.ii.xtraplatform.tiles.app;
 
 import com.github.azahnen.dagger.annotations.AutoBind;
 import dagger.assisted.AssistedFactory;
-import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
 import de.ii.xtraplatform.entities.domain.AbstractEntityFactory;
 import de.ii.xtraplatform.entities.domain.EntityData;
 import de.ii.xtraplatform.entities.domain.EntityDataBuilder;
@@ -37,8 +36,7 @@ public class TileProviderHttpFactory
   private final boolean skipHydration;
 
   @Inject
-  public TileProviderHttpFactory(
-      VolatileRegistry volatileRegistry, TileProviderHttpFactoryAssisted factoryAssisted) {
+  public TileProviderHttpFactory(TileProviderHttpFactoryAssisted factoryAssisted) {
     super(factoryAssisted);
     this.skipHydration = false;
   }

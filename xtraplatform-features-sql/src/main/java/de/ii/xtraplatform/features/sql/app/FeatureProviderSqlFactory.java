@@ -11,11 +11,6 @@ import com.github.azahnen.dagger.annotations.AutoBind;
 import dagger.Lazy;
 import dagger.assisted.AssistedFactory;
 import de.ii.xtraplatform.base.domain.LogContext;
-import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
-import de.ii.xtraplatform.cache.domain.Cache;
-import de.ii.xtraplatform.cql.domain.Cql;
-import de.ii.xtraplatform.crs.domain.CrsInfo;
-import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.entities.domain.AbstractEntityFactory;
 import de.ii.xtraplatform.entities.domain.AutoEntityFactory;
 import de.ii.xtraplatform.entities.domain.EntityData;
@@ -24,13 +19,11 @@ import de.ii.xtraplatform.entities.domain.EntityFactory;
 import de.ii.xtraplatform.entities.domain.PersistentEntity;
 import de.ii.xtraplatform.entities.domain.ValidationResult.MODE;
 import de.ii.xtraplatform.features.domain.ConnectorFactory;
-import de.ii.xtraplatform.features.domain.DecoderFactories;
 import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
 import de.ii.xtraplatform.features.domain.MappingOperationResolver;
 import de.ii.xtraplatform.features.domain.ProviderData;
-import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.domain.SchemaFragmentResolver;
 import de.ii.xtraplatform.features.domain.SchemaReferenceResolver;
 import de.ii.xtraplatform.features.domain.TypesResolver;
@@ -50,8 +43,6 @@ import de.ii.xtraplatform.features.sql.domain.ImmutableQueryGeneratorSettings;
 import de.ii.xtraplatform.features.sql.domain.ImmutableSqlPathDefaults;
 import de.ii.xtraplatform.features.sql.domain.SqlClientBasicFactory;
 import de.ii.xtraplatform.features.sql.domain.SqlDbmsAdapters;
-import de.ii.xtraplatform.streams.domain.Reactive;
-import de.ii.xtraplatform.values.domain.ValueStore;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -79,18 +70,8 @@ public class FeatureProviderSqlFactory
   @Inject
   public FeatureProviderSqlFactory(
       Lazy<Set<SchemaFragmentResolver>> schemaResolvers,
-      // TODO: needed because dagger-auto does not parse FeatureProviderSql
-      CrsTransformerFactory crsTransformerFactory,
-      CrsInfo crsInfo,
-      Cql cql,
       ConnectorFactory connectorFactory,
       SqlDbmsAdapters dbmsAdapters,
-      Reactive reactive,
-      ValueStore valueStore,
-      ProviderExtensionRegistry extensionRegistry,
-      DecoderFactories decoderFactories,
-      VolatileRegistry volatileRegistry,
-      Cache cache,
       ProviderSqlFactoryAssisted providerSqlFactoryAssisted) {
     super(providerSqlFactoryAssisted);
     this.schemaResolvers = schemaResolvers;

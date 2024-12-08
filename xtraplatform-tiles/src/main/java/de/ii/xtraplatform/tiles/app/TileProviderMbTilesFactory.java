@@ -9,8 +9,6 @@ package de.ii.xtraplatform.tiles.app;
 
 import com.github.azahnen.dagger.annotations.AutoBind;
 import dagger.assisted.AssistedFactory;
-import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
-import de.ii.xtraplatform.blobs.domain.ResourceStore;
 import de.ii.xtraplatform.entities.domain.AbstractEntityFactory;
 import de.ii.xtraplatform.entities.domain.EntityData;
 import de.ii.xtraplatform.entities.domain.EntityDataBuilder;
@@ -18,7 +16,6 @@ import de.ii.xtraplatform.entities.domain.EntityFactory;
 import de.ii.xtraplatform.entities.domain.PersistentEntity;
 import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
 import de.ii.xtraplatform.tiles.domain.ImmutableTileProviderMbtilesData;
-import de.ii.xtraplatform.tiles.domain.TileMatrixSetRepository;
 import de.ii.xtraplatform.tiles.domain.TileProviderData;
 import de.ii.xtraplatform.tiles.domain.TileProviderMbtilesData;
 import java.util.Optional;
@@ -38,12 +35,7 @@ public class TileProviderMbTilesFactory
   private final boolean skipHydration;
 
   @Inject
-  public TileProviderMbTilesFactory(
-      // TODO: needed because dagger-auto does not parse TileProviderMbTiles
-      ResourceStore blobStore,
-      TileMatrixSetRepository tileMatrixSetRepository,
-      VolatileRegistry volatileRegistry,
-      TileProviderMbTilesFactoryAssisted factoryAssisted) {
+  public TileProviderMbTilesFactory(TileProviderMbTilesFactoryAssisted factoryAssisted) {
     super(factoryAssisted);
     this.skipHydration = false;
   }

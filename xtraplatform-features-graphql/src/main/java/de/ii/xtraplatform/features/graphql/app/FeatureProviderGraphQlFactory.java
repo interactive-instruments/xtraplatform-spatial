@@ -10,9 +10,6 @@ package de.ii.xtraplatform.features.graphql.app;
 import com.github.azahnen.dagger.annotations.AutoBind;
 import dagger.Lazy;
 import dagger.assisted.AssistedFactory;
-import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
-import de.ii.xtraplatform.cql.domain.Cql;
-import de.ii.xtraplatform.crs.domain.CrsTransformerFactory;
 import de.ii.xtraplatform.entities.domain.AbstractEntityFactory;
 import de.ii.xtraplatform.entities.domain.EntityData;
 import de.ii.xtraplatform.entities.domain.EntityDataBuilder;
@@ -23,13 +20,10 @@ import de.ii.xtraplatform.features.domain.FeatureProviderDataV2;
 import de.ii.xtraplatform.features.domain.FeatureSchema;
 import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
 import de.ii.xtraplatform.features.domain.ProviderData;
-import de.ii.xtraplatform.features.domain.ProviderExtensionRegistry;
 import de.ii.xtraplatform.features.domain.SchemaFragmentResolver;
 import de.ii.xtraplatform.features.domain.SchemaReferenceResolver;
 import de.ii.xtraplatform.features.graphql.domain.FeatureProviderGraphQlData;
 import de.ii.xtraplatform.features.graphql.domain.ImmutableFeatureProviderGraphQlData;
-import de.ii.xtraplatform.streams.domain.Reactive;
-import de.ii.xtraplatform.values.domain.ValueStore;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -52,14 +46,7 @@ public class FeatureProviderGraphQlFactory
   @Inject
   public FeatureProviderGraphQlFactory(
       Lazy<Set<SchemaFragmentResolver>> schemaResolvers,
-      // TODO: needed because dagger-auto does not parse FeatureProviderSql
-      CrsTransformerFactory crsTransformerFactory,
-      Cql cql,
       ConnectorFactory connectorFactory,
-      Reactive reactive,
-      ValueStore valueStore,
-      ProviderExtensionRegistry extensionRegistry,
-      VolatileRegistry volatileRegistry,
       ProviderGraphQlFactoryAssisted providerGraphQlFactoryAssisted) {
     super(providerGraphQlFactoryAssisted);
     this.schemaResolvers = schemaResolvers;
