@@ -1,12 +1,12 @@
 pluginManagement {
     repositories {
+        gradlePluginPortal()
         maven {
             url "https://dl.interactive-instruments.de/repository/maven-releases/"
         }
         maven {
             url "https://dl.interactive-instruments.de/repository/maven-snapshots/"
         }
-        gradlePluginPortal()
     }
 }
 
@@ -20,7 +20,24 @@ buildscript {
 }
 
 plugins {
-    id "de.interactive_instruments.xtraplatform-settings" version "6.0.1"
+    id "de.interactive_instruments.xtraplatform-settings" version "6.1.0"
+}
+
+def versions =  xtraplatform.getCatalogVersions(file("gradle/layers.versions.toml"))
+
+ext {
+    coreVersionCatalog    = versions['xtraplatform-core']
+    nativeVersionCatalog  = versions['xtraplatform-native']
+
+    coreVersion    = settings.hasProperty('coreVersionExt') ? settings.getProperty('coreVersionExt') : coreVersionCatalog
+    nativeVersion  = settings.hasProperty('nativeVersionExt') ? settings.getProperty('nativeVersionExt') : nativeVersionCatalog
+}
+
+xtraplatform {
+    includeOnlyIf { layer -> (gradle.parent != null || settings.hasProperty('inc')) && (layer.name != 'xtraplatform-native' || settings.hasProperty('native'))  }
+
+    layerInclude       name: 'xtraplatform-core', group: 'de.interactive_instruments', version: coreVersion, path: '../', dir: 'xtraplatform'
+    layerIncludeNative name: 'xtraplatform-native', group: 'de.interactive_instruments', version: nativeVersion, path: '../'
 }
 
 dependencyResolutionManagement {
@@ -35,14 +52,3 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = 'xtraplatform-spatial'
-
-rootDir.listFiles().each { file ->
-    if (file.isDirectory() && file.name.startsWith('xtraplatform-')) {
-        include file.name
-    }  
-}
-
-
-//includeBuild '../xtraplatform-build'
-//includeBuild '../xtraplatform'
-//includeBuild '../xtraplatform-native'

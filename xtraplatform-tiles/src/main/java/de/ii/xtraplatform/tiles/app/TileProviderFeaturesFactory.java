@@ -10,12 +10,7 @@ package de.ii.xtraplatform.tiles.app;
 import com.github.azahnen.dagger.annotations.AutoBind;
 import com.google.common.collect.ImmutableMap;
 import dagger.assisted.AssistedFactory;
-import de.ii.xtraplatform.base.domain.AppContext;
 import de.ii.xtraplatform.base.domain.LogContext;
-import de.ii.xtraplatform.base.domain.resiliency.VolatileRegistry;
-import de.ii.xtraplatform.blobs.domain.ResourceStore;
-import de.ii.xtraplatform.cql.domain.Cql;
-import de.ii.xtraplatform.crs.domain.CrsInfo;
 import de.ii.xtraplatform.entities.domain.AbstractEntityFactory;
 import de.ii.xtraplatform.entities.domain.EntityData;
 import de.ii.xtraplatform.entities.domain.EntityDataBuilder;
@@ -25,14 +20,12 @@ import de.ii.xtraplatform.entities.domain.PersistentEntity;
 import de.ii.xtraplatform.features.domain.FeatureProvider;
 import de.ii.xtraplatform.features.domain.FeatureProviderEntity;
 import de.ii.xtraplatform.features.domain.ImmutableProviderCommonData;
-import de.ii.xtraplatform.jobs.domain.JobQueue;
 import de.ii.xtraplatform.tiles.domain.ImmutableMinMax;
 import de.ii.xtraplatform.tiles.domain.ImmutableTileProviderFeaturesData;
 import de.ii.xtraplatform.tiles.domain.ImmutableTilesetFeatures.Builder;
 import de.ii.xtraplatform.tiles.domain.ImmutableTilesetFeaturesDefaults;
 import de.ii.xtraplatform.tiles.domain.TileProviderData;
 import de.ii.xtraplatform.tiles.domain.TileProviderFeaturesData;
-import de.ii.xtraplatform.tiles.domain.TileWalker;
 import de.ii.xtraplatform.tiles.domain.TilesetFeatures;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Map;
@@ -55,16 +48,7 @@ public class TileProviderFeaturesFactory
 
   @Inject
   public TileProviderFeaturesFactory(
-      // TODO: needed because dagger-auto does not parse TileProviderFeatures
-      CrsInfo crsInfo,
-      EntityRegistry entityRegistry,
-      AppContext appContext,
-      Cql cql,
-      ResourceStore blobStore,
-      TileWalker tileWalker,
-      VolatileRegistry volatileRegistry,
-      JobQueue jobQueue,
-      TileProviderFeaturesFactoryAssisted factoryAssisted) {
+      EntityRegistry entityRegistry, TileProviderFeaturesFactoryAssisted factoryAssisted) {
     super(factoryAssisted);
     this.entityRegistry = entityRegistry;
     this.skipHydration = false;

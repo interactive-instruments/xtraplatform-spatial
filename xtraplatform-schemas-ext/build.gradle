@@ -17,6 +17,6 @@ dependencies {
     embedded 'org.jruby.joni:joni:2.1.41'
     embedded 'org.jsoup:jsoup:1.16.1'
 
-    testImplementation(testFixtures(project(":xtraplatform-features")))
-    testImplementation project(':xtraplatform-crs')
+    testProvided(testFixtures(project(":xtraplatform-features")))
+    testProvided project(':xtraplatform-crs')
 }
