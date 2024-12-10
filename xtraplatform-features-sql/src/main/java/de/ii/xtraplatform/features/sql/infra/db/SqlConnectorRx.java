@@ -48,11 +48,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.davidmoten.rxjava3.jdbc.Database;
-import org.davidmoten.rxjava3.jdbc.pool.DatabaseType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -343,26 +341,7 @@ public class SqlConnectorRx extends AbstractVolatilePolling implements SqlConnec
   }
 
   private Database createSession(HikariDataSource dataSource) {
-    int maxIdleTime = 600; // minConnections == maxConnections ? 0 : 600;
-    DatabaseType healthCheck = dbmsAdapters.get(connectionInfo.getDialect()).getRxType();
-    int idleTimeBeforeHealthCheck = 60;
-    if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace(
-          "rxjava2-jdbc - maxIdleTime: {}, healthCheck: {},  idleTimeBeforeHealthCheck: {}",
-          maxIdleTime,
-          healthCheck,
-          idleTimeBeforeHealthCheck);
-    }
-
-    return Database.nonBlocking()
-        .connectionProvider(dataSource)
-        .maxPoolSize(maxConnections)
-        .maxIdleTime(
-            maxIdleTime,
-            TimeUnit.SECONDS) // TODO: workaround for bug in rxjava2-jdbc, remove when fixed
-        .healthCheck(healthCheck)
-        .idleTimeBeforeHealthCheck(idleTimeBeforeHealthCheck, TimeUnit.SECONDS)
-        .build();
+    return Database.fromBlocking(dataSource);
   }
 
   private static long getInitFailTimeout(ConnectionInfoSql connectionInfo) {
