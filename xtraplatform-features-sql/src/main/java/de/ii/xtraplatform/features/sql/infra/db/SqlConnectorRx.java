@@ -31,11 +31,9 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.davidmoten.rx.jdbc.Database;
-import org.davidmoten.rx.jdbc.pool.DatabaseType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -299,27 +297,7 @@ public class SqlConnectorRx implements SqlConnector {
   }
 
   private Database createSession(HikariDataSource dataSource) {
-    int maxIdleTime = minConnections == maxConnections ? 0 : 600;
-    DatabaseType healthCheck =
-        connectionInfo.getDialect() == Dialect.GPKG ? DatabaseType.SQLITE : DatabaseType.POSTGRES;
-    int idleTimeBeforeHealthCheck = 60;
-    if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace(
-          "rxjava2-jdbc - maxIdleTime: {}, healthCheck: {},  idleTimeBeforeHealthCheck: {}",
-          maxIdleTime,
-          healthCheck,
-          idleTimeBeforeHealthCheck);
-    }
-
-    return Database.nonBlocking()
-        .connectionProvider(dataSource)
-        .maxPoolSize(maxConnections)
-        .maxIdleTime(
-            maxIdleTime,
-            TimeUnit.SECONDS) // TODO: workaround for bug in rxjava2-jdbc, remove when fixed
-        .healthCheck(healthCheck)
-        .idleTimeBeforeHealthCheck(idleTimeBeforeHealthCheck, TimeUnit.SECONDS)
-        .build();
+    return Database.fromBlocking(dataSource);
   }
 
   private static long getInitFailTimeout(ConnectionInfoSql connectionInfo) {
