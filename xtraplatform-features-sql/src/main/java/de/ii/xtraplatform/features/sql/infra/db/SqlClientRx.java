@@ -96,7 +96,6 @@ public class SqlClientRx implements SqlClient {
     Flowable<SqlRow> flowable =
         session
             .select(query)
-            .transacted()
             .get(
                 resultSet -> {
                   SqlRow row = new SqlRowVals(collator).read(resultSet, options);
@@ -106,9 +105,7 @@ public class SqlClientRx implements SqlClient {
                   }
 
                   return row;
-                })
-            .filter(tx2 -> !tx2.isComplete())
-            .map(Tx::value);
+                });
 
     // TODO: prettify, see
     // https://github.com/slick/slick/blob/main/slick/src/main/scala/slick/jdbc/StatementInvoker.scala
@@ -187,16 +184,18 @@ public class SqlClientRx implements SqlClient {
     String first = toStatementsWithLog.get(0).apply(feature);
 
     Flowable<? extends Tx<?>> txFlowable =
-        // TODO: workaround for bug in rxjava2-jdbc, TransactedConnection.commit is called too
-        // often, therefore close is never called because counter < 0
-        toStatements.size() == 2
-            ? session.update(first).transacted().tx().filter(tx -> !tx.isComplete())
-            : session
-                .update(first)
-                .transacted()
-                .returnGeneratedKeys()
-                .get(resultSet -> mapper.apply(resultSet, null))
-                .filter(tx -> !tx.isComplete());
+        // TODO: when implementing crud for joins, check if bug in rxjava3-jdbc still exists:
+        //  when using returnGeneratedKeys, TransactedConnection.commit is called too often,
+        //  therefore close is never called because counter < 0
+        /*toStatements.size() == 2
+        ? session.update(first).transacted().tx().filter(tx -> !tx.isComplete())
+        :*/
+        session
+            .update(first)
+            .transacted()
+            .returnGeneratedKeys()
+            .get(resultSet -> mapper.apply(resultSet, null))
+            .filter(tx -> !tx.isComplete());
 
     for (int j = 1; j < toStatementsWithLog.size(); j++) {
       String next = toStatementsWithLog.get(j).apply(feature);
