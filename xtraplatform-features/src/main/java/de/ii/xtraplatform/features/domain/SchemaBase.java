@@ -546,6 +546,13 @@ public interface SchemaBase<T extends SchemaBase<T>> {
   @JsonIgnore
   @Value.Derived
   @Value.Auxiliary
+  default boolean isVirtualObject() {
+    return isObject() && getEffectiveSourcePaths().isEmpty();
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
   default boolean isArray() {
     return getType() == Type.OBJECT_ARRAY
         || getType() == Type.VALUE_ARRAY
