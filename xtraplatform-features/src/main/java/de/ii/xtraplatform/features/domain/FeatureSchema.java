@@ -117,7 +117,7 @@ public interface FeatureSchema
    * - `OBJECT_ARRAY` für eine Liste von Objekten.
    * - `VALUE_ARRAY`für eine Liste von einfachen Werten.
    * - `FEATURE_REF` für einen Verweis auf ein anderes Feature oder eine externe Ressource.
-   * - "FEATURE_REF_ARRAY" für eine Liste von Verweisen auf andere Features oder externe Ressourcen.
+   * - `FEATURE_REF_ARRAY` für eine Liste von Verweisen auf andere Features oder externe Ressourcen.
    * </code>
    *     <p>
    * @default STRING/OBJECT
@@ -544,6 +544,22 @@ public interface FeatureSchema
               return builder.build();
             })
         .collect(Collectors.toList());
+  }
+
+  @JsonIgnore
+  @Value.Derived
+  @Value.Auxiliary
+  @Override
+  default boolean isVirtualObject() {
+    return isObject()
+        && (getEffectiveSourcePaths().isEmpty()
+            || getTransformations().stream()
+                .anyMatch(
+                    transformation ->
+                        transformation
+                            .getWrap()
+                            .filter(wrap -> wrap == Type.OBJECT || wrap == Type.OBJECT_ARRAY)
+                            .isPresent()));
   }
 
   @JsonIgnore

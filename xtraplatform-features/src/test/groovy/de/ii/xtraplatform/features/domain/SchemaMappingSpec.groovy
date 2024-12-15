@@ -7,7 +7,7 @@
  */
 package de.ii.xtraplatform.features.domain
 
-
+import de.ii.xtraplatform.features.domain.transform.ImplicitMappingResolver
 import spock.lang.Shared
 import spock.lang.Specification
 
@@ -18,16 +18,19 @@ class SchemaMappingSpec extends Specification {
 
     @Shared
     MappingOperationResolver mappingOperationResolver
+    @Shared
+    ImplicitMappingResolver implicitMappingResolver
 
     def setupSpec() {
         mappingOperationResolver = new MappingOperationResolver()
+        implicitMappingResolver = new ImplicitMappingResolver()
     }
 
     def 'schema mapping: #casename'() {
 
         when:
 
-        SchemaMapping actual = mapping(schema, mappingOperationResolver)
+        SchemaMapping actual = mapping(schema, mappingOperationResolver, implicitMappingResolver)
         Set<List<String>> expectedSource = FeaturePathFixtures.fromYaml(paths + "-source")
         Set<List<String>> expectedTarget = FeaturePathFixtures.fromYaml(paths + "-target")
 
@@ -43,9 +46,10 @@ class SchemaMappingSpec extends Specification {
 
     }
 
-    static SchemaMapping mapping(String featureSchemaName, MappingOperationResolver mappingOperationResolver) {
+    static SchemaMapping mapping(String featureSchemaName, MappingOperationResolver mappingOperationResolver, ImplicitMappingResolver implicitMappingResolver) {
         def schema = FeatureSchemaFixtures.fromYaml(featureSchemaName)
-        def schema2 = schema.accept(mappingOperationResolver, List.of())
-        return SchemaMapping.of(schema2)
+        def schema2 = schema.accept(implicitMappingResolver, List.of())
+        def schema3 = schema2.accept(mappingOperationResolver, List.of())
+        return SchemaMapping.of(schema3)
     }
 }

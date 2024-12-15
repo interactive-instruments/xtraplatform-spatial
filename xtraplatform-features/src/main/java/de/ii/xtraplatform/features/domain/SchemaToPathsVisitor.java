@@ -139,21 +139,20 @@ public class SchemaToPathsVisitor<T extends SchemaBase<T>>
                     Stream.of(Map.entry(path, schema))
                         .map(
                             entry -> {
-                              if (useTargetPath
-                                  || !entry.getValue().isFeatureRef()
-                                  || !entry.getValue().isObject()
-                                  || !MappingOperationResolver.isConcatPath(
-                                      entry.getValue().getPath())
-                                  || entry.getKey().size() > 1) {
-                                return entry;
-                              }
-                              // special handling for virtual object (no source path) feature refs
-                              // in concat
-                              // the wrapping object has to be ignored since it cannot be
+                              // special handling for virtual objects (no source path) in concat
+                              // the virtual object has to be ignored since it cannot be
                               // differentiated from its parent object
                               // it will be re-added automatically by the wrap transformer
-                              return Map.entry(
-                                  List.of("__EMPTY__", String.valueOf(counter)), entry.getValue());
+                              if (!useTargetPath
+                                  && entry.getValue().isVirtualObject()
+                                  && MappingOperationResolver.isConcatPath(
+                                      entry.getValue().getPath())) {
+                                return Map.entry(
+                                    List.of("__EMPTY__", String.valueOf(counter)),
+                                    entry.getValue());
+                              }
+
+                              return entry;
                             }),
                     visitedProperties.stream()
                         .flatMap(

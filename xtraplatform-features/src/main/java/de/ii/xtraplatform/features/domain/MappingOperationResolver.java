@@ -466,14 +466,17 @@ public class MappingOperationResolver implements TypesResolver {
 
         for (FeatureSchema prop : schema.getConcat().get(i).getProperties()) {
           String prefix = i + "_";
+
+          Optional<String> newSourcePath =
+              prop.getSourcePath()
+                  .map(originalPath -> basePath2 + originalPath)
+                  .or(() -> prop.isObject() ? Optional.of(basePath2NoSlash) : Optional.empty());
+
           builder.putPropertyMap(
               prefix + prop.getName(),
               new ImmutableFeatureSchema.Builder()
                   .from(prop)
-                  .sourcePath(
-                      prop.getSourcePath().isPresent()
-                          ? basePath2 + prop.getSourcePath().get()
-                          : basePath2NoSlash)
+                  .sourcePath(newSourcePath)
                   .path(List.of(i + "_" + prop.getName()))
                   .transformations(
                       prop.getTransformations().stream()
