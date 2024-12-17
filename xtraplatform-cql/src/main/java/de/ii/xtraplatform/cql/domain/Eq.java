@@ -34,6 +34,12 @@ public interface Eq extends BinaryScalarOperation, CqlNode {
         .build();
   }
 
+  static Eq of(String property, TemporalLiteral temporalLiteral) {
+    return new ImmutableEq.Builder()
+        .args(ImmutableList.of(Property.of(property), temporalLiteral))
+        .build();
+  }
+
   static Eq of(String property, String property2) {
     return new ImmutableEq.Builder()
         .args(ImmutableList.of(Property.of(property), Property.of(property2)))
