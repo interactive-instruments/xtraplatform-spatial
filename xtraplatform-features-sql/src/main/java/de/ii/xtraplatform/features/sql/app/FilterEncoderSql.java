@@ -1013,7 +1013,7 @@ public class FilterEncoderSql {
 
       String propertyName = ((Property) arrayOperation.getArgs().get(notInverse ? 0 : 1)).getName();
       SchemaSql table = getTable(propertyName, false, false);
-      List<String> aliases = AliasGenerator.getAliases(table, 1);
+      List<String> aliases = AliasGenerator.getAliases(List.of(rootSchema), table, 1);
       Tuple<String, Optional<String>> qualifiedColumn =
           getQualifiedColumn(table, propertyName, aliases.get(aliases.size() - 1), false);
 
