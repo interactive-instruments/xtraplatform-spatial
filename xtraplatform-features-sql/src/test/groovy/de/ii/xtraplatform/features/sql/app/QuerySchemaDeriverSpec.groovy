@@ -8,8 +8,6 @@
 package de.ii.xtraplatform.features.sql.app
 
 import de.ii.xtraplatform.cql.app.CqlImpl
-import de.ii.xtraplatform.features.domain.Decoder
-import de.ii.xtraplatform.features.domain.DecoderFactory
 import de.ii.xtraplatform.features.domain.FeatureSchemaFixtures
 import de.ii.xtraplatform.features.domain.MappingOperationResolver
 import de.ii.xtraplatform.features.json.app.DecoderFactoryJson
@@ -18,8 +16,6 @@ import de.ii.xtraplatform.features.sql.domain.SchemaSql
 import de.ii.xtraplatform.features.sql.domain.SqlPathParser
 import spock.lang.Shared
 import spock.lang.Specification
-
-import javax.ws.rs.core.MediaType
 
 class QuerySchemaDeriverSpec extends Specification {
 
@@ -67,6 +63,7 @@ class QuerySchemaDeriverSpec extends Specification {
         "merge object connector"                     | FeatureSchemaFixtures.CONNECTOR_MERGE_OBJECT              || QuerySchemaFixtures.CONNECTOR_MERGE_OBJECT
         "concat object arrays"                       | FeatureSchemaFixtures.CONCAT_OBJECT_ARRAYS                || QuerySchemaFixtures.CONCAT_OBJECT_ARRAYS
         "concat root objects"                        | FeatureSchemaFixtures.CONCAT_ROOT                         || QuerySchemaFixtures.CONCAT_ROOT
+        "long value path overlap"                    | FeatureSchemaFixtures.fromYaml('gemeinde_bezeichnung')    || QuerySchemaFixtures.LONG_VALUE_PATH_OVERLAP
     }
 
 
