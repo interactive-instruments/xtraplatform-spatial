@@ -291,7 +291,23 @@ public class QuerySchemaDeriver implements MappedSchemaDeriver<SchemaSql, SqlPat
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
-  private record SubConnector(Map<String, String> paths, Map<String, PropertyTypeInfo> types) {}
+  private static class SubConnector {
+    private final Map<String, String> paths;
+    private final Map<String, PropertyTypeInfo> types;
+
+    SubConnector(Map<String, String> paths, Map<String, PropertyTypeInfo> types) {
+      this.paths = paths;
+      this.types = types;
+    }
+
+    Map<String, String> paths() {
+      return paths;
+    }
+
+    Map<String, PropertyTypeInfo> types() {
+      return types;
+    }
+  }
 
   private List<SchemaSql> createTableParents(
       List<SchemaSql> visitedProperties,
